@@ -18,85 +18,142 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final _name = TextEditingController();
   final _desc = TextEditingController();
-  // changed: birthDate (ISO yyyy-MM-dd) instead of birth year
-  final _birthDate = TextEditingController();
-  final _city = TextEditingController(); // will hold cityId or name depending on usage
-  final _country = TextEditingController(); // will hold countryId or name depending on usage
+  final _city = TextEditingController();
+  final _country = TextEditingController();
   PlatformFile? _picked;
   String _status = '';
 
+  List<CountryDto> _countries = [];
+  List<CityDto> _cities = [];
+  CountryDto? _selectedCountry;
+  CityDto? _selectedCity;
+  bool? _isBand;
+
+  // artist fields
+  DateTime? _birthDate;
+  List<GenderDto> _genders = [];
+  GenderDto? _selectedGender;
+
   bool _isEditing = false; // Track edit mode
-  bool _isBand = false; // new: whether profile is a band
-  int _step = 0; // 0 = details (name, birthDate, country, city, isBand), 1 = step2 (tags/about/photo)
+  Map<String, List<Map<String, dynamic>>> _options = {};
   // map categoryName -> set of selected values
   final Map<String, Set<dynamic>> _selected = {};
-  Map<String, List<Map<String, dynamic>>> _options = {};
 
   @override
   void initState() {
     super.initState();
     _loadOptions();
     _loadProfile(); // Load user profile data on initialization
+    _loadCountries();
+  }
+
+  Future<void> _loadCountries() async {
+    try {
+      final resp = await widget.api.getCountries();
+      if (resp.statusCode == 200) {
+        var decoded = jsonDecode(resp.body);
+        if (decoded is String) decoded = jsonDecode(decoded);
+        final List<CountryDto> list = [];
+        if (decoded is List) {
+          for (final e in decoded) {
+            if (e is Map) list.add(CountryDto.fromJson(Map<String, dynamic>.from(e)));
+          }
+        }
+        setState(() => _countries = list);
+      }
+    } catch (_) {
+      // ignore
+    }
   }
 
   Future<void> _loadOptions() async {
     try {
-      setState(() => _status = 'Loading options...');
-      // Fetch tags and categories separately (no getUserOptions)
-      final tagsResp = await widget.api.getTags();
-      final catsResp = await widget.api.getTagCategories();
+      setState(() => _status = 'Loading tags...');
 
-      if (tagsResp.statusCode != 200 && catsResp.statusCode != 200) {
-        setState(() => _status = 'Failed to load options: tags ${tagsResp.statusCode}, categories ${catsResp.statusCode}');
-        return;
-      }
+      // fetch categories, tags, and genders
+      final catResp = await widget.api.getTagCategories();
+      final tagResp = await widget.api.getTags();
+      final genderResp = await widget.api.getGenders();
 
-      List<dynamic> tagsList = [];
-      List<dynamic> catsList = [];
-      try {
-        if (tagsResp.statusCode == 200) tagsList = jsonDecode(tagsResp.body) as List<dynamic>;
-      } catch (_) {}
-      try {
-        if (catsResp.statusCode == 200) catsList = jsonDecode(catsResp.body) as List<dynamic>;
-      } catch (_) {}
-
-      // build category id -> name map
-      final Map<String, String> catNames = {};
-      for (final c in catsList) {
-        if (c is Map) {
-          final id = c['id']?.toString();
-          final name = c['name']?.toString();
-          if (id != null && name != null) catNames[id] = name;
+      // parse genders first
+      if (genderResp.statusCode == 200) {
+        var dec = jsonDecode(genderResp.body);
+        if (dec is String) dec = jsonDecode(dec);
+        if (dec is List) {
+          final List<GenderDto> genders = [];
+          for (final e in dec) {
+            if (e is Map) genders.add(GenderDto.fromJson(Map<String, dynamic>.from(e)));
+          }
+          setState(() => _genders = genders);
         }
       }
 
-      // group tags by category name (fallback to 'tags' if unknown)
       final Map<String, List<Map<String, dynamic>>> groups = {};
-      for (final t in tagsList) {
-        if (t is Map) {
-          final cid = t['tagCategoryId']?.toString();
-          final label = (t['name'] ?? t['label'] ?? t['value'])?.toString() ?? '';
-          final value = (t['id']?.toString() ?? label);
-          final categoryName = cid != null ? (catNames[cid] ?? cid) : 'tags';
-          groups.putIfAbsent(categoryName, () => []).add({'value': value, 'label': label});
-        } else if (t is String) {
-          groups.putIfAbsent('tags', () => []).add({'value': t, 'label': t});
-        }
-      }
 
-      // ensure flat 'tags' group exists if nothing categorized it
-      if (!groups.containsKey('tags') && tagsList.isNotEmpty) {
-        final List<Map<String, dynamic>> flat = [];
-        for (final t in tagsList) {
-          if (t is Map) {
-            final label = (t['name'] ?? t['label'] ?? t['value'])?.toString() ?? '';
-            final value = (t['id']?.toString() ?? label);
-            flat.add({'value': value, 'label': label});
-          } else if (t is String) {
-            flat.add({'value': t, 'label': t});
+      List<TagCategoryDto> cats = [];
+      if (catResp.statusCode == 200) {
+        var dec = jsonDecode(catResp.body);
+        if (dec is String) dec = jsonDecode(dec);
+        if (dec is List) {
+          for (final e in dec) {
+            if (e is Map) cats.add(TagCategoryDto.fromJson(Map<String, dynamic>.from(e)));
           }
         }
-        if (flat.isNotEmpty) groups['tags'] = flat;
+      }
+
+      List<TagDto> tags = [];
+      if (tagResp.statusCode == 200) {
+        var dec = jsonDecode(tagResp.body);
+        if (dec is String) dec = jsonDecode(dec);
+        if (dec is List) {
+          for (final e in dec) {
+            if (e is Map) tags.add(TagDto.fromJson(Map<String, dynamic>.from(e)));
+          }
+        }
+      }
+
+      if (cats.isNotEmpty) {
+        for (final c in cats) {
+          final List<Map<String, dynamic>> opts = [];
+          final ctTags = tags.where((t) => t.tagCategoryId == c.id).toList();
+          for (final t in ctTags) {
+            opts.add({'value': t.id, 'label': t.name});
+          }
+          if (opts.isNotEmpty) groups[c.name] = opts;
+        }
+      } else if (tags.isNotEmpty) {
+        // no categories returned - put all tags under 'tags'
+        final List<Map<String, dynamic>> opts = [];
+        for (final t in tags) {
+          opts.add({'value': t.id, 'label': t.name});
+        }
+        groups['tags'] = opts;
+      }
+
+      // fallback: if no groups created, try old generic userOptions endpoint
+      if (groups.isEmpty) {
+        final resp = await widget.api.getUserOptions();
+        if (resp.statusCode == 200) {
+          var decoded = jsonDecode(resp.body);
+          if (decoded is String) decoded = jsonDecode(decoded);
+          if (decoded is Map) {
+            decoded.forEach((k, v) {
+              if (v is List) {
+                final List<Map<String, dynamic>> opts = [];
+                for (final e in v) {
+                  if (e is String) {
+                    opts.add({'value': e, 'label': e});
+                  } else if (e is Map) {
+                    final label = e['name'] ?? e['label'] ?? e['text'] ?? e['value'];
+                    final value = e['value'] ?? label;
+                    if (label != null) opts.add({'value': value, 'label': label.toString()});
+                  }
+                }
+                if (opts.isNotEmpty) groups[k] = opts;
+              }
+            });
+          }
+        }
       }
 
       setState(() {
@@ -114,33 +171,75 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final resp = await widget.api.getMyProfile();
       if (resp.statusCode == 200) {
         final profile = jsonDecode(resp.body);
+        // prepare selection values outside setState and avoid awaiting inside setState
+        final nameVal = profile['name'] ?? '';
+        final descVal = profile['description'] ?? '';
+        final cityVal = profile['city'] ?? '';
+        final countryVal = profile['country'] ?? '';
+        final cid = profile['countryId']?.toString() ?? profile['country_id']?.toString();
+        final cityId = profile['cityId']?.toString() ?? profile['city_id']?.toString();
+
+        CountryDto? selCountry;
+        if (cid != null && cid.isNotEmpty && _countries.isNotEmpty) {
+          selCountry = _countries.firstWhere((c) => c.id == cid, orElse: () => _countries.first);
+        } else if (countryVal != null && countryVal.isNotEmpty && _countries.isNotEmpty) {
+          selCountry = _countries.firstWhere((c) => c.name == countryVal, orElse: () => _countries.first);
+        }
+
         setState(() {
-          _name.text = profile['name'] ?? '';
-          _desc.text = profile['description'] ?? '';
-          // new API returns birthDate (ISO) or null
-          _birthDate.text = profile['birthDate'] ?? profile['birth_date'] ?? '';
-          // API uses countryId / cityId
-          _city.text = profile['cityId'] ?? profile['city'] ?? '';
-          _country.text = profile['countryId'] ?? profile['country'] ?? '';
-          _isBand = profile['isBand'] == true;
-          // populate selected tags if tagsIds exists
-          if (profile['tagsIds'] is List) {
-            final List t = profile['tagsIds'];
-            _selected['tags'] = Set<dynamic>.from(t.where((e) => e != null).map((e) => e.toString()));
+          _name.text = nameVal;
+          _desc.text = descVal;
+          _city.text = cityVal;
+          _country.text = countryVal;
+          _selectedCountry = selCountry;
+          _isBand = profile['isBand'] is bool ? profile['isBand'] as bool : (profile['isBand']?.toString().toLowerCase() == 'true');
+          // parse birthDate if provided (server returns yyyy-MM-dd)
+          if (profile['birthDate'] != null) {
+            final bd = profile['birthDate'].toString();
+            final parsed = DateTime.tryParse(bd);
+            if (parsed != null) _birthDate = parsed;
           }
-          // if profile contains gender id, put into selected under 'genders' for single picker
-          if (profile['artistGenderId'] != null) {
-            _selected['genders'] = {profile['artistGenderId'].toString()};
-          } else if (profile['genderId'] != null) {
-            _selected['genders'] = {profile['genderId'].toString()};
+          // set selected gender if present and genders loaded later will pick match
+          final genderId = profile['genderId']?.toString() ?? profile['gender_id']?.toString();
+          if (genderId != null) {
+            _selectedGender = _genders.firstWhere((g) => g.id == genderId, orElse: () => GenderDto(id: genderId, name: genderId));
           }
           _status = '';
         });
+
+        if (selCountry != null && cityId != null && cityId.isNotEmpty) {
+          await _loadCitiesForSelectedCountry(selCountry.id);
+          final selCity = _cities.isNotEmpty ? _cities.firstWhere((c) => c.id == cityId, orElse: () => _cities.first) : null;
+          if (selCity != null) {
+            setState(() {
+              _selectedCity = selCity;
+            });
+          }
+        }
       } else {
         setState(() => _status = 'Failed to load profile: ${resp.statusCode}');
       }
     } catch (e) {
       setState(() => _status = 'Error loading profile');
+    }
+  }
+
+  Future<void> _loadCitiesForSelectedCountry(String countryId) async {
+    try {
+      final resp = await widget.api.getCities(countryId);
+      if (resp.statusCode == 200) {
+        var decoded = jsonDecode(resp.body);
+        if (decoded is String) decoded = jsonDecode(decoded);
+        final List<CityDto> list = [];
+        if (decoded is List) {
+          for (final e in decoded) {
+            if (e is Map) list.add(CityDto.fromJson(Map<String, dynamic>.from(e)));
+          }
+        }
+        setState(() => _cities = list);
+      }
+    } catch (_) {
+      // ignore
     }
   }
 
@@ -151,55 +250,52 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  String? _validateBirthDate(String s) {
-    if (s.trim().isEmpty) return null; // optional
-    final re = RegExp(r'^\d{4}-\d{2}-\d{2}$');
-    if (!re.hasMatch(s.trim())) return 'Data powinna być w formacie RRRR-MM-DD';
-    // optional: basic range check
-    final year = int.tryParse(s.trim().split('-').first) ?? 0;
-    final currentYear = DateTime.now().year;
-    if (year < 1900 || year > currentYear) return 'Nieprawidłowy rok';
-    return null;
-  }
-
   Future<void> _save() async {
     final nameErr = validateName(_name.text);
     if (nameErr != null) return setState(() => _status = nameErr);
     final descErr = validateDescription(_desc.text);
     if (descErr != null) return setState(() => _status = descErr);
-    final birthErr = _validateBirthDate(_birthDate.text);
-    if (birthErr != null) return setState(() => _status = birthErr);
-    final cityErr = validateCityOrCountry(_city.text, 'City');
-    if (cityErr != null) return setState(() => _status = cityErr);
-    final countryErr = validateCityOrCountry(_country.text, 'Country');
-    if (countryErr != null) return setState(() => _status = countryErr);
+  final cityValue = _selectedCity?.name ?? _city.text;
+  final countryValue = _selectedCountry?.name ?? _country.text;
+  final cityErr = validateCityOrCountry(cityValue, 'City');
+  if (cityErr != null) return setState(() => _status = cityErr);
+  final countryErr = validateCityOrCountry(countryValue, 'Country');
+  if (countryErr != null) return setState(() => _status = countryErr);
 
     setState(() => _status = 'Saving...');
-    // collect tagsIds from selections (flatten all categories, but prefer 'tags' if present)
-    final allSelected = _selected.values.expand((s) => s).map((v) => v.toString()).toList();
+    // build DTO with IDs below (dtoWithTags)
 
-    // determine gender selection (single)
-    String? genderId;
-    if (_selected.containsKey('genders') && _selected['genders']!.isNotEmpty) {
-      genderId = _selected['genders']!.first.toString();
+    final allSelected = _selected.values.expand((s) => s).map((v) => v.toString()).toList();
+    // For artists, server requires birthDate and genderId. Validate and include.
+    if (_isBand != true) {
+      if (_birthDate == null) return setState(() => _status = 'Birth date is required for artists');
+      if (_selectedGender == null) return setState(() => _status = 'Gender is required for artists');
     }
 
-    final dto = UpdateUserProfileDto(
-      userType: _isBand ? 'band' : 'artist',
-      birthDate: _birthDate.text.trim().isEmpty ? null : _birthDate.text.trim(),
-      genderId: genderId,
+    final dtoWithTags = UpdateUserProfileDto(
       isBand: _isBand,
       name: _name.text.trim(),
       description: _desc.text.trim(),
-      countryId: _country.text.trim().isEmpty ? null : _country.text.trim(),
-      cityId: _city.text.trim().isEmpty ? null : _city.text.trim(),
-      tagsIds: allSelected.isEmpty ? null : allSelected,
-      musicSamplesOrder: null,
-      profilePicturesOrder: null,
-      bandMembers: null,
+      countryId: _selectedCountry?.id ?? '',
+      cityId: _selectedCity?.id ?? '',
+      birthDate: _birthDate,
+      genderId: _selectedGender?.id,
+      tagsIds: allSelected,
+      musicSamplesOrder: const [],
+      profilePicturesOrder: const [],
     );
-
-    final resp = await widget.api.updateUserWithTags(dto, allSelected);
+    // DEBUG: print request body
+    try {
+      final dbg = jsonEncode(dtoWithTags.toJson());
+      // ignore: avoid_print
+      print('PUT /users/profile BODY: $dbg');
+    } catch (_) {}
+    final resp = await widget.api.updateUserWithTags(dtoWithTags, allSelected.isEmpty ? null : allSelected);
+    try {
+      final respBody = resp.body;
+      // ignore: avoid_print
+      print('PUT /users/profile RESP: ${resp.statusCode} - $respBody');
+    } catch (_) {}
     setState(() => _status = 'Profile update: ${resp.statusCode}');
     if (resp.statusCode == 200) {
       if (_picked?.bytes != null) {
@@ -294,55 +390,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // New: single-choice picker (returns single value)
-  Future<dynamic> _showSinglePicker(String category) async {
-    final opts = _options[category];
-    if (opts == null || opts.isEmpty) return null;
-    dynamic current = _selected[category]?.isNotEmpty == true ? _selected[category]!.first : null;
-    final result = await showDialog<dynamic>(
-      context: context,
-      builder: (ctx) {
-        return StatefulBuilder(builder: (context, setDialogState) {
-          return AlertDialog(
-            title: Text('Wybierz: ${_humanize(category)}'),
-            content: SizedBox(
-              width: double.maxFinite,
-              child: SingleChildScrollView(
-                child: Column(
-                  children: opts.map((opt) {
-                    final val = opt['value'];
-                    final label = opt['label']?.toString() ?? val.toString();
-                    return RadioListTile<dynamic>(
-                      value: val,
-                      groupValue: current,
-                      title: Text(label),
-                      onChanged: (v) {
-                        setDialogState(() {
-                          current = v;
-                        });
-                      },
-                    );
-                  }).toList(),
-                ),
-              ),
-            ),
-            actions: [
-              TextButton(onPressed: () => Navigator.of(ctx).pop(null), child: const Text('Anuluj')),
-              ElevatedButton(onPressed: () => Navigator.of(ctx).pop(current), child: const Text('OK')),
-            ],
-          );
-        });
-      },
-    );
-
-    if (result != null) {
-      setState(() {
-        _selected[category] = {result};
-      });
-    }
-    return result;
-  }
-
   String _humanize(String key) {
     if (key.isEmpty) return key;
     return key[0].toUpperCase() + key.substring(1);
@@ -382,14 +429,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Text(_humanize(cat), style: const TextStyle(fontWeight: FontWeight.w600)),
               const SizedBox(height: 6),
               InkWell(
-                onTap: () {
-                  // for genders we use single picker
-                  if (cat.toLowerCase().contains('gender')) {
-                    _showSinglePicker(cat);
-                  } else {
-                    _showTagPicker(cat);
-                  }
-                },
+                onTap: () => _showTagPicker(cat),
                 child: InputDecorator(
                   decoration: const InputDecoration(
                     border: OutlineInputBorder(),
@@ -431,7 +471,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Adjusted UI: when editing show multi-step editor, otherwise show read-only view
     return Scaffold(
       appBar: AppBar(title: const Text('Profile')),
       body: Padding(
@@ -442,107 +481,90 @@ class _ProfileScreenState extends State<ProfileScreen> {
               if (!_isEditing) ...[
                 Text('Name: ${_name.text}', style: const TextStyle(fontSize: 16)),
                 Text('Description: ${_desc.text}', style: const TextStyle(fontSize: 16)),
-                Text('Birth Date: ${_birthDate.text}', style: const TextStyle(fontSize: 16)),
                 Text('City: ${_city.text}', style: const TextStyle(fontSize: 16)),
                 Text('Country: ${_country.text}', style: const TextStyle(fontSize: 16)),
-                Text('Is Band: ${_isBand ? "Yes" : "No"}', style: const TextStyle(fontSize: 16)),
                 const SizedBox(height: 12),
                 ElevatedButton(
                   onPressed: () {
-                    setState(() {
-                      _isEditing = true;
-                      _step = 0; // start at step 1
-                    });
+                    setState(() => _isEditing = true); 
                   },
                   child: const Text('Edit Profile'),
                 ),
               ] else ...[
-                // Step 1 (now step==0): details (name, birthDate, country, city, isBand)
-                if (_step == 0) ...[
-                  const Text('Step 1 of 2', style: TextStyle(fontWeight: FontWeight.w600)),
+                TextField(controller: _name, decoration: const InputDecoration(labelText: 'Name')),
+                TextField(controller: _desc, decoration: const InputDecoration(labelText: 'Description')),
+                const SizedBox(height: 8),
+                // Artist vs Band selection
+                Row(children: [
+                  Expanded(child: Text('Account type:')),
+                  Row(children: [
+                    Radio<bool?>(value: false, groupValue: _isBand, onChanged: (v) => setState(() => _isBand = v),),
+                    const Text('Artist'),
+                    const SizedBox(width: 8),
+                    Radio<bool?>(value: true, groupValue: _isBand, onChanged: (v) => setState(() => _isBand = v),),
+                    const Text('Band'),
+                  ])
+                ]),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<CountryDto>(
+                  initialValue: _selectedCountry,
+                  decoration: const InputDecoration(labelText: 'Country', border: OutlineInputBorder()),
+                  items: _countries.map((c) => DropdownMenuItem(value: c, child: Text(c.name))).toList(),
+                  onChanged: (v) async {
+                    setState(() {
+                      _selectedCountry = v;
+                      _selectedCity = null;
+                      _cities = [];
+                      _country.text = v?.name ?? '';
+                    });
+                    if (v != null) await _loadCitiesForSelectedCountry(v.id);
+                  },
+                ),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<CityDto>(
+                  initialValue: _selectedCity,
+                  decoration: const InputDecoration(labelText: 'City', border: OutlineInputBorder()),
+                  items: _cities.map((c) => DropdownMenuItem(value: c, child: Text(c.name))).toList(),
+                  onChanged: (v) {
+                    setState(() {
+                      _selectedCity = v;
+                      _city.text = v?.name ?? '';
+                    });
+                  },
+                ),
+                // Artist-only fields: birthDate and gender
+                if (_isBand != true) ...[
                   const SizedBox(height: 8),
-                  TextField(controller: _name, decoration: const InputDecoration(labelText: 'Name')),
-                  TextField(controller: _birthDate, decoration: const InputDecoration(labelText: 'Birth Date (YYYY-MM-DD)')),
-                  TextField(controller: _country, decoration: const InputDecoration(labelText: 'Country (id or name)')),
-                  TextField(controller: _city, decoration: const InputDecoration(labelText: 'City (id or name)')),
-                  // isBand toggle
-                  SwitchListTile(
-                    title: const Text('Is Band'),
-                    value: _isBand,
-                    onChanged: (v) => setState(() => _isBand = v),
+                  InputDecorator(
+                    decoration: const InputDecoration(labelText: 'Birth date', border: OutlineInputBorder()),
+                    child: Row(children: [
+                      Expanded(child: Text(_birthDate == null ? '(not set)' : _birthDate!.toIso8601String().split('T').first)),
+                      TextButton(onPressed: () async {
+                        final now = DateTime.now();
+                        final picked = await showDatePicker(context: context, initialDate: _birthDate ?? DateTime(now.year - 20), firstDate: DateTime(1900), lastDate: now);
+                        if (picked != null) setState(() => _birthDate = picked);
+                      }, child: const Text('Pick'))
+                    ]),
                   ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () {
-                            // cancel editing and go back to view
-                            setState(() {
-                              _isEditing = false;
-                            });
-                          },
-                          child: const Text('Cancel'),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () {
-                            // advance to tags step
-                            setState(() => _step = 1);
-                          },
-                          child: const Text('Next'),
-                        ),
-                      ),
-                    ],
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<GenderDto>(
+                    initialValue: _selectedGender,
+                    decoration: const InputDecoration(labelText: 'Gender', border: OutlineInputBorder()),
+                    items: _genders.map((g) => DropdownMenuItem(value: g, child: Text(g.name))).toList(),
+                    onChanged: (v) => setState(() => _selectedGender = v),
                   ),
                 ],
-                // Step 2 (now step==1): tags, about, photo and Save
-                if (_step == 1) ...[
-                  const Text('Step 2 of 2', style: TextStyle(fontWeight: FontWeight.w600)),
-                  const SizedBox(height: 8),
-                  _buildTags(),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _desc,
-                    decoration: const InputDecoration(labelText: 'About you', hintText: 'Tell us a fun fact about you'),
-                    maxLines: 4,
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      ElevatedButton(onPressed: _pick, child: const Text('Pick Photo')),
-                      const SizedBox(width: 8),
-                      Expanded(child: Text(_picked?.name ?? '(no file)')),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () {
-                            // back to previous step (details)
-                            setState(() => _step = 0);
-                          },
-                          child: const Text('Back'),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () {
-                            // finalize and save
-                            setState(() => _isEditing = false);
-                            _save();
-                          },
-                          child: const Text('Save'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                _buildTags(),
+                const SizedBox(height: 8),
+                Row(children: [ElevatedButton(onPressed: _pick, child: const Text('Pick Photo')), const SizedBox(width: 8), Text(_picked?.name ?? '(no file)')]),
+                const SizedBox(height: 12),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() => _isEditing = false);
+                    _save();
+                  },
+                  child: const Text('Save'),
+                ),
               ],
               const SizedBox(height: 12),
               Text(_status),

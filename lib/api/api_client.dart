@@ -49,85 +49,19 @@ class ApiClient {
     return resp;
   }
   Future<http.Response> getUserOptions() async {
-    final primaryUri = _uri('api/lookups/user-options');
+    final uri = _uri('api/lookups/user-options');
     final headers = await _authHeaders();
-    try {
-      final primaryResp = await _withRefreshRetry(() => http.get(primaryUri, headers: headers));
-      if (primaryResp.statusCode == 200) return primaryResp;
-    } catch (_) {
-      // ignore and fallback
-    }
-
-    // Fallback: fetch tags and categories and merge into map(categoryName -> [{value,label}, ...])
-    final tagsUri = _uri('dictionaries/tags');
-    final catsUri = _uri('dictionaries/tag-categories');
-
-    final tagsResp = await _withRefreshRetry(() => http.get(tagsUri, headers: headers));
-    final catsResp = await _withRefreshRetry(() => http.get(catsUri, headers: headers));
-
-    // If neither returned ok, return an empty object with appropriate status
-    if (tagsResp.statusCode != 200 && catsResp.statusCode != 200) {
-      // prefer returning one of responses if it has meaningful status, otherwise generic 500
-      if (tagsResp.statusCode == 200) return tagsResp;
-      if (catsResp.statusCode == 200) return catsResp;
-      return http.Response('{}', 500, headers: {'content-type': 'application/json'});
-    }
-
-    List<dynamic> tagsList = [];
-    List<dynamic> catsList = [];
-    try {
-      if (tagsResp.statusCode == 200) tagsList = jsonDecode(tagsResp.body) as List<dynamic>;
-    } catch (_) {}
-    try {
-      if (catsResp.statusCode == 200) catsList = jsonDecode(catsResp.body) as List<dynamic>;
-    } catch (_) {}
-
-    // build category id -> name map
-    final Map<String, String> catNames = {};
-    for (final c in catsList) {
-      if (c is Map) {
-        final id = c['id']?.toString();
-        final name = c['name']?.toString();
-        if (id != null && name != null) catNames[id] = name;
-      }
-    }
-
-    // group tags by category name (fallback to 'tags' if unknown)
-    final Map<String, List<Map<String, String>>> groups = {};
-    for (final t in tagsList) {
-      if (t is Map) {
-        final cid = t['tagCategoryId']?.toString();
-        final label = (t['name'] ?? t['label'] ?? t['value'])?.toString() ?? '';
-        final value = (t['id']?.toString() ?? label);
-        final categoryName = cid != null ? (catNames[cid] ?? cid) : 'tags';
-        groups.putIfAbsent(categoryName, () => []).add({'value': value, 'label': label});
-      }
-    }
-
-    // also expose flat 'tags' list if helpful
-    if (!groups.containsKey('tags') && tagsList.isNotEmpty) {
-      final List<Map<String, String>> flat = [];
-      for (final t in tagsList) {
-        if (t is Map) {
-          final label = (t['name'] ?? t['label'] ?? t['value'])?.toString() ?? '';
-          final value = (t['id']?.toString() ?? label);
-          flat.add({'value': value, 'label': label});
-        }
-      }
-      if (flat.isNotEmpty) groups['tags'] = flat;
-    }
-
-    final body = jsonEncode(groups);
-    return http.Response(body, 200, headers: {'content-type': 'application/json'});
+    return await _withRefreshRetry(() => http.get(uri, headers: headers));
   }
 
-  // PUT /users with optional tags (merges tags into body)
+  // PUT /users/profile with wrapper { "updateUserDto": { ... } }
   Future<http.Response> updateUserWithTags(UpdateUserProfileDto dto, [List<String>? tags]) async {
-    final uri = _uri('/users');
+    final uri = _uri('/users/profile');
     final headers = await _authHeaders();
-    final bodyMap = dto.toJson();
-    if (tags != null) bodyMap['tags'] = tags;
-    return await _withRefreshRetry(() => http.put(uri, headers: headers, body: jsonEncode(bodyMap)));
+    final inner = dto.toJson();
+    if (tags != null) inner['tagsIds'] = tags;
+    // final envelope = {'updateUserDto': inner};
+    return await _withRefreshRetry(() => http.put(uri, headers: headers, body: jsonEncode(inner)));
   }
   Future<http.Response> login(LoginDto dto) async {
     final uri = _uri('/auth/login');
@@ -296,66 +230,86 @@ class ApiClient {
     return http.get(uri, headers: headers);
   }
 
-  // Added: Dictionaries endpoints
-  Future<http.Response> getCountries() async {
-    final uri = _uri('dictionaries/countries');
+  Future<http.StreamedResponse> uploadMusicSample(List<int> bytes, String filename) async {
+    final uri = _uri('music-samples');
+    final request = http.MultipartRequest('POST', uri);
+    final headers = await _authHeaders();
+    headers.remove('Content-Type');
+    request.headers.addAll(headers);
+    final parts = filename.split('.');
+    final ext = parts.length > 1 ? parts.last.toLowerCase() : '';
+    MediaType? ct;
+    if (ext == 'mp3') {
+      ct = MediaType('audio', 'mpeg');
+    } else if (ext == 'wav') {
+      ct = MediaType('audio', 'wav');
+    } else if (ext == 'ogg') {
+      ct = MediaType('audio', 'ogg');
+    }
+    if (ct != null) {
+      request.files.add(http.MultipartFile.fromBytes('file', bytes, filename: filename, contentType: ct));
+    } else {
+      request.files.add(http.MultipartFile.fromBytes('file', bytes, filename: filename));
+    }
+    final streamed = await request.send();
+    if (streamed.statusCode == 401) {
+      final refreshed = await _tryRefresh();
+      if (refreshed) {
+        final request2 = http.MultipartRequest('POST', uri);
+        final headers2 = await _authHeaders();
+        request2.headers.addAll(headers2);
+        request2.files.add(http.MultipartFile.fromBytes('file', bytes, filename: filename));
+        return request2.send();
+      }
+    }
+    return streamed;
+  }
+
+  Future<http.StreamedResponse> uploadProfilePicture(List<int> bytes, String filename) async {
+    final uri = _uri('profile-pictures');
+    final request = http.MultipartRequest('POST', uri);
+    final headers = await _authHeaders();
+    headers.remove('Content-Type');
+    request.headers.addAll(headers);
+    final parts = filename.split('.');
+    final ext = parts.length > 1 ? parts.last.toLowerCase() : '';
+    MediaType? ct;
+    if (ext == 'jpg' || ext == 'jpeg') {
+      ct = MediaType('image', 'jpeg');
+    } else if (ext == 'png') {
+      ct = MediaType('image', 'png');
+    } else if (bytes.length >= 2 && bytes[0] == 0xFF && bytes[1] == 0xD8) {
+      ct = MediaType('image', 'jpeg');
+    }
+    if (ct != null) {
+      request.files.add(http.MultipartFile.fromBytes('file', bytes, filename: filename, contentType: ct));
+    } else {
+      request.files.add(http.MultipartFile.fromBytes('file', bytes, filename: filename));
+    }
+    final streamed = await request.send();
+    if (streamed.statusCode == 401) {
+      final refreshed = await _tryRefresh();
+      if (refreshed) {
+        final request2 = http.MultipartRequest('POST', uri);
+        final headers2 = await _authHeaders();
+        request2.headers.addAll(headers2);
+        request2.files.add(http.MultipartFile.fromBytes('file', bytes, filename: filename));
+        return request2.send();
+      }
+    }
+    return streamed;
+  }
+
+  Future<http.Response> getProfilePictures({int limit = 20, int offset = 0}) async {
+    final uri = _uri('profile-pictures?limit=$limit&offset=$offset');
     final headers = await _authHeaders();
     return await _withRefreshRetry(() => http.get(uri, headers: headers));
   }
 
-  Future<http.Response> getCities(String countryId) async {
-    final uri = _uri('dictionaries/cities/$countryId');
+  Future<http.Response> getProfilePicturesForUser(String userId, {int limit = 20, int offset = 0}) async {
+    final uri = _uri('profile-pictures/$userId?limit=$limit&offset=$offset');
     final headers = await _authHeaders();
     return await _withRefreshRetry(() => http.get(uri, headers: headers));
-  }
-
-  Future<http.Response> getBandRoles() async {
-    final uri = _uri('dictionaries/band-roles');
-    final headers = await _authHeaders();
-    return await _withRefreshRetry(() => http.get(uri, headers: headers));
-  }
-
-  Future<http.Response> getTags() async {
-    final uri = _uri('dictionaries/tags');
-    final headers = await _authHeaders();
-    return await _withRefreshRetry(() => http.get(uri, headers: headers));
-  }
-
-  Future<http.Response> getTagCategories() async {
-    final uri = _uri('dictionaries/tag-categories');
-    final headers = await _authHeaders();
-    return await _withRefreshRetry(() => http.get(uri, headers: headers));
-  }
-
-  Future<http.Response> getGenders() async {
-    final uri = _uri('dictionaries/genders');
-    final headers = await _authHeaders();
-    return await _withRefreshRetry(() => http.get(uri, headers: headers));
-  }
-
-  // Added: Matching - artists / bands and match-preference
-  Future<http.Response> getArtists({int limit = 20, int offset = 0}) async {
-    final uri = _uri('matching/artists?limit=$limit&offset=$offset');
-    final headers = await _authHeaders();
-    return await _withRefreshRetry(() => http.get(uri, headers: headers));
-  }
-
-  Future<http.Response> getBands({int limit = 20, int offset = 0}) async {
-    final uri = _uri('matching/bands?limit=$limit&offset=$offset');
-    final headers = await _authHeaders();
-    return await _withRefreshRetry(() => http.get(uri, headers: headers));
-  }
-
-  Future<http.Response> getMatchPreference() async {
-    final uri = _uri('matching/match-preference');
-    final headers = await _authHeaders();
-    return await _withRefreshRetry(() => http.get(uri, headers: headers));
-  }
-
-  Future<http.Response> updateMatchPreference(UpdateMatchPreferenceDto dto) async {
-    final uri = _uri('matching/match-preference');
-    final headers = await _authHeaders();
-    return await _withRefreshRetry(() => http.put(uri, headers: headers, body: jsonEncode(dto.toJson())));
   }
 
   Future<http.Response> deleteProfilePicture(String pictureId) async {
@@ -378,6 +332,59 @@ class ApiClient {
 
   Future<http.Response> getMyProfile() async {
     final uri = _uri('users/profile');
+    final headers = await _authHeaders();
+    return await _withRefreshRetry(() => http.get(uri, headers: headers));
+  }
+
+  /// Calls users/profile and returns parsed UserDto on success (statusCode 200).
+  Future<UserDto?> getMyProfileDto() async {
+    final resp = await getMyProfile();
+    if (resp.statusCode != 200) return null;
+    try {
+      final decoded = jsonDecode(resp.body);
+      if (decoded is String) {
+        final parsed = jsonDecode(decoded);
+        if (parsed is Map) return UserDto.fromJson(Map<String, dynamic>.from(parsed));
+      } else if (decoded is Map) {
+        return UserDto.fromJson(Map<String, dynamic>.from(decoded));
+      }
+    } catch (_) {
+      // ignore parse errors
+    }
+    return null;
+  }
+
+  // GET /dictionaries/countries
+  Future<http.Response> getCountries() async {
+    final uri = _uri('dictionaries/countries');
+    final headers = await _authHeaders();
+    return await _withRefreshRetry(() => http.get(uri, headers: headers));
+  }
+
+  // GET /dictionaries/cities/{countryId}
+  Future<http.Response> getCities(String countryId) async {
+    final uri = _uri('dictionaries/cities/$countryId');
+    final headers = await _authHeaders();
+    return await _withRefreshRetry(() => http.get(uri, headers: headers));
+  }
+
+  // GET /dictionaries/tags
+  Future<http.Response> getTags() async {
+    final uri = _uri('dictionaries/tags');
+    final headers = await _authHeaders();
+    return await _withRefreshRetry(() => http.get(uri, headers: headers));
+  }
+
+  // GET /dictionaries/tag-categories
+  Future<http.Response> getTagCategories() async {
+    final uri = _uri('dictionaries/tag-categories');
+    final headers = await _authHeaders();
+    return await _withRefreshRetry(() => http.get(uri, headers: headers));
+  }
+
+  // GET /dictionaries/genders
+  Future<http.Response> getGenders() async {
+    final uri = _uri('dictionaries/genders');
     final headers = await _authHeaders();
     return await _withRefreshRetry(() => http.get(uri, headers: headers));
   }
@@ -419,9 +426,10 @@ class ApiClient {
   }
 
   Future<http.Response> updateUser(UpdateUserProfileDto dto) async {
-    final uri = _uri('/users');
+    final uri = _uri('/users/profile');
     final headers = await _authHeaders();
-    return await _withRefreshRetry(() => http.put(uri, headers: headers, body: jsonEncode(dto.toJson())));
+    final envelope = {'updateUserDto': dto.toJson()};
+    return await _withRefreshRetry(() => http.put(uri, headers: headers, body: jsonEncode(envelope)));
   }
 
   Future<http.Response> deleteUser(PasswordDto dto) async {
@@ -471,56 +479,5 @@ class ApiClient {
     final refreshed = await _tryRefresh();
     if (!refreshed) return resp;
     return await fn();
-  }
-
-  // Added: explicit method matching OpenAPI POST /profile-pictures
-  Future<http.StreamedResponse> postProfilePicture(List<int> bytes, String filename) async {
-    // reuse existing upload implementation
-    return await uploadProfilePicture(bytes, filename);
-  }
-
-  Future<http.StreamedResponse> uploadProfilePicture(List<int> bytes, String filename) async {
-    final uri = _uri('profile-pictures');
-    final request = http.MultipartRequest('POST', uri);
-    final headers = await _authHeaders();
-    headers.remove('Content-Type');
-    request.headers.addAll(headers);
-    final parts = filename.split('.');
-    final ext = parts.length > 1 ? parts.last.toLowerCase() : '';
-    MediaType? ct;
-    if (ext == 'jpg' || ext == 'jpeg') {
-      ct = MediaType('image', 'jpeg');
-    } else if (ext == 'png') {
-      ct = MediaType('image', 'png');
-    } else if (bytes.length >= 2 && bytes[0] == 0xFF && bytes[1] == 0xD8) {
-      ct = MediaType('image', 'jpeg');
-    }
-    if (ct != null) {
-      request.files.add(http.MultipartFile.fromBytes('file', bytes, filename: filename, contentType: ct));
-    } else {
-      request.files.add(http.MultipartFile.fromBytes('file', bytes, filename: filename));
-    }
-    final streamed = await request.send();
-    if (streamed.statusCode == 401) {
-      final refreshed = await _tryRefresh();
-      if (refreshed) {
-        final request2 = http.MultipartRequest('POST', uri);
-        final headers2 = await _authHeaders();
-        request2.headers.addAll(headers2);
-        request2.files.add(http.MultipartFile.fromBytes('file', bytes, filename: filename));
-        return request2.send();
-      }
-    }
-    return streamed;
-  }
-   Future<http.Response> getProfilePictures({int limit = 20, int offset = 0}) async {
-    final uri = _uri('profile-pictures?limit=$limit&offset=$offset');
-    final headers = await _authHeaders();
-    return await _withRefreshRetry(() => http.get(uri, headers: headers));
-  }
-    Future<http.Response> getProfilePicturesForUser(String userId, {int limit = 20, int offset = 0}) async {
-    final uri = _uri('profile-pictures/$userId?limit=$limit&offset=$offset');
-    final headers = await _authHeaders();
-    return await _withRefreshRetry(() => http.get(uri, headers: headers));
   }
 }

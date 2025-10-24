@@ -1,3 +1,5 @@
+
+
 class LoginDto {
   final String email;
   final String password;
@@ -54,71 +56,63 @@ class SendMessageDto {
       };
 }
 
-class BandMemberDto {
-  final String id;
-  final String name;
-  final int age;
-  final String bandRoleId;
-
-  BandMemberDto({required this.id, required this.name, required this.age, required this.bandRoleId});
-
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'age': age,
-        'bandRoleId': bandRoleId,
-      };
-}
-
 class UpdateUserProfileDto {
-  // discriminator: "artist" or "band"
-  final String userType;
-
-  // common / artist fields
-  final String? birthDate; // ISO date yyyy-MM-dd
-  final String? genderId;
   final bool? isBand;
-  final String? name;
-  final String? description;
+  final String name;
+  final String description;
+  // prefer sending IDs as backend expects UUIDs
   final String? countryId;
   final String? cityId;
+  // artist-only fields
+  final DateTime? birthDate; // send as ISO date yyyy-MM-dd expected by DateOnly on server
+  final String? genderId;
+
+  // tagsIds - list of tag UUIDs
   final List<String>? tagsIds;
-  final List<String>? musicSamplesOrder;
-  final List<String>? profilePicturesOrder;
+  // orders - lists of music sample ids and profile picture ids
+  final List<String> musicSamplesOrder;
+  final List<String> profilePicturesOrder;
 
-  // band-specific
-  final List<BandMemberDto>? bandMembers;
-
-  UpdateUserProfileDto({
-    required this.userType,
-    this.birthDate,
-    this.genderId,
-    this.isBand,
-    this.name,
-    this.description,
-    this.countryId,
-    this.cityId,
-    this.tagsIds,
-    this.musicSamplesOrder,
-    this.profilePicturesOrder,
-    this.bandMembers,
-  });
+  UpdateUserProfileDto({this.isBand, required this.name, required this.description, this.countryId, this.cityId, this.birthDate, this.genderId, this.tagsIds, List<String>? musicSamplesOrder, List<String>? profilePicturesOrder}) :
+    musicSamplesOrder = musicSamplesOrder ?? const [],
+    profilePicturesOrder = profilePicturesOrder ?? const [];
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> m = {'userType': userType};
-    if (birthDate != null) m['birthDate'] = birthDate;
-    if (genderId != null) m['genderId'] = genderId;
-    if (isBand != null) m['isBand'] = isBand;
-    if (name != null) m['name'] = name;
-    if (description != null) m['description'] = description;
-    if (countryId != null) m['countryId'] = countryId;
-    if (cityId != null) m['cityId'] = cityId;
+    // Always include discriminator required by server polymorphic DTO
+    // Put it first in the map so it appears earliest in serialized JSON.
+    final m = <String, dynamic>{
+      'userType': (isBand == true) ? 'band' : 'artist',
+      'name': name,
+      'description': description,
+    };
+    if (countryId != null && countryId!.isNotEmpty) m['countryId'] = countryId;
+    if (cityId != null && cityId!.isNotEmpty) m['cityId'] = cityId;
+    // artist-only properties
+    if (birthDate != null) {
+      // send only the date portion in ISO format yyyy-MM-dd
+      final iso = birthDate!.toIso8601String().split('T').first;
+      m['birthDate'] = iso;
+    }
+    if (genderId != null && genderId!.isNotEmpty) m['genderId'] = genderId;
     if (tagsIds != null) m['tagsIds'] = tagsIds;
-    if (musicSamplesOrder != null) m['musicSamplesOrder'] = musicSamplesOrder;
-    if (profilePicturesOrder != null) m['profilePicturesOrder'] = profilePicturesOrder;
-    if (bandMembers != null) m['bandMembers'] = bandMembers!.map((b) => b.toJson()).toList();
+    // include orders (server expects these lists)
+    m['musicSamplesOrder'] = musicSamplesOrder;
+    m['profilePicturesOrder'] = profilePicturesOrder;
     return m;
   }
+
+  factory UpdateUserProfileDto.fromJson(Map<String, dynamic> json) => UpdateUserProfileDto(
+        isBand: json.containsKey('userType') ? (json['userType']?.toString() == 'band') : null,
+        name: json['name'] ?? '',
+        description: json['description'] ?? '',
+        countryId: json['countryId']?.toString() ?? json['country_id']?.toString(),
+        cityId: json['cityId']?.toString() ?? json['city_id']?.toString(),
+        birthDate: json['birthDate'] != null ? DateTime.tryParse(json['birthDate'].toString()) : null,
+        genderId: json['genderId']?.toString() ?? json['gender_id']?.toString(),
+        tagsIds: (json['tagsIds'] is List) ? List<String>.from(json['tagsIds'].map((e) => e.toString())) : null,
+        musicSamplesOrder: (json['musicSamplesOrder'] is List) ? List<String>.from(json['musicSamplesOrder'].map((e) => e.toString())) : const [],
+        profilePicturesOrder: (json['profilePicturesOrder'] is List) ? List<String>.from(json['profilePicturesOrder'].map((e) => e.toString())) : const [],
+      );
 }
 
 class PasswordDto {
@@ -143,47 +137,150 @@ class ChangePasswordDto {
       };
 }
 
-class UpdateMatchPreferenceDto {
-  final bool showArtists;
-  final bool showBands;
-  final int? maxDistance;
+class ProfilePictureDto {
+  final String id;
+  final String url;
+  final int displayOrder;
+
+  ProfilePictureDto({required this.id, required this.url, required this.displayOrder});
+
+  factory ProfilePictureDto.fromJson(Map<String, dynamic> json) => ProfilePictureDto(
+        id: json['id']?.toString() ?? '',
+        url: json['url']?.toString() ?? '',
+        displayOrder: (json['displayOrder'] is int) ? json['displayOrder'] as int : int.tryParse('${json['displayOrder'] ?? ''}') ?? 0,
+      );
+}
+
+class UserDto {
+  final String id;
+  final String email;
+  final String passwordHash;
+  final bool? isBand;
+  final String? name;
+  final String description;
+  final DateTime createdAt;
+  final bool isActive;
+  final bool isFirstLogin;
+  final bool isEmailConfirmed;
+  final bool isLoggedOut;
   final String? countryId;
   final String? cityId;
-  final int? artistMinAge;
-  final int? artistMaxAge;
-  final String? artistGenderId;
-  final int? bandMinMembersCount;
-  final int? bandMaxMembersCount;
-  final List<String>? filterTagsIds;
+  final List<String> tags;
 
-  UpdateMatchPreferenceDto({
-    required this.showArtists,
-    required this.showBands,
-    this.maxDistance,
+  UserDto({
+    required this.id,
+    required this.email,
+    required this.passwordHash,
+    this.isBand,
+    this.name,
+    required this.description,
+    required this.createdAt,
+    required this.isActive,
+    required this.isFirstLogin,
+    required this.isEmailConfirmed,
+    required this.isLoggedOut,
     this.countryId,
     this.cityId,
-    this.artistMinAge,
-    this.artistMaxAge,
-    this.artistGenderId,
-    this.bandMinMembersCount,
-    this.bandMaxMembersCount,
-    this.filterTagsIds,
+    required this.tags,
   });
 
-  Map<String, dynamic> toJson() {
-    final Map<String, dynamic> m = {
-      'showArtists': showArtists,
-      'showBands': showBands,
-    };
-    if (maxDistance != null) m['maxDistance'] = maxDistance;
-    if (countryId != null) m['countryId'] = countryId;
-    if (cityId != null) m['cityId'] = cityId;
-    if (artistMinAge != null) m['artistMinAge'] = artistMinAge;
-    if (artistMaxAge != null) m['artistMaxAge'] = artistMaxAge;
-    if (artistGenderId != null) m['artistGenderId'] = artistGenderId;
-    if (bandMinMembersCount != null) m['bandMinMembersCount'] = bandMinMembersCount;
-    if (bandMaxMembersCount != null) m['bandMaxMembersCount'] = bandMaxMembersCount;
-    if (filterTagsIds != null) m['filterTagsIds'] = filterTagsIds;
-    return m;
+  factory UserDto.fromJson(Map<String, dynamic> json) {
+    final tagList = <String>[];
+    if (json['tags'] is List) {
+      for (final t in json['tags']) {
+        tagList.add(t?.toString() ?? '');
+      }
+    }
+
+    DateTime parseDate(dynamic v) {
+      if (v is DateTime) return v;
+      if (v is String) return DateTime.tryParse(v) ?? DateTime.fromMillisecondsSinceEpoch(0);
+      if (v is int) return DateTime.fromMillisecondsSinceEpoch(v);
+      return DateTime.fromMillisecondsSinceEpoch(0);
+    }
+
+    return UserDto(
+      id: json['id']?.toString() ?? '',
+      email: json['email']?.toString() ?? '',
+      passwordHash: json['passwordHash']?.toString() ?? json['password_hash']?.toString() ?? '',
+      isBand: json.containsKey('isBand') ? (json['isBand'] == null ? null : (json['isBand'] is bool ? json['isBand'] as bool : (json['isBand'].toString().toLowerCase() == 'true'))) : null,
+      name: json['name']?.toString(),
+      description: json['description']?.toString() ?? '',
+      createdAt: parseDate(json['createdAt'] ?? json['created_at'] ?? DateTime.fromMillisecondsSinceEpoch(0)),
+      isActive: json['isActive'] is bool ? json['isActive'] as bool : (json['isActive'] != null ? json['isActive'].toString().toLowerCase() == 'true' : false),
+      isFirstLogin: json['isFirstLogin'] is bool ? json['isFirstLogin'] as bool : (json['isFirstLogin'] != null ? json['isFirstLogin'].toString().toLowerCase() == 'true' : false),
+      isEmailConfirmed: json['isEmailConfirmed'] is bool ? json['isEmailConfirmed'] as bool : (json['isEmailConfirmed'] != null ? json['isEmailConfirmed'].toString().toLowerCase() == 'true' : false),
+      isLoggedOut: json['isLoggedOut'] is bool ? json['isLoggedOut'] as bool : (json['isLoggedOut'] != null ? json['isLoggedOut'].toString().toLowerCase() == 'true' : false),
+      countryId: json['countryId']?.toString() ?? json['country_id']?.toString(),
+      cityId: json['cityId']?.toString() ?? json['city_id']?.toString(),
+      tags: tagList,
+    );
   }
+}
+
+
+class CountryDto {
+  final String id;
+  final String name;
+
+  CountryDto({required this.id, required this.name});
+
+  factory CountryDto.fromJson(Map<String, dynamic> json) => CountryDto(
+        id: json['id']?.toString() ?? json['value']?.toString() ?? '',
+        name: json['name']?.toString() ?? json['label']?.toString() ?? json['text']?.toString() ?? json['value']?.toString() ?? '',
+      );
+}
+
+class CityDto {
+  final String id;
+  final String name;
+  final String? countryId;
+
+  CityDto({required this.id, required this.name, this.countryId});
+
+  factory CityDto.fromJson(Map<String, dynamic> json) => CityDto(
+        id: json['id']?.toString() ?? json['value']?.toString() ?? '',
+        name: json['name']?.toString() ?? json['label']?.toString() ?? json['text']?.toString() ?? json['value']?.toString() ?? '',
+        countryId: json['countryId']?.toString() ?? json['country_id']?.toString(),
+      );
+}
+
+class TagCategoryDto {
+  final String id;
+  final String name;
+  final bool isForBand;
+
+  TagCategoryDto({required this.id, required this.name, required this.isForBand});
+
+  factory TagCategoryDto.fromJson(Map<String, dynamic> json) => TagCategoryDto(
+    id: json['id']?.toString() ?? '',
+    name: json['name']?.toString() ?? '',
+    isForBand: json['isForBand'] is bool ? json['isForBand'] as bool : (json['isForBand']?.toString().toLowerCase() == 'true'),
+  );
+}
+
+class TagDto {
+  final String id;
+  final String name;
+  final String? tagCategoryId;
+
+  TagDto({required this.id, required this.name, this.tagCategoryId});
+
+  factory TagDto.fromJson(Map<String, dynamic> json) => TagDto(
+    id: json['id']?.toString() ?? '',
+    name: json['name']?.toString() ?? '',
+    tagCategoryId: json['tagCategoryId']?.toString() ?? json['tag_category_id']?.toString(),
+  );
+}
+
+class GenderDto {
+  final String id;
+  final String name;
+
+  GenderDto({required this.id, required this.name});
+
+  factory GenderDto.fromJson(Map<String, dynamic> json) => GenderDto(
+    id: json['id']?.toString() ?? json['value']?.toString() ?? '',
+    name: json['name']?.toString() ?? json['label']?.toString() ?? json['value']?.toString() ?? '',
+  );
 }
