@@ -217,6 +217,240 @@ class UserDto {
     );
   }
 }
+class ArtistDto extends UserDto {
+  final DateTime? birthDate;
+  final String? genderId;
+
+  ArtistDto({
+    required String id,
+    required String email,
+    required String passwordHash,
+    required String? name,
+    required String description,
+    required DateTime createdAt,
+    required bool isActive,
+    required bool isFirstLogin,
+    required bool isEmailConfirmed,
+    required bool isLoggedOut,
+    required String? countryId,
+    required String? cityId,
+    required List<String> tags,
+    this.birthDate,
+    this.genderId,
+  }) : super(
+          id: id,
+          email: email,
+          passwordHash: passwordHash,
+          isBand: false,
+          name: name,
+          description: description,
+          createdAt: createdAt,
+          isActive: isActive,
+          isFirstLogin: isFirstLogin,
+          isEmailConfirmed: isEmailConfirmed,
+          isLoggedOut: isLoggedOut,
+          countryId: countryId,
+          cityId: cityId,
+          tags: tags,
+        );
+   Map<String, dynamic> toJson() {
+    final m = <String, dynamic>{
+      'id': id,
+      'email': email,
+      'passwordHash': passwordHash,
+      'name': name,
+      'description': description,
+      'createdAt': createdAt.toIso8601String(),
+      'isActive': isActive,
+      'isFirstLogin': isFirstLogin,
+      'isEmailConfirmed': isEmailConfirmed,
+      'isLoggedOut': isLoggedOut,
+      'countryId': countryId,
+      'cityId': cityId,
+      'tags': tags,
+    };
+    if (birthDate != null) {
+      m['birthDate'] = birthDate!.toIso8601String();
+    } 
+    if (genderId != null) {
+      m['genderId'] = genderId;
+    } 
+    return m;
+  }
+  factory ArtistDto.fromJson(Map<String, dynamic> json) {
+    DateTime? parseDate(dynamic v) {
+      if (v == null) return null;
+      if (v is DateTime) return v;
+      if (v is String) return DateTime.tryParse(v);
+      if (v is int) return DateTime.fromMillisecondsSinceEpoch(v);
+      return null;
+    }
+
+    return ArtistDto(
+      id: json['id']?.toString() ?? '',
+      email: json['email']?.toString() ?? '',
+      passwordHash: json['passwordHash']?.toString() ?? json['password_hash']?.toString() ?? '',
+      name: json['name']?.toString(),
+      description: json['description']?.toString() ?? '',
+      createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? json['created_at']?.toString() ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0),
+      isActive: json['isActive'] is bool ? json['isActive'] as bool : (json['isActive'] != null ? json['isActive'].toString().toLowerCase() == 'true' : false),
+      isFirstLogin: json['isFirstLogin'] is bool ? json['isFirstLogin'] as bool : (json['isFirstLogin'] != null ? json['isFirstLogin'].toString().toLowerCase() == 'true' : false),
+      isEmailConfirmed: json['isEmailConfirmed'] is bool ? json['isEmailConfirmed'] as bool : (json['isEmailConfirmed'] != null ? json['isEmailConfirmed'].toString().toLowerCase() == 'true' : false),
+      isLoggedOut: json['isLoggedOut'] is bool ? json['isLoggedOut'] as bool : (json['isLoggedOut'] != null ? json['isLoggedOut'].toString().toLowerCase() == 'true' : false),
+      countryId: json['countryId']?.toString() ?? json['country_id']?.toString(),
+      cityId: json['cityId']?.toString() ?? json['city_id']?.toString(),
+      tags: (json['tags'] is List) ? List<String>.from(json['tags'].map((e) => e.toString())) : [],
+      birthDate: parseDate(json['birthDate'] ?? json['birth_date']),  
+    );
+
+  }}
+
+  class BandDto extends UserDto {
+    final BandMemberDto? bandMemberInfo;
+    BandDto({ 
+      required String id,
+      required String email,
+      required String passwordHash,
+      required String? name,
+      required String description,
+      required DateTime createdAt,
+      required bool isActive,
+      required bool isFirstLogin,
+      required bool isEmailConfirmed,
+      required bool isLoggedOut,
+      required String? countryId,
+      required String? cityId,
+      required List<String> tags,
+      this.bandMemberInfo,
+    }) : super(
+          id: id,
+          email: email,
+          passwordHash: passwordHash,
+          isBand: true,
+          name: name,
+          description: description,
+          createdAt: createdAt,
+          isActive: isActive,
+          isFirstLogin: isFirstLogin,
+          isEmailConfirmed: isEmailConfirmed,
+          isLoggedOut: isLoggedOut,
+          countryId: countryId,
+          cityId: cityId,
+          tags: tags,
+        );  
+
+    Map<String, dynamic> toJson() { 
+      final m = <String, dynamic>{
+        'id': id,
+        'email': email,
+        'passwordHash': passwordHash,
+        'name': name,
+        'description': description,
+        'createdAt': createdAt.toIso8601String(),
+        'isActive': isActive,
+        'isFirstLogin': isFirstLogin,
+        'isEmailConfirmed': isEmailConfirmed,
+        'isLoggedOut': isLoggedOut,
+        'countryId': countryId,
+        'cityId': cityId,
+        'tags': tags,
+      };
+      if (bandMemberInfo != null) {
+        m['bandMemberInfo'] = {
+          'id': bandMemberInfo!.id,
+          'name': bandMemberInfo!.name,
+          'age': bandMemberInfo!.age,
+          'displayOrder': bandMemberInfo!.displayOrder,
+          'bandId': bandMemberInfo!.bandId,
+          'bandRoleId': bandMemberInfo!.bandRoleId,
+        };
+      } 
+      return m;
+    }
+
+    factory BandDto.fromJson(Map<String, dynamic> json) {
+      BandMemberDto? parseBandMemberInfo(dynamic v) {
+        if (v is Map<String, dynamic>) {
+          return BandMemberDto.fromJson(v);
+        }
+        return null;
+      } 
+      return BandDto(
+        id: json['id']?.toString() ?? '',
+        email: json['email']?.toString() ?? '',
+        passwordHash: json['passwordHash']?.toString() ?? json['password_hash']?.toString() ?? '',
+        name: json['name']?.toString(),
+        description: json['description']?.toString() ?? '',
+        createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? json['created_at']?.toString() ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0),
+        isActive: json['isActive'] is bool ? json['isActive'] as bool : (json['isActive'] != null ? json['isActive'].toString().toLowerCase() == 'true' : false),
+        isFirstLogin: json['isFirstLogin'] is bool ? json['isFirstLogin'] as bool : (json['isFirstLogin'] != null ? json['isFirstLogin'].toString().toLowerCase() == 'true' : false),
+        isEmailConfirmed: json['isEmailConfirmed'] is bool ? json['isEmailConfirmed'] as bool : (json['isEmailConfirmed'] != null ? json['isEmailConfirmed'].toString().toLowerCase() == 'true' : false),
+        isLoggedOut: json['isLoggedOut'] is bool ? json['isLoggedOut'] as bool : (json['isLoggedOut'] != null ? json['isLoggedOut'].toString().toLowerCase() == 'true' : false),
+        countryId: json['countryId']?.toString() ?? json['country_id']?.toString(),
+        cityId: json['cityId']?.toString() ?? json['city_id']?.toString(),
+        tags: (json['tags'] is List) ? List<String>.from(json['tags'].map((e) => e.toString())) : [],
+        bandMemberInfo: parseBandMemberInfo(json['bandMemberInfo'] ?? json['band_member_info']),  
+      );
+    }}
+
+class BandMemberDto {
+  final String id;  
+  final String name;
+  final int age;
+  final int displayOrder;
+  final String bandId;
+  final String bandRoleId;
+  BandMemberDto({
+    required this.id,
+    required this.name,
+    required this.age,
+    required this.displayOrder,
+    required this.bandId,
+    required this.bandRoleId,
+  });
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'age': age,
+    'displayOrder': displayOrder,
+    'bandId': bandId,
+    'bandRoleId': bandRoleId,
+  };
+
+
+  factory BandMemberDto.fromJson(Map<String, dynamic> json) => BandMemberDto(
+    id: json['id']?.toString() ?? '',
+    name: json['name']?.toString() ?? '',
+    age: (json['age'] is int) ? json['age'] as int : int.tryParse('${json['age'] ?? ''}') ?? 0,
+    displayOrder: (json['displayOrder'] is int) ? json['displayOrder'] as int : int.tryParse('${json['displayOrder'] ?? ''}') ?? 0,
+    bandId: json['bandId']?.toString() ?? json['band_id']?.toString() ?? '',
+    bandRoleId: json['bandRoleId']?.toString() ?? json['band_role_id']?.toString() ?? '',
+  );  
+} 
+
+  class BandRoleDto {
+  final String id;  
+  final String name;
+  BandRoleDto({
+    required this.id,
+    required this.name,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+  };
+  
+  factory BandRoleDto.fromJson(Map<String, dynamic> json) => BandRoleDto(
+    id: json['id']?.toString() ?? '',
+    name: json['name']?.toString() ?? '',
+  );
+}
+
+
+
+
+
 
 
 class CountryDto {

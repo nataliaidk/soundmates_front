@@ -255,12 +255,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (nameErr != null) return setState(() => _status = nameErr);
     final descErr = validateDescription(_desc.text);
     if (descErr != null) return setState(() => _status = descErr);
-  final cityValue = _selectedCity?.name ?? _city.text;
-  final countryValue = _selectedCountry?.name ?? _country.text;
-  final cityErr = validateCityOrCountry(cityValue, 'City');
-  if (cityErr != null) return setState(() => _status = cityErr);
-  final countryErr = validateCityOrCountry(countryValue, 'Country');
-  if (countryErr != null) return setState(() => _status = countryErr);
+    final cityValue = _selectedCity?.name ?? _city.text;
+    final countryValue = _selectedCountry?.name ?? _country.text;
+    final cityErr = validateCityOrCountry(cityValue, 'City');
+    if (cityErr != null) return setState(() => _status = cityErr);
+    final countryErr = validateCityOrCountry(countryValue, 'Country');
+    if (countryErr != null) return setState(() => _status = countryErr);
 
     setState(() => _status = 'Saving...');
     // build DTO with IDs below (dtoWithTags)

@@ -60,9 +60,25 @@ class ApiClient {
     final headers = await _authHeaders();
     final inner = dto.toJson();
     if (tags != null) inner['tagsIds'] = tags;
-    // final envelope = {'updateUserDto': inner};
     return await _withRefreshRetry(() => http.put(uri, headers: headers, body: jsonEncode(inner)));
   }
+
+  Future<http.Response> updateArtistProfile(ArtistDto dto, [List<String>? tags]) async {
+    final uri = _uri('/users/profile/artist');
+    final headers = await _authHeaders();
+    final inner = dto.toJson();
+    if (tags != null) inner['tagsIds'] = tags;
+    return await _withRefreshRetry(() => http.put(uri, headers: headers, body: jsonEncode(inner)));
+  }
+
+  Future<http.Response> updateBandProfile(BandDto dto, [List<String>? tags]) async {
+    final uri = _uri('/users/profile/band');
+    final headers = await _authHeaders();
+    final inner = dto.toJson();
+    if (tags != null) inner['tagsIds'] = tags;
+    return await _withRefreshRetry(() => http.put(uri, headers: headers, body: jsonEncode(inner)));
+  }
+
   Future<http.Response> login(LoginDto dto) async {
     final uri = _uri('/auth/login');
     final headers = _jsonHeaders();
