@@ -41,7 +41,7 @@ flutter pub get
 3. Run the app (desktop or device):
 
 ```
-flutter run
+flutter run -d web-server --web-port=5555 --web-hostname=localhost
 ```
 
 4. Open the app and press "Get Users" or "Get Message Previews" to see the raw JSON responses returned by the API running at `API_BASE_URL`.
