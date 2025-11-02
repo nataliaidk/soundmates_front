@@ -360,176 +360,469 @@ class _FiltersScreenState extends State<FiltersScreen> {
     );
   }
 
+  // In _FiltersScreenState class, replace the current build method content with:
+
   @override
   Widget build(BuildContext context) {
-    // Define colors from the mockup for reusability
     const primaryColor = Color(0xFF6A4C9C);
     const backgroundColor = Color(0xFFF8F4FF);
     const textColor = Color(0xFF3D2C5E);
+    const cardColor = Colors.white;
 
     return Scaffold(
       backgroundColor: backgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: primaryColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: textColor),
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: const Text(
           'Filters',
-          style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 24),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 24),
         ),
         centerTitle: true,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.check, color: Colors.green, size: 30),
+          TextButton.icon(
             onPressed: _savePreferences,
+            icon: const Icon(Icons.check, color: Colors.white),
+            label: const Text('Save', style: TextStyle(color: Colors.white, fontSize: 16)),
           ),
         ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: primaryColor))
           : SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+        padding: const EdgeInsets.all(20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Your potential matches will be suggested based on those preferences.',
-              style: TextStyle(color: textColor, fontSize: 16),
+            // Header text
+            Text(
+              'Customize your match preferences',
+              style: TextStyle(
+                color: textColor,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-            const SizedBox(height: 30),
-
-// Add this to your build method where you want the selector to appear
-            SegmentedButton<String>(
-              segments: const [
-                ButtonSegment(value: 'artists', label: Text('Artists')),
-                ButtonSegment(value: 'both', label: Text('Both')),
-                ButtonSegment(value: 'bands', label: Text('Bands')),
-              ],
-              selected: {
-                if (_showArtists && !_showBands) 'artists'
-                else if (_showBands && !_showArtists) 'bands'
-                else 'both'
-              },
-              onSelectionChanged: (Set<String> selection) {
-                final choice = selection.first;
-                setState(() {
-                  _showArtists = choice == 'artists' || choice == 'both';
-                  _showBands = choice == 'bands' || choice == 'both';
-                });
-              },
+            const SizedBox(height: 8),
+            Text(
+              'Your potential matches will be suggested based on these preferences.',
+              style: TextStyle(color: textColor.withOpacity(0.7), fontSize: 14),
             ),
+            const SizedBox(height: 24),
 
-            // TODO: Gender Choice (requires backend update)
-            // DropdownButtonFormField<GenderDto>(
-            //   value: _selectedGender,
-            //   decoration: const InputDecoration(
-            //     labelText: 'Artist Gender',
-            //     border: OutlineInputBorder(),
-            //   ),
-            //   items: _genders.map((g) => DropdownMenuItem(
-            //     value: g,
-            //     child: Text(g.name),
-            //   )).toList(),
-            //   onChanged: (v) {
-            //     setState(() {
-            //       _selectedGender = v;
-            //       _selectedGenderId = v?.id;
-            //     });
-            //   },
-            // ),
-
-
-            // Distance Slider
-            _buildSectionTitle('Distance', textColor),
-            Row(
-              children: [
-                Expanded(
-                  child: Slider(
-                    value: (_maxDistance ?? 50).toDouble(),
-                    min: 0,
-                    max: 100,
-                    divisions: 100,
-                    label: '${_maxDistance ?? 50} km',
-                    onChanged: (double value) {
+            // Artist/Band Selector Card
+            _buildCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildCardTitle('Looking For', Icons.search),
+                  const SizedBox(height: 16),
+                  SegmentedButton<String>(
+                    segments: const [
+                      ButtonSegment(
+                        value: 'artists',
+                        label: Text('Artists'),
+                        icon: Icon(Icons.person, size: 18),
+                      ),
+                      ButtonSegment(
+                        value: 'both',
+                        label: Text('Both'),
+                        icon: Icon(Icons.group, size: 18),
+                      ),
+                      ButtonSegment(
+                        value: 'bands',
+                        label: Text('Bands'),
+                        icon: Icon(Icons.groups, size: 18),
+                      ),
+                    ],
+                    selected: {
+                      if (_showArtists && !_showBands) 'artists'
+                      else if (_showBands && !_showArtists) 'bands'
+                      else 'both'
+                    },
+                    onSelectionChanged: (Set<String> selection) {
+                      final choice = selection.first;
                       setState(() {
-                        _maxDistance = value.round();
+                        _showArtists = choice == 'artists' || choice == 'both';
+                        _showBands = choice == 'bands' || choice == 'both';
                       });
                     },
+                    style: ButtonStyle(
+                      backgroundColor: WidgetStateProperty.resolveWith((states) {
+                        if (states.contains(WidgetState.selected)) {
+                          return primaryColor;
+                        }
+                        return Colors.transparent;
+                      }),
+                      foregroundColor: WidgetStateProperty.resolveWith((states) {
+                        if (states.contains(WidgetState.selected)) {
+                          return Colors.white;
+                        }
+                        return primaryColor;
+                      }),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 16),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey.shade300),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text('${_maxDistance ?? 50} km', style: const TextStyle(color: textColor)),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-
-            // Age Range Slider
-            _buildSectionTitle('Age', textColor),
-            RangeSlider(
-              values: RangeValues(
-                  (_artistMinAge ?? 18).toDouble(),
-                  (_artistMaxAge ?? 99).toDouble()
+                ],
               ),
-              min: 18,
-              max: 99,
-              onChanged: (RangeValues values) {
-                setState(() {
-                  _artistMinAge = values.start.round();
-                  _artistMaxAge = values.end.round();
-                });
-              },
             ),
-            const SizedBox(height: 30),
+            const SizedBox(height: 16),
 
+            // Distance Card
+            _buildCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildCardTitle('Maximum Distance', Icons.location_on),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Slider(
+                          value: (_maxDistance ?? 0).toDouble(),
+                          min: 0,
+                          max: 100,
+                          divisions: 100,
+                          activeColor: primaryColor,
+                          inactiveColor: primaryColor.withOpacity(0.2),
+                          onChanged: (double value) {
+                            setState(() {
+                              _maxDistance = value.round();
+                            });
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: primaryColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: primaryColor.withOpacity(0.3)),
+                        ),
+                        child: Text(
+                          '${_maxDistance ?? 0} km',
+                          style: TextStyle(
+                            color: primaryColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
 
+            // Artist-specific filters
+            if (_showArtists) ...[
+              const SizedBox(height: 16),
+              _buildCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildCardTitle('Age Range', Icons.cake),
+                    const SizedBox(height: 8),
+                    RangeSlider(
+                      values: RangeValues(
+                        (_artistMinAge ?? 18).toDouble(),
+                        (_artistMaxAge ?? 99).toDouble(),
+                      ),
+                      min: 18,
+                      max: 99,
+                      divisions: 81,
+                      activeColor: primaryColor,
+                      inactiveColor: primaryColor.withOpacity(0.2),
+                      onChanged: (RangeValues values) {
+                        setState(() {
+                          _artistMinAge = values.start.round();
+                          _artistMaxAge = values.end.round();
+                        });
+                      },
+                    ),
+                    Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: primaryColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          '${_artistMinAge ?? 18} - ${_artistMaxAge ?? 99} years',
+                          style: TextStyle(
+                            color: primaryColor,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
 
-            // Dynamically build tag sections
-            ..._tagGroups.entries.map((entry) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 30.0),
-                child: _buildTagSection(entry.key),
-              );
-            }),
+              if (_tagGroups.containsKey('Instruments'))
+                _buildTagCard('Instruments', Icons.music_note),
 
-            // Country Dropdown
-            _buildSectionTitle('Country', textColor),
-            _buildDropdown(
-                items: _countries.map((c) => DropdownMenuItem(value: c.id, child: Text(c.name))).toList(),
-                value: _selectedCountryId,
-                onChanged: (String? value) {
-                  setState(() {
-                    _selectedCountryId = value;
-                    _selectedCityId = null; // Reset city when country changes
-                  });
-                },
-                hint: 'Select Country'),
-            const SizedBox(height: 30),
+              if (_tagGroups.containsKey('Activity'))
+                _buildTagCard('Activity', Icons.star),
+            ],
 
-            // City Dropdown
-            _buildSectionTitle('City', textColor),
-            _buildDropdown(
-                items: _cities.map((c) => DropdownMenuItem(value: c.id, child: Text(c.name))).toList(),
-                value: _selectedCityId,
-                onChanged: (String? value) {
-                  setState(() {
-                    _selectedCityId = value;
-                  });
-                },                hint: 'Select City'),
+            // Band-specific filters
+            if (_showBands) ...[
+              if (_tagGroups.containsKey('Band Status'))
+                _buildTagCard('Band Status', Icons.info_outline),
+
+              const SizedBox(height: 16),
+              _buildCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildCardTitle('Band Members', Icons.groups),
+                    const SizedBox(height: 8),
+                    RangeSlider(
+                      values: RangeValues(
+                        (_bandMinMembersCount ?? 1).toDouble(),
+                        (_bandMaxMembersCount ?? 10).toDouble(),
+                      ),
+                      min: 1,
+                      max: 10,
+                      divisions: 9,
+                      activeColor: primaryColor,
+                      inactiveColor: primaryColor.withOpacity(0.2),
+                      onChanged: (RangeValues values) {
+                        setState(() {
+                          _bandMinMembersCount = values.start.round();
+                          _bandMaxMembersCount = values.end.round();
+                        });
+                      },
+                    ),
+                    Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: primaryColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          '${_bandMinMembersCount ?? 1} - ${_bandMaxMembersCount ?? 10} members',
+                          style: TextStyle(
+                            color: primaryColor,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
+            // Other tag sections
+            ..._tagGroups.entries
+                .where((entry) =>
+            entry.key != 'Instruments' &&
+                entry.key != 'Activity' &&
+                entry.key != 'Band Status')
+                .map((entry) => _buildTagCard(entry.key, Icons.label)),
+
+            // Location Card
+            const SizedBox(height: 16),
+            _buildCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildCardTitle('Location', Icons.map),
+                  const SizedBox(height: 16),
+                  _buildEnhancedDropdown(
+                    items: _countries
+                        .map((c) => DropdownMenuItem(value: c.id, child: Text(c.name)))
+                        .toList(),
+                    value: _selectedCountryId,
+                    onChanged: (String? value) async {
+                      if (value != null) {
+                        await _onCountryChanged(value);
+                      } else {
+                        setState(() {
+                          _selectedCountryId = null;
+                          _selectedCityId = null;
+                          _cities = [];
+                        });
+                      }
+                    },
+                    hint: 'Select Country',
+                    icon: Icons.public,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildEnhancedDropdown(
+                    items: _cities
+                        .map((c) => DropdownMenuItem(value: c.id, child: Text(c.name)))
+                        .toList(),
+                    value: _selectedCityId,
+                    onChanged: (String? value) {
+                      setState(() {
+                        _selectedCityId = value;
+                      });
+                    },
+                    hint: 'Select City',
+                    icon: Icons.location_city,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
           ],
         ),
       ),
     );
   }
+
+  Widget _buildCard({required Widget child}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: child,
+    );
+  }
+
+  Widget _buildCardTitle(String title, IconData icon) {
+    const primaryColor = Color(0xFF6A4C9C);
+    return Row(
+      children: [
+        Icon(icon, color: primaryColor, size: 22),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: primaryColor,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTagCard(String category, IconData icon) {
+    final options = _tagGroups[category] ?? [];
+    if (options.isEmpty) return const SizedBox.shrink();
+
+    final selectedIds = _selectedTags[category] ?? {};
+    final selectedTagObjects = options.where((t) => selectedIds.contains(t.id)).toList();
+    final categoryTitle = category == 'Activity' ? 'Who are you looking for?' : category;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: _buildCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildCardTitle(categoryTitle, icon),
+            const SizedBox(height: 16),
+            InkWell(
+              onTap: () => _showTagPicker(category, options),
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(12),
+                  color: Colors.grey.shade50,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: selectedTagObjects.isNotEmpty
+                          ? Wrap(
+                        spacing: 8.0,
+                        runSpacing: 8.0,
+                        children: selectedTagObjects.map((tag) {
+                          return Chip(
+                            label: Text(tag.name, style: const TextStyle(fontSize: 13)),
+                            deleteIcon: const Icon(Icons.close, size: 18),
+                            onDeleted: () {
+                              setState(() {
+                                _selectedTags[category]?.remove(tag.id);
+                              });
+                            },
+                            backgroundColor: const Color(0xFF6A4C9C).withOpacity(0.1),
+                            deleteIconColor: const Color(0xFF6A4C9C),
+                            labelStyle: const TextStyle(color: Color(0xFF6A4C9C)),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          );
+                        }).toList(),
+                      )
+                          : Text(
+                        'Tap to select',
+                        style: TextStyle(color: Colors.grey.shade500, fontSize: 15),
+                      ),
+                    ),
+                    const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEnhancedDropdown({
+    required List<DropdownMenuItem<String>> items,
+    required String? value,
+    required ValueChanged<String?> onChanged,
+    required String hint,
+    required IconData icon,
+  }) {
+    const primaryColor = Color(0xFF6A4C9C);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: primaryColor, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                isExpanded: true,
+                value: value,
+                icon: const Icon(Icons.keyboard_arrow_down, color: primaryColor),
+                items: items,
+                onChanged: onChanged,
+                hint: Text(hint, style: TextStyle(color: Colors.grey.shade600)),
+                style: const TextStyle(color: Color(0xFF3D2C5E), fontSize: 15),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+
 
 
   Widget _buildSectionTitle(String title, Color color) {

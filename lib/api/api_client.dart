@@ -506,10 +506,7 @@ class ApiClient {
   Future<http.Response> updateMatchPreference(UpdateMatchPreferenceDto dto) async {
     final uri = _uri('matching/match-preference');
     final headers = await _authHeaders();
-    print('Headers: $headers'); // Debug: check if Authorization header is present
     final body = jsonEncode(dto.toJson());
-    final envelope = {'updateMatchPreferenceDto': dto.toJson()};
-    print('Sending to API: $body');
-    return await _withRefreshRetry(() => http.put(uri, headers: headers, body: jsonEncode(envelope)));
+    return await _withRefreshRetry(() => http.put(uri, headers: headers, body: body));
   }
 }
