@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../api/api_client.dart';
 import '../api/token_store.dart';
+import 'filters_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   final ApiClient api;
@@ -28,6 +29,13 @@ class HomeScreen extends StatelessWidget {
               },
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
               child: const Text('Logout')),
+          ElevatedButton(
+            child: const Text('Open Filters'),
+            onPressed: () {
+              // Use the named route to ensure all dependencies are passed
+              Navigator.pushNamed(context, '/filters');
+            },
+          )
         ]),
       ),
     );

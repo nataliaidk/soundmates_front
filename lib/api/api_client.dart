@@ -496,4 +496,17 @@ class ApiClient {
     if (!refreshed) return resp;
     return await fn();
   }
+
+  Future<http.Response> getMatchPreference() async {
+    final uri = _uri('matching/match-preference');
+    final headers = await _authHeaders();
+    return await _withRefreshRetry(() => http.get(uri, headers: headers));
+  }
+
+  Future<http.Response> updateMatchPreference(UpdateMatchPreferenceDto dto) async {
+    final uri = _uri('matching/match-preference');
+    final headers = await _authHeaders();
+    return await _withRefreshRetry(() => http.put(uri, headers: headers, body: jsonEncode(dto.toJson())));
+  }
+
 }

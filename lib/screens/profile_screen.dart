@@ -114,6 +114,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       if (cats.isNotEmpty) {
         for (final c in cats) {
+          print('Category: ${c.name} (${c.id})');
           final List<Map<String, dynamic>> opts = [];
           final ctTags = tags.where((t) => t.tagCategoryId == c.id).toList();
           for (final t in ctTags) {

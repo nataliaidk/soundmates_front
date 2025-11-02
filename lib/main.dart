@@ -9,6 +9,7 @@ import 'screens/home_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/messages_screen.dart';
 import 'screens/users_screen.dart';
+import 'screens/filters_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,6 +35,7 @@ class MyApp extends StatelessWidget {
         '/profile': (c) => ProfileScreen(api: api, tokens: tokens),
         '/messages': (c) => MessagesScreen(api: api, tokens: tokens),
         '/users': (c) => UsersScreen(api: api, tokens: tokens),
+        '/filters': (c) => FiltersScreen(api: api, tokens: tokens),
       },
     );
   }

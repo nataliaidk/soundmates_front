@@ -518,3 +518,71 @@ class GenderDto {
     name: json['name']?.toString() ?? json['label']?.toString() ?? json['value']?.toString() ?? '',
   );
 }
+
+class MatchPreferenceDto {
+  final double? maxDistance;
+  final int? minAge;
+  final int? maxAge;
+  final String? countryId;
+  final String? cityId;
+  final List<String>? tagIds;
+
+  MatchPreferenceDto({
+    this.maxDistance,
+    this.minAge,
+    this.maxAge,
+    this.countryId,
+    this.cityId,
+    this.tagIds,
+  });
+
+  factory MatchPreferenceDto.fromJson(Map<String, dynamic> json) => MatchPreferenceDto(
+    maxDistance: json['maxDistance'] is num ? (json['maxDistance'] as num).toDouble() : null,
+    minAge: json['minAge'] is int ? json['minAge'] as int : null,
+    maxAge: json['maxAge'] is int ? json['maxAge'] as int : null,
+    countryId: json['countryId']?.toString(),
+    cityId: json['cityId']?.toString(),
+    tagIds: (json['tagIds'] is List) ? List<String>.from(json['tagIds'].map((e) => e.toString())) : null,
+  );
+
+  Map<String, dynamic> toJson() {
+    final m = <String, dynamic>{};
+    if (maxDistance != null) m['maxDistance'] = maxDistance;
+    if (minAge != null) m['minAge'] = minAge;
+    if (maxAge != null) m['maxAge'] = maxAge;
+    if (countryId != null && countryId!.isNotEmpty) m['countryId'] = countryId;
+    if (cityId != null && cityId!.isNotEmpty) m['cityId'] = cityId;
+    if (tagIds != null) m['tagIds'] = tagIds;
+    return m;
+  }
+}
+
+class UpdateMatchPreferenceDto {
+  final double? maxDistance;
+  final int? minAge;
+  final int? maxAge;
+  final String? countryId;
+  final String? cityId;
+  final List<String>? tagIds;
+
+  UpdateMatchPreferenceDto({
+    this.maxDistance,
+    this.minAge,
+    this.maxAge,
+    this.countryId,
+    this.cityId,
+    this.tagIds,
+  });
+
+  Map<String, dynamic> toJson() {
+    final m = <String, dynamic>{};
+    if (maxDistance != null) m['maxDistance'] = maxDistance;
+    if (minAge != null) m['minAge'] = minAge;
+    if (maxAge != null) m['maxAge'] = maxAge;
+    if (countryId != null && countryId!.isNotEmpty) m['countryId'] = countryId;
+    if (cityId != null && cityId!.isNotEmpty) m['cityId'] = cityId;
+    if (tagIds != null) m['tagIds'] = tagIds;
+    return m;
+  }
+}
+
