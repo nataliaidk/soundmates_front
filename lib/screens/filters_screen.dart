@@ -17,11 +17,17 @@ class FiltersScreen extends StatefulWidget {
 class _FiltersScreenState extends State<FiltersScreen> {
   bool _isLoading = true;
 
-  // State variables to hold filter values
-  double _distance = 50.0;
-  RangeValues _ageRange = const RangeValues(21, 37);
+  bool _showArtists = true;
+  bool _showBands = true;
+  int? _maxDistance;
+  String? _selectedGenderId;
+  int? _artistMinAge;
+  int? _artistMaxAge;
+  int? _bandMinMembersCount;
+  int? _bandMaxMembersCount;
   String? _selectedCountryId;
   String? _selectedCityId;
+  GenderDto? _selectedGender;
 
   // New state for tags
   // map categoryName -> list of tags in that category
@@ -32,15 +38,14 @@ class _FiltersScreenState extends State<FiltersScreen> {
   // Data from API
   List<CountryDto> _countries = [];
   List<CityDto> _cities = [];
-
-  // Placeholder data for "Looking for"
-  final List<String> _lookingForOptions = ['Musician', 'Band', 'Producer', 'Vocalist'];
-
+  List<GenderDto> _genders = [];
 
   @override
   void initState() {
     super.initState();
     _loadFilterData();
+    _loadCurrentPreferences();
+    _loadGenders();
   }
 
   Future<void> _loadFilterData() async {
@@ -100,6 +105,118 @@ class _FiltersScreenState extends State<FiltersScreen> {
           SnackBar(content: Text('Error loading filter data: $e')),
         );
       }
+    }
+  }
+
+  Future<void> _loadCurrentPreferences() async {
+    try {
+      final resp = await widget.api.getMatchPreference();
+
+      if (resp.statusCode == 200) {
+        final data = jsonDecode(resp.body);
+        print('Loaded preferences: $data'); // Debug print
+
+        final prefs = MatchPreferenceDto.fromJson(data);
+
+        setState(() {
+          _showArtists = prefs.showArtists ?? true;
+          _showBands = prefs.showBands ?? true;
+          _maxDistance = prefs.maxDistance;
+          _selectedCountryId = prefs.countryId;
+          _selectedCityId = prefs.cityId;
+          _artistMinAge = prefs.artistMinAge;
+          _artistMaxAge = prefs.artistMaxAge;
+          _selectedGenderId = prefs.artistGenderId;
+          _bandMinMembersCount = prefs.bandMinMembersCount;
+          _bandMaxMembersCount = prefs.bandMaxMembersCount;
+
+          // Load selected tags into groups
+          if (prefs.filterTagsIds != null) {
+            for (final tagId in prefs.filterTagsIds!) {
+              // Find which category this tag belongs to
+              for (final entry in _tagGroups.entries) {
+                if (entry.value.any((t) => t.id == tagId)) {
+                  _selectedTags[entry.key] ??= {};
+                  _selectedTags[entry.key]!.add(tagId);
+                  break;
+                }
+              }
+            }
+          }
+
+        });
+
+        // Load cities if country is selected
+        if (prefs.countryId != null) {
+          await _onCountryChanged(prefs.countryId);
+        }
+      }
+    } catch (e) {
+      print('Error loading current preferences: $e');
+    }
+  }
+
+  Future<void> _loadGenders() async {
+    try {
+      final resp = await widget.api.getGenders();
+      if (resp.statusCode == 200) {
+        var decoded = jsonDecode(resp.body);
+        if (decoded is String) decoded = jsonDecode(decoded);
+        final List<GenderDto> list = [];
+        if (decoded is List) {
+          for (final e in decoded) {
+            if (e is Map) list.add(GenderDto.fromJson(Map<String, dynamic>.from(e)));
+          }
+        }
+        setState(() => _genders = list);
+      }
+    } catch (_) {
+      // ignore
+    }
+  }
+
+  Future<void> _savePreferences() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final allSelectedTagIds = _selectedTags.values
+          .expand((set) => set)
+          .toList();
+
+      final dto = UpdateMatchPreferenceDto(
+        showArtists: _showArtists,
+        showBands: _showBands,
+        maxDistance: _maxDistance,
+        countryId: _selectedCountryId,
+        cityId: _selectedCityId,
+        artistMinAge: _artistMinAge,
+        artistMaxAge: _artistMaxAge,
+        artistGenderId: _selectedGenderId,
+        bandMinMembersCount: _bandMinMembersCount,
+        bandMaxMembersCount: _bandMaxMembersCount,
+        filterTagsIds: allSelectedTagIds,
+      );
+
+      final resp = await widget.api.updateMatchPreference(dto);
+
+      if (!mounted) return;
+
+      if (resp.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Preferences saved!')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${resp.statusCode} ${resp.body}')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -267,10 +384,7 @@ class _FiltersScreenState extends State<FiltersScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.check, color: Colors.green, size: 30),
-            onPressed: () {
-              // TODO: Implement save logic
-              Navigator.of(context).pop();
-            },
+            onPressed: _savePreferences,
           ),
         ],
       ),
@@ -287,22 +401,61 @@ class _FiltersScreenState extends State<FiltersScreen> {
             ),
             const SizedBox(height: 30),
 
+// Add this to your build method where you want the selector to appear
+            SegmentedButton<String>(
+              segments: const [
+                ButtonSegment(value: 'artists', label: Text('Artists')),
+                ButtonSegment(value: 'both', label: Text('Both')),
+                ButtonSegment(value: 'bands', label: Text('Bands')),
+              ],
+              selected: {
+                if (_showArtists && !_showBands) 'artists'
+                else if (_showBands && !_showArtists) 'bands'
+                else 'both'
+              },
+              onSelectionChanged: (Set<String> selection) {
+                final choice = selection.first;
+                setState(() {
+                  _showArtists = choice == 'artists' || choice == 'both';
+                  _showBands = choice == 'bands' || choice == 'both';
+                });
+              },
+            ),
+
+            // TODO: Gender Choice (requires backend update)
+            // DropdownButtonFormField<GenderDto>(
+            //   value: _selectedGender,
+            //   decoration: const InputDecoration(
+            //     labelText: 'Artist Gender',
+            //     border: OutlineInputBorder(),
+            //   ),
+            //   items: _genders.map((g) => DropdownMenuItem(
+            //     value: g,
+            //     child: Text(g.name),
+            //   )).toList(),
+            //   onChanged: (v) {
+            //     setState(() {
+            //       _selectedGender = v;
+            //       _selectedGenderId = v?.id;
+            //     });
+            //   },
+            // ),
+
+
             // Distance Slider
             _buildSectionTitle('Distance', textColor),
             Row(
               children: [
                 Expanded(
                   child: Slider(
-                    value: _distance,
+                    value: (_maxDistance ?? 50).toDouble(),
                     min: 0,
                     max: 100,
                     divisions: 100,
-                    label: '${_distance.round()} km',
-                    activeColor: primaryColor,
-                    inactiveColor: primaryColor.withOpacity(0.3),
+                    label: '${_maxDistance ?? 50} km',
                     onChanged: (double value) {
                       setState(() {
-                        _distance = value;
+                        _maxDistance = value.round();
                       });
                     },
                   ),
@@ -314,7 +467,7 @@ class _FiltersScreenState extends State<FiltersScreen> {
                     border: Border.all(color: Colors.grey.shade300),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Text('${_distance.round()} km', style: const TextStyle(color: textColor)),
+                  child: Text('${_maxDistance ?? 50} km', style: const TextStyle(color: textColor)),
                 ),
               ],
             ),
@@ -323,23 +476,22 @@ class _FiltersScreenState extends State<FiltersScreen> {
             // Age Range Slider
             _buildSectionTitle('Age', textColor),
             RangeSlider(
-              values: _ageRange,
+              values: RangeValues(
+                  (_artistMinAge ?? 18).toDouble(),
+                  (_artistMaxAge ?? 99).toDouble()
+              ),
               min: 18,
               max: 99,
-              divisions: 81,
-              labels: RangeLabels(
-                _ageRange.start.round().toString(),
-                _ageRange.end.round().toString(),
-              ),
-              activeColor: primaryColor,
-              inactiveColor: primaryColor.withOpacity(0.3),
               onChanged: (RangeValues values) {
                 setState(() {
-                  _ageRange = values;
+                  _artistMinAge = values.start.round();
+                  _artistMaxAge = values.end.round();
                 });
               },
             ),
             const SizedBox(height: 30),
+
+
 
             // Dynamically build tag sections
             ..._tagGroups.entries.map((entry) {
@@ -354,7 +506,12 @@ class _FiltersScreenState extends State<FiltersScreen> {
             _buildDropdown(
                 items: _countries.map((c) => DropdownMenuItem(value: c.id, child: Text(c.name))).toList(),
                 value: _selectedCountryId,
-                onChanged: _onCountryChanged,
+                onChanged: (String? value) {
+                  setState(() {
+                    _selectedCountryId = value;
+                    _selectedCityId = null; // Reset city when country changes
+                  });
+                },
                 hint: 'Select Country'),
             const SizedBox(height: 30),
 
@@ -363,8 +520,11 @@ class _FiltersScreenState extends State<FiltersScreen> {
             _buildDropdown(
                 items: _cities.map((c) => DropdownMenuItem(value: c.id, child: Text(c.name))).toList(),
                 value: _selectedCityId,
-                onChanged: (val) => setState(() => _selectedCityId = val),
-                hint: 'Select City'),
+                onChanged: (String? value) {
+                  setState(() {
+                    _selectedCityId = value;
+                  });
+                },                hint: 'Select City'),
           ],
         ),
       ),

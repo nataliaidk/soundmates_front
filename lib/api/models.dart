@@ -520,69 +520,90 @@ class GenderDto {
 }
 
 class MatchPreferenceDto {
-  final double? maxDistance;
-  final int? minAge;
-  final int? maxAge;
+  final bool? showArtists;
+  final bool? showBands;
+  final int? maxDistance;
+  final int? artistMinAge;
+  final int? artistMaxAge;
   final String? countryId;
   final String? cityId;
-  final List<String>? tagIds;
+  final String? artistGenderId;
+  final int? bandMinMembersCount;
+  final int? bandMaxMembersCount;
+  final List<String>? filterTagsIds;
 
   MatchPreferenceDto({
+    this.showArtists,
+    this.showBands,
     this.maxDistance,
-    this.minAge,
-    this.maxAge,
+    this.artistMinAge,
+    this.artistMaxAge,
     this.countryId,
     this.cityId,
-    this.tagIds,
+    this.artistGenderId,
+    this.bandMinMembersCount,
+    this.bandMaxMembersCount,
+    this.filterTagsIds,
   });
 
   factory MatchPreferenceDto.fromJson(Map<String, dynamic> json) => MatchPreferenceDto(
-    maxDistance: json['maxDistance'] is num ? (json['maxDistance'] as num).toDouble() : null,
-    minAge: json['minAge'] is int ? json['minAge'] as int : null,
-    maxAge: json['maxAge'] is int ? json['maxAge'] as int : null,
+    showArtists: json['showArtists'] as bool?,
+    showBands: json['showBands'] as bool?,
+    maxDistance: json['maxDistance'] as int?,
+    artistMinAge: json['artistMinAge'] as int?,
+    artistMaxAge: json['artistMaxAge'] as int?,
     countryId: json['countryId']?.toString(),
     cityId: json['cityId']?.toString(),
-    tagIds: (json['tagIds'] is List) ? List<String>.from(json['tagIds'].map((e) => e.toString())) : null,
+    artistGenderId: json['artistGenderId']?.toString(),
+    bandMinMembersCount: json['bandMinMembersCount'] as int?,
+    bandMaxMembersCount: json['bandMaxMembersCount'] as int?,
+    filterTagsIds: (json['filterTagsIds'] is List)
+        ? List<String>.from(json['filterTagsIds'].map((e) => e.toString()))
+        : null,
   );
-
-  Map<String, dynamic> toJson() {
-    final m = <String, dynamic>{};
-    if (maxDistance != null) m['maxDistance'] = maxDistance;
-    if (minAge != null) m['minAge'] = minAge;
-    if (maxAge != null) m['maxAge'] = maxAge;
-    if (countryId != null && countryId!.isNotEmpty) m['countryId'] = countryId;
-    if (cityId != null && cityId!.isNotEmpty) m['cityId'] = cityId;
-    if (tagIds != null) m['tagIds'] = tagIds;
-    return m;
-  }
 }
 
+
 class UpdateMatchPreferenceDto {
-  final double? maxDistance;
-  final int? minAge;
-  final int? maxAge;
+  final bool showArtists;
+  final bool showBands;
+  final int? maxDistance;
   final String? countryId;
   final String? cityId;
-  final List<String>? tagIds;
+  final int? artistMinAge;
+  final int? artistMaxAge;
+  final String? artistGenderId;
+  final int? bandMinMembersCount;
+  final int? bandMaxMembersCount;
+  final List<String> filterTagsIds;
 
   UpdateMatchPreferenceDto({
+    required this.showArtists,
+    required this.showBands,
     this.maxDistance,
-    this.minAge,
-    this.maxAge,
     this.countryId,
     this.cityId,
-    this.tagIds,
+    this.artistMinAge,
+    this.artistMaxAge,
+    this.artistGenderId,
+    this.bandMinMembersCount,
+    this.bandMaxMembersCount,
+    required this.filterTagsIds,
   });
 
   Map<String, dynamic> toJson() {
-    final m = <String, dynamic>{};
-    if (maxDistance != null) m['maxDistance'] = maxDistance;
-    if (minAge != null) m['minAge'] = minAge;
-    if (maxAge != null) m['maxAge'] = maxAge;
-    if (countryId != null && countryId!.isNotEmpty) m['countryId'] = countryId;
-    if (cityId != null && cityId!.isNotEmpty) m['cityId'] = cityId;
-    if (tagIds != null) m['tagIds'] = tagIds;
-    return m;
+    return {
+      'showArtists': showArtists,
+      'showBands': showBands,
+      'maxDistance': maxDistance,
+      'countryId': countryId,
+      'cityId': cityId,
+      'artistMinAge': artistMinAge,
+      'artistMaxAge': artistMaxAge,
+      'artistGenderId': artistGenderId,
+      'bandMinMembersCount': bandMinMembersCount,
+      'bandMaxMembersCount': bandMaxMembersCount,
+      'filterTagsIds': filterTagsIds,
+    };
   }
 }
-
