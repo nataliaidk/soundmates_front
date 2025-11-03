@@ -272,72 +272,138 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (_birthDate == null) return setState(() => _status = 'Birth date is required for artists');
       if (_selectedGender == null) return setState(() => _status = 'Gender is required for artists');
     }
-
-    final dtoWithTags = UpdateUserProfileDto(
-      isBand: _isBand,
-      name: _name.text.trim(),
-      description: _desc.text.trim(),
-      countryId: _selectedCountry?.id ?? '',
-      cityId: _selectedCity?.id ?? '',
-      birthDate: _birthDate,
-      genderId: _selectedGender?.id,
-      tagsIds: allSelected,
-      musicSamplesOrder: const [],
-      profilePicturesOrder: const [],
-    );
-    // DEBUG: print request body
-    try {
-      final dbg = jsonEncode(dtoWithTags.toJson());
-      // ignore: avoid_print
-      print('PUT /users/profile BODY: $dbg');
-    } catch (_) {}
-    final resp = await widget.api.updateUserWithTags(dtoWithTags, allSelected.isEmpty ? null : allSelected);
-    try {
-      final respBody = resp.body;
-      // ignore: avoid_print
-      print('PUT /users/profile RESP: ${resp.statusCode} - $respBody');
-    } catch (_) {}
-    setState(() => _status = 'Profile update: ${resp.statusCode}');
-    if (resp.statusCode == 200) {
-      if (_picked?.bytes != null) {
-        String uploadName = _picked!.name;
-        final nameMatch = RegExp(r'^(.+?\.(jpg|jpeg))', caseSensitive: false).firstMatch(uploadName);
-        if (nameMatch != null) {
-          uploadName = nameMatch.group(1)!;
-        } else {
-          final bytes = _picked!.bytes!;
-          if (bytes.length >= 2 && bytes[0] == 0xFF && bytes[1] == 0xD8) {
-            uploadName = uploadName.trim();
-            if (!uploadName.toLowerCase().endsWith('.jpg') && !uploadName.toLowerCase().endsWith('.jpeg')) {
-              uploadName = '$uploadName.jpg';
-            }
+    
+  
+    if (_isBand == true){  
+      final dtoWithTags = UpdateBandProfile(
+        isBand: _isBand,
+        name: _name.text.trim(),
+        description: _desc.text.trim(),
+        countryId: _selectedCountry?.id ?? '',
+        cityId: _selectedCity?.id ?? '',
+        tagsIds: allSelected,
+        musicSamplesOrder: const [],
+        profilePicturesOrder: const [],
+      );
+      try {
+        final dbg = jsonEncode(dtoWithTags.toJson());
+        // ignore: avoid_print
+        print('PUT /users/profile BODY: $dbg');
+      } catch (_) {}
+      final resp = await widget.api.updateBandProfile(dtoWithTags, allSelected.isEmpty ? null : allSelected);
+      try {
+        final respBody = resp.body;
+        // ignore: avoid_print
+        print('PUT /users/profile RESP: ${resp.statusCode} - $respBody');
+      } catch (_) {}
+      setState(() => _status = 'Profile update: ${resp.statusCode}');
+      if (resp.statusCode == 200) {
+        if (_picked?.bytes != null) {
+          String uploadName = _picked!.name;
+          final nameMatch = RegExp(r'^(.+?\.(jpg|jpeg))', caseSensitive: false).firstMatch(uploadName);
+          if (nameMatch != null) {
+            uploadName = nameMatch.group(1)!;
           } else {
-            return setState(() => _status = 'Allowed file extensions: .jpeg, .jpg');
+            final bytes = _picked!.bytes!;
+            if (bytes.length >= 2 && bytes[0] == 0xFF && bytes[1] == 0xD8) {
+              uploadName = uploadName.trim();
+              if (!uploadName.toLowerCase().endsWith('.jpg') && !uploadName.toLowerCase().endsWith('.jpeg')) {
+                uploadName = '$uploadName.jpg';
+              }
+            } else {
+              return setState(() => _status = 'Allowed file extensions: .jpeg, .jpg');
+            }
           }
-        }
 
-        final streamed = await widget.api.uploadProfilePicture(_picked!.bytes!, uploadName);
-        final body = await streamed.stream.bytesToString();
-        if (!mounted) {
-          return;
-        }
-        setState(() => _status += ' ; upload: ${streamed.statusCode} - $body');
-        if (streamed.statusCode == 200) {
+          final streamed = await widget.api.uploadProfilePicture(_picked!.bytes!, uploadName);
+          final body = await streamed.stream.bytesToString();
+          if (!mounted) {
+            return;
+          }
+          setState(() => _status += ' ; upload: ${streamed.statusCode} - $body');
+          if (streamed.statusCode == 200) {
+            if (!mounted) {
+              return;
+            }
+            Navigator.pushReplacementNamed(context, '/home');
+          }
+        } else {
           if (!mounted) {
             return;
           }
           Navigator.pushReplacementNamed(context, '/home');
         }
       } else {
-        if (!mounted) {
-          return;
-        }
-        Navigator.pushReplacementNamed(context, '/home');
+        return;
       }
+    
+
     } else {
-      return;
-    }
-  }
+      final dtoWithTags = UpdateArtistProfile(
+        isBand: _isBand,
+        name: _name.text.trim(),
+        description: _desc.text.trim(),
+        countryId: _selectedCountry?.id ?? '',
+        cityId: _selectedCity?.id ?? '',
+        birthDate: _birthDate,
+        genderId: _selectedGender?.id,
+        tagsIds: allSelected,
+        musicSamplesOrder: const [],
+        profilePicturesOrder: const [],
+      );
+      // DEBUG: print request body
+      try {
+        final dbg = jsonEncode(dtoWithTags.toJson());
+        // ignore: avoid_print
+        print('PUT /users/profile BODY: $dbg');
+      } catch (_) {}
+      final resp = await widget.api.updateArtistProfile(dtoWithTags, allSelected.isEmpty ? null : allSelected);
+      try {
+        final respBody = resp.body;
+        // ignore: avoid_print
+        print('PUT /users/profile RESP: ${resp.statusCode} - $respBody');
+      } catch (_) {}
+      setState(() => _status = 'Profile update: ${resp.statusCode}');
+      if (resp.statusCode == 200) {
+        if (_picked?.bytes != null) {
+          String uploadName = _picked!.name;
+          final nameMatch = RegExp(r'^(.+?\.(jpg|jpeg))', caseSensitive: false).firstMatch(uploadName);
+          if (nameMatch != null) {
+            uploadName = nameMatch.group(1)!;
+          } else {
+            final bytes = _picked!.bytes!;
+            if (bytes.length >= 2 && bytes[0] == 0xFF && bytes[1] == 0xD8) {
+              uploadName = uploadName.trim();
+              if (!uploadName.toLowerCase().endsWith('.jpg') && !uploadName.toLowerCase().endsWith('.jpeg')) {
+                uploadName = '$uploadName.jpg';
+              }
+            } else {
+              return setState(() => _status = 'Allowed file extensions: .jpeg, .jpg');
+            }
+          }
+
+          final streamed = await widget.api.uploadProfilePicture(_picked!.bytes!, uploadName);
+          final body = await streamed.stream.bytesToString();
+          if (!mounted) {
+            return;
+          }
+          setState(() => _status += ' ; upload: ${streamed.statusCode} - $body');
+          if (streamed.statusCode == 200) {
+            if (!mounted) {
+              return;
+            }
+            Navigator.pushReplacementNamed(context, '/home');
+          }
+        } else {
+          if (!mounted) {
+            return;
+          }
+          Navigator.pushReplacementNamed(context, '/home');
+        }
+      } else {
+        return;
+      }
+    }}
 
   Future<void> _showTagPicker(String category) async {
     final opts = _options[category];

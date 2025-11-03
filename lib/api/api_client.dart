@@ -63,16 +63,16 @@ class ApiClient {
     return await _withRefreshRetry(() => http.put(uri, headers: headers, body: jsonEncode(inner)));
   }
 
-  Future<http.Response> updateArtistProfile(ArtistDto dto, [List<String>? tags]) async {
-    final uri = _uri('/users/profile/artist');
+  Future<http.Response> updateArtistProfile(UpdateArtistProfile dto, [List<String>? tags]) async {
+    final uri = _uri('/users/profile');
     final headers = await _authHeaders();
     final inner = dto.toJson();
     if (tags != null) inner['tagsIds'] = tags;
     return await _withRefreshRetry(() => http.put(uri, headers: headers, body: jsonEncode(inner)));
   }
 
-  Future<http.Response> updateBandProfile(BandDto dto, [List<String>? tags]) async {
-    final uri = _uri('/users/profile/band');
+  Future<http.Response> updateBandProfile(UpdateBandProfile dto, [List<String>? tags]) async {
+    final uri = _uri('/users/profile');
     final headers = await _authHeaders();
     final inner = dto.toJson();
     if (tags != null) inner['tagsIds'] = tags;

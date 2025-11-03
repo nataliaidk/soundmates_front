@@ -113,7 +113,100 @@ class UpdateUserProfileDto {
         musicSamplesOrder: (json['musicSamplesOrder'] is List) ? List<String>.from(json['musicSamplesOrder'].map((e) => e.toString())) : const [],
         profilePicturesOrder: (json['profilePicturesOrder'] is List) ? List<String>.from(json['profilePicturesOrder'].map((e) => e.toString())) : const [],
       );
+
+      
 }
+
+class UpdateArtistProfile {
+  final bool? isBand;
+  final String name;
+  final String description;
+  // prefer sending IDs as backend expects UUIDs
+  final String? countryId;
+  final String? cityId;
+  // artist-only fields
+  final DateTime? birthDate; // send as ISO date yyyy-MM-dd expected by DateOnly on server
+  final String? genderId;
+
+  // tagsIds - list of tag UUIDs
+  final List<String>? tagsIds;
+  // orders - lists of music sample ids and profile picture ids
+  final List<String> musicSamplesOrder;
+  final List<String> profilePicturesOrder;
+
+  UpdateArtistProfile({this.isBand, required this.name, required this.description, this.countryId, this.cityId, this.birthDate, this.genderId, this.tagsIds, List<String>? musicSamplesOrder, List<String>? profilePicturesOrder}) :
+    musicSamplesOrder = musicSamplesOrder ?? const [],
+    profilePicturesOrder = profilePicturesOrder ?? const [];
+    
+  Map<String, dynamic> toJson() {
+    // Always include discriminator required by server polymorphic DTO
+    // Put it first in the map so it appears earliest in serialized JSON.
+    final m = <String, dynamic>{
+      'userType': (isBand == true) ? 'band' : 'artist',
+      'name': name,
+      'description': description,
+    };
+    if (countryId != null && countryId!.isNotEmpty) m['countryId'] = countryId;
+    if (cityId != null && cityId!.isNotEmpty) m['cityId'] = cityId;
+    // artist-only properties
+    if (birthDate != null) {
+      // send only the date portion in ISO format yyyy-MM-dd
+      final iso = birthDate!.toIso8601String().split('T').first;
+      m['birthDate'] = iso;
+    }
+    if (genderId != null && genderId!.isNotEmpty) m['genderId'] = genderId;
+    if (tagsIds != null) m['tagsIds'] = tagsIds;
+    // include orders (server expects these lists)
+    m['musicSamplesOrder'] = musicSamplesOrder;
+    m['profilePicturesOrder'] = profilePicturesOrder;
+    return m;}
+
+
+}
+
+class UpdateBandProfile {
+  final bool? isBand;
+  final String name;
+  final String description;
+  // prefer sending IDs as backend expects UUIDs
+  final String? countryId;
+  final String? cityId;
+
+  // tagsIds - list of tag UUIDs
+  final List<String>? tagsIds;
+  // orders - lists of music sample ids and profile picture ids
+  final List<String> musicSamplesOrder;
+  final List<BandMemberDto> bandMembers;
+  final List<String> profilePicturesOrder;
+
+  UpdateBandProfile({this.isBand, required this.name, required this.description, this.countryId, this.cityId, this.tagsIds, List<String>? musicSamplesOrder, List<BandMemberDto>? bandMembers, List<String>? profilePicturesOrder}) :
+    bandMembers = bandMembers ?? const [],
+    musicSamplesOrder = musicSamplesOrder ?? const [],
+    profilePicturesOrder = profilePicturesOrder ?? const [];
+    
+
+
+  Map<String, dynamic> toJson() {
+    // Always include discriminator required by server polymorphic DTO
+    // Put it first in the map so it appears earliest in serialized JSON.
+    final m = <String, dynamic>{
+      'userType': (isBand == true) ? 'band' : 'artist',
+      'name': name,
+      'description': description,
+    };
+    if (countryId != null && countryId!.isNotEmpty) m['countryId'] = countryId;
+    if (cityId != null && cityId!.isNotEmpty) m['cityId'] = cityId;
+    if (tagsIds != null) m['tagsIds'] = tagsIds;
+    
+    m['bandMembers'] = bandMembers.map((bm) => bm.toJson()).toList();
+    
+    // include orders (server expects these lists)
+    m['musicSamplesOrder'] = musicSamplesOrder;
+    m['profilePicturesOrder'] = profilePicturesOrder;
+    return m;
+  }
+}
+
 
 class PasswordDto {
   final String password;
