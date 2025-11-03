@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../api/api_client.dart';
 import '../api/token_store.dart';
-import 'filters_screen.dart';
+// FiltersScreen is used via named route; no direct import needed here.
+import 'change_password_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   final ApiClient api;
@@ -20,6 +21,18 @@ class HomeScreen extends StatelessWidget {
           ElevatedButton(onPressed: () => Navigator.pushNamed(context, '/messages'), child: const Text('Messages')),
           const SizedBox(height: 8),
           ElevatedButton(onPressed: () => Navigator.pushNamed(context, '/users'), child: const Text('Users')),
+          const SizedBox(height: 8),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ChangePasswordScreen(api: api, tokens: tokens),
+                ),
+              );
+            },
+            child: const Text('Change Password'),
+          ),
           const SizedBox(height: 16),
           ElevatedButton(
               onPressed: () {

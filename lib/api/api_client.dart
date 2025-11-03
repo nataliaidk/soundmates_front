@@ -216,6 +216,18 @@ class ApiClient {
     return await _withRefreshRetry(() => http.post(uri, headers: headers, body: jsonEncode(dto.toJson())));
   }
 
+  Future<http.Response> getPotentialMatchesArtists({int limit = 20, int offset = 0}) async {
+    final uri = _uri('matching/artists?limit=$limit&offset=$offset');
+    final headers = await _authHeaders();
+    return await _withRefreshRetry(() => http.get(uri, headers: headers));
+  }
+
+  Future<http.Response> getPotentialMatchesBands({int limit = 20, int offset = 0}) async {
+    final uri = _uri('matching/bands?limit=$limit&offset=$offset');
+    final headers = await _authHeaders();
+    return await _withRefreshRetry(() => http.get(uri, headers: headers));
+  }
+
   Future<http.Response> getMatches({int limit = 20, int offset = 0}) async {
     final uri = _uri('matching/matches?limit=$limit&offset=$offset');
     final headers = await _authHeaders();

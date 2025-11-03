@@ -40,6 +40,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // Profile pictures and music samples
   List<Map<String, dynamic>> _profilePictures = [];
+  // ignore: unused_field
   List<Map<String, dynamic>> _musicSamples = [];
 
   // artist fields
@@ -253,6 +254,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           selCountry = _countries.firstWhere((c) => c.name == countryVal, orElse: () => _countries.first);
         }
 
+        // enrich picture objects with usable URLs if backend returned only id/file
+        pictures = await _enrichPicturesWithUrls(pictures);
+
         setState(() {
           _name.text = nameVal;
           _desc.text = descVal;
@@ -290,6 +294,54 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
     } catch (e) {
       setState(() => _status = 'Error loading profile');
+    }
+  }
+
+  // Merge URLs from profile-pictures endpoint into profile['profilePictures'] items
+  Future<List<Map<String, dynamic>>> _enrichPicturesWithUrls(List<Map<String, dynamic>> pics) async {
+    try {
+      // Build an ID->url map from the dedicated endpoint which is known to return URL
+      final resp = await widget.api.getProfilePictures(limit: 100, offset: 0);
+      final urlById = <String, String>{};
+      if (resp.statusCode == 200) {
+        var dec = jsonDecode(resp.body);
+        if (dec is String) dec = jsonDecode(dec);
+        if (dec is List) {
+          for (final e in dec) {
+            if (e is Map) {
+              final m = Map<String, dynamic>.from(e);
+              final id = m['id']?.toString();
+              final url = m['url']?.toString();
+              if (id != null && url != null && url.isNotEmpty) urlById[id] = url;
+            }
+          }
+        }
+      }
+
+      // Produce enriched list
+      return pics.map((p) {
+        final m = Map<String, dynamic>.from(p);
+        final id = m['id']?.toString();
+        final file = m['file']?.toString();
+        // Prefer existing url
+        var url = m['url']?.toString();
+        // If not present, try to derive from file or lookup by id
+        url ??= (file != null && file.startsWith('http')) ? file : null;
+        if (url == null && id != null && urlById.containsKey(id)) {
+          url = urlById[id];
+        }
+        // Fallback heuristic: common REST pattern to fetch file by id
+        if (url == null && id != null) {
+          url = Uri.parse(widget.api.baseUrl).resolve('profile-pictures/file/$id').toString();
+        }
+        m['url'] = url;
+        // Normalize fileName for UI hints
+        if (m['fileName'] == null && file != null) m['fileName'] = file.split('/').last;
+        return m;
+      }).toList();
+    } catch (_) {
+      // On any error, just return the original list
+      return pics;
     }
   }
 
@@ -377,7 +429,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (_selectedGender == null) return setState(() => _status = 'Gender is required for artists');
     }
 
-    if (_isBand == true) {
+  if (_isBand == true) {
       final dtoWithTags = UpdateBandProfile(
         isBand: _isBand,
         name: _name.text.trim(),
@@ -395,7 +447,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         if (_pickedFiles.isNotEmpty) {
           for (final file in _pickedFiles) {
             String uploadName = file.name;
-            final extMatch = RegExp(r'^(.+?)\.(jpg|jpeg|mp3|mp4) 24', caseSensitive: false).firstMatch(uploadName);
+            final extMatch = RegExp(r'^(.+?)\.(jpg|jpeg|mp3|mp4)$', caseSensitive: false).firstMatch(uploadName);
             if (extMatch != null) {
               uploadName = extMatch.group(0)!;
             } else {
@@ -416,10 +468,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             if (!mounted) return;
             setState(() => _status += ' ; upload: ${streamed.statusCode} - $body');
           }
-          Navigator.pushReplacementNamed(context, '/home');
+          await _goToProfileView();
         } else {
           if (!mounted) return;
-          Navigator.pushReplacementNamed(context, '/home');
+          await _goToProfileView();
         }
       } else {
         return;
@@ -443,7 +495,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         if (_pickedFiles.isNotEmpty) {
           for (final file in _pickedFiles) {
             String uploadName = file.name;
-            final extMatch = RegExp(r'^(.+?)\.(jpg|jpeg|mp3|mp4) 24', caseSensitive: false).firstMatch(uploadName);
+            final extMatch = RegExp(r'^(.+?)\.(jpg|jpeg|mp3|mp4)$', caseSensitive: false).firstMatch(uploadName);
             if (extMatch != null) {
               uploadName = extMatch.group(0)!;
             } else {
@@ -463,15 +515,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
             if (!mounted) return;
             setState(() => _status += ' ; upload: ${streamed.statusCode} - $body');
           }
-          Navigator.pushReplacementNamed(context, '/home');
+          await _goToProfileView();
         } else {
           if (!mounted) return;
-          Navigator.pushReplacementNamed(context, '/home');
+          await _goToProfileView();
         }
       } else {
         return;
       }
     }
+  }
+
+  Future<void> _goToProfileView() async {
+    // Reload full profile to reflect latest data, then switch to view mode
+    await _loadProfile();
+    if (!mounted) return;
+    setState(() {
+      _isEditing = false;
+      _currentStep = 1;
+    });
   }
   Future<BandMemberDto?> _showBandMemberDialog({BandMemberDto? member}) async {
   final nameCtrl = TextEditingController(text: member?.name ?? '');
@@ -921,9 +983,9 @@ Widget _buildBandMembersSection() {
                               );
                             }
                             // Display existing picture
-                            final picture = _profilePictures[index];
-                            final url = picture['url'] as String?;
-                            final fileName = picture['fileName'] as String?;
+              final picture = _profilePictures[index];
+              final url = (picture['url'] as String?) ?? (picture['file'] is String && (picture['file'] as String).startsWith('http') ? picture['file'] as String : null) ?? (picture['id'] != null ? Uri.parse(widget.api.baseUrl).resolve('profile-pictures/file/${picture['id']}').toString() : null);
+              final fileName = (picture['fileName'] as String?) ?? (picture['file'] as String?);
                             final isVideo = fileName != null && 
                                 (fileName.toLowerCase().endsWith('.mp4') || fileName.toLowerCase().endsWith('.mp3'));
                             
@@ -1070,7 +1132,7 @@ Widget _buildBandMembersSection() {
               // Artist vs Band selection
               Row(children: [
                 const Expanded(child: Text('Account type:')),
-                Row(children: [
+                Row(children: [ 
                   Radio<bool?>(
                     value: false, 
                     groupValue: _isBand, 
@@ -1083,7 +1145,7 @@ Widget _buildBandMembersSection() {
                   const SizedBox(width: 8),
                   Radio<bool?>(
                     value: true, 
-                    groupValue: _isBand, 
+                    groupValue: _isBand,      
                     onChanged: (v) {
                       setState(() => _isBand = v);
                       _loadOptions(); // Reload tag categories when changing account type
