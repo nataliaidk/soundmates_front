@@ -1,4 +1,4 @@
-
+import 'package:uuid/uuid.dart';
 
 class LoginDto {
   final String email;
@@ -501,6 +501,23 @@ class BandMemberDto {
     required this.bandId,
     required this.bandRoleId,
   });
+  BandMemberDto copyWith({
+    String? id,
+    String? name,
+    int? age,
+    int? displayOrder,
+    String? bandId,
+    String? bandRoleId,
+  }) {
+    return BandMemberDto(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      age: age ?? this.age,
+      displayOrder: displayOrder ?? this.displayOrder,
+      bandId: bandId ?? this.bandId,
+      bandRoleId: bandRoleId ?? this.bandRoleId,
+    );
+  }
   Map<String, dynamic> toJson() => {
     'id': id,
     'name': name,
@@ -511,14 +528,16 @@ class BandMemberDto {
   };
 
 
-  factory BandMemberDto.fromJson(Map<String, dynamic> json) => BandMemberDto(
-    id: json['id']?.toString() ?? '',
-    name: json['name']?.toString() ?? '',
-    age: (json['age'] is int) ? json['age'] as int : int.tryParse('${json['age'] ?? ''}') ?? 0,
-    displayOrder: (json['displayOrder'] is int) ? json['displayOrder'] as int : int.tryParse('${json['displayOrder'] ?? ''}') ?? 0,
-    bandId: json['bandId']?.toString() ?? json['band_id']?.toString() ?? '',
-    bandRoleId: json['bandRoleId']?.toString() ?? json['band_role_id']?.toString() ?? '',
-  );  
+  factory BandMemberDto.fromJson(Map<String, dynamic> json) {
+    return BandMemberDto(
+      id: json['id']?.toString() ?? const Uuid().v4(),
+      name: json['name']?.toString() ?? '',
+      age: (json['age'] is int) ? json['age'] as int : int.tryParse(json['age']?.toString() ?? '') ?? 0,
+      displayOrder: (json['displayOrder'] is int) ? json['displayOrder'] as int : int.tryParse(json['displayOrder']?.toString() ?? '') ?? 0,
+      bandId: json['bandId']?.toString() ?? '',
+      bandRoleId: json['bandRoleId']?.toString() ?? '',
+    );
+  }
 } 
 
   class BandRoleDto {

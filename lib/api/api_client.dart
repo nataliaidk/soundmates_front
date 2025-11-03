@@ -376,7 +376,11 @@ class ApiClient {
     final headers = await _authHeaders();
     return await _withRefreshRetry(() => http.get(uri, headers: headers));
   }
-
+  Future<http.Response> getBandRoles() async {
+    final uri = _uri('dictionaries/band-roles');
+    final headers = await _authHeaders();
+    return await _withRefreshRetry(() => http.get(uri, headers: headers));
+  }
   // GET /dictionaries/cities/{countryId}
   Future<http.Response> getCities(String countryId) async {
     final uri = _uri('dictionaries/cities/$countryId');

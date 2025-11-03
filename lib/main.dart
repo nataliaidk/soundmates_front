@@ -30,9 +30,18 @@ class MyApp extends StatelessWidget {
       initialRoute: '/login',
       routes: {
         '/login': (c) => LoginScreen(api: api, tokens: tokens, onLoggedIn: () => Navigator.pushReplacementNamed(c, '/home')),
-        '/register': (c) => RegisterScreen(api: api, tokens: tokens, onRegistered: () => Navigator.pushReplacementNamed(c, '/profile')),
+        '/register': (c) => RegisterScreen(
+          api: api, 
+          tokens: tokens, 
+          onRegistered: () => Navigator.pushReplacement(
+            c,
+            MaterialPageRoute(
+              builder: (_) => ProfileScreen(api: api, tokens: tokens, startInEditMode: true),
+            ),
+          ),
+        ),
         '/home': (c) => HomeScreen(api: api, tokens: tokens),
-        '/profile': (c) => ProfileScreen(api: api, tokens: tokens),
+        '/profile': (c) => ProfileScreen(api: api, tokens: tokens, startInEditMode: false),
         '/messages': (c) => MessagesScreen(api: api, tokens: tokens),
         '/users': (c) => UsersScreen(api: api, tokens: tokens),
         '/filters': (c) => FiltersScreen(api: api, tokens: tokens),
