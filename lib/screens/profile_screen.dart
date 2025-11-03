@@ -154,8 +154,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
 
       if (cats.isNotEmpty) {
-        for (final c in cats) {
-          print('Category: ${c.name} (${c.id})');
+        // Filter categories based on isBand value
+        final filteredCats = cats.where((c) {
+          if (_isBand == null) return true; // Show all if not yet decided
+          return c.isForBand == _isBand; // Show only matching categories
+        }).toList();
+      
+        for (final c in filteredCats) {
+          print('Category: ${c.name} (${c.id}) - isForBand: ${c.isForBand}');
           final List<Map<String, dynamic>> opts = [];
           final ctTags = tags.where((t) => t.tagCategoryId == c.id).toList();
           for (final t in ctTags) {
@@ -1065,10 +1071,24 @@ Widget _buildBandMembersSection() {
               Row(children: [
                 const Expanded(child: Text('Account type:')),
                 Row(children: [
-                  Radio<bool?>(value: false, groupValue: _isBand, onChanged: (v) => setState(() => _isBand = v),),
+                  Radio<bool?>(
+                    value: false, 
+                    groupValue: _isBand, 
+                    onChanged: (v) {
+                      setState(() => _isBand = v);
+                      _loadOptions(); // Reload tag categories when changing account type
+                    },
+                  ),
                   const Text('Artist'),
                   const SizedBox(width: 8),
-                  Radio<bool?>(value: true, groupValue: _isBand, onChanged: (v) => setState(() => _isBand = v),),
+                  Radio<bool?>(
+                    value: true, 
+                    groupValue: _isBand, 
+                    onChanged: (v) {
+                      setState(() => _isBand = v);
+                      _loadOptions(); // Reload tag categories when changing account type
+                    },
+                  ),
                   const Text('Band'),
                 ])
               ]),
