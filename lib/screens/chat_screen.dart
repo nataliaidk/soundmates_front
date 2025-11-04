@@ -3,6 +3,7 @@ import '../api/api_client.dart';
 import '../api/token_store.dart';
 import '../api/models.dart';
 import 'dart:convert';
+import 'package:jwt_decoder/jwt_decoder.dart';
 
 class ChatScreen extends StatefulWidget {
   final ApiClient api;
@@ -29,12 +30,34 @@ class _ChatScreenState extends State<ChatScreen> {
   final ScrollController _scrollController = ScrollController();
   List<MessageDto> _messages = [];
   bool _loading = true;
+  String? _currentUserId;
 
   @override
   void initState() {
     super.initState();
+    _loadCurrentUserId();
     _loadMessages();
   }
+
+  Future<void> _loadCurrentUserId() async {
+    try {
+      final token = await widget.tokens.readAccessToken();
+      if (token != null) {
+        final decoded = JwtDecoder.decode(token);
+
+
+        final userId = decoded['sub'] ?? decoded['userId'] ?? decoded['id'];
+
+
+        setState(() {
+          _currentUserId = userId;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error decoding token: $e');
+    }
+  }
+
 
   @override
   void dispose() {
@@ -180,6 +203,7 @@ class _ChatScreenState extends State<ChatScreen> {
               itemBuilder: (context, index) => _MessageBubble(
                 message: _messages[index],
                 userImageUrl: widget.userImageUrl,
+                currentUserId: _currentUserId,
               ),
             ),
           ),
@@ -239,16 +263,18 @@ class _ChatScreenState extends State<ChatScreen> {
 class _MessageBubble extends StatelessWidget {
   final MessageDto message;
   final String? userImageUrl;
+  final String? currentUserId;
 
   const _MessageBubble({
     required this.message,
     this.userImageUrl,
+    this.currentUserId,
   });
 
   @override
   Widget build(BuildContext context) {
-    // TODO: Determine if the message is sent by the current user (get user ID)
-    final isMe = false;
+    final isMe = currentUserId != null && message.senderId == currentUserId;
+
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -292,4 +318,5 @@ class _MessageBubble extends StatelessWidget {
       ),
     );
   }
+
 }
