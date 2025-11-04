@@ -1,0 +1,2264 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Soundmates.Api | soundmates",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5000/"
+    }
+  ],
+  "paths": {
+    "/auth/register": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessRefreshTokensDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessRefreshTokensDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessRefreshTokensDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshTokenDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshTokenDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshTokenDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessTokenDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessTokenDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessTokenDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/dictionaries/countries": {
+      "get": {
+        "tags": [
+          "Dictionaries"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CountryDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CountryDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CountryDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dictionaries/cities/{countryId}": {
+      "get": {
+        "tags": [
+          "Dictionaries"
+        ],
+        "parameters": [
+          {
+            "name": "countryID",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CityDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CityDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CityDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dictionaries/band-roles": {
+      "get": {
+        "tags": [
+          "Dictionaries"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BandRoleDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BandRoleDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BandRoleDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dictionaries/tags": {
+      "get": {
+        "tags": [
+          "Dictionaries"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TagDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TagDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TagDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dictionaries/tag-categories": {
+      "get": {
+        "tags": [
+          "Dictionaries"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TagCategoryDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TagCategoryDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TagCategoryDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dictionaries/genders": {
+      "get": {
+        "tags": [
+          "Dictionaries"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GenderDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GenderDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GenderDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/matching/artists": {
+      "get": {
+        "tags": [
+          "Matching"
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 20
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OtherUserProfileArtistDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OtherUserProfileArtistDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OtherUserProfileArtistDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/matching/bands": {
+      "get": {
+        "tags": [
+          "Matching"
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 20
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OtherUserProfileBandDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OtherUserProfileBandDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OtherUserProfileBandDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/matching/match-preference": {
+      "get": {
+        "tags": [
+          "Matching"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatchPreferenceDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatchPreferenceDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatchPreferenceDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Matching"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMatchPreferenceDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMatchPreferenceDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMatchPreferenceDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/matching/matches": {
+      "get": {
+        "tags": [
+          "Matching"
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 20
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OtherUserProfileDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OtherUserProfileDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OtherUserProfileDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/matching/like": {
+      "post": {
+        "tags": [
+          "Matching"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SwipeDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SwipeDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SwipeDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/matching/dislike": {
+      "post": {
+        "tags": [
+          "Matching"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SwipeDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SwipeDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SwipeDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/messages/preview": {
+      "get": {
+        "tags": [
+          "Messages"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MessageDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MessageDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MessageDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/messages/{userId}": {
+      "get": {
+        "tags": [
+          "Messages"
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 20
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MessageDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MessageDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MessageDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/messages": {
+      "post": {
+        "tags": [
+          "Messages"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendMessageDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendMessageDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendMessageDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/music-samples": {
+      "post": {
+        "tags": [
+          "MusicSamples"
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "$ref": "#/components/schemas/IFormFile"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/music-samples/{sampleId}": {
+      "delete": {
+        "tags": [
+          "MusicSamples"
+        ],
+        "parameters": [
+          {
+            "name": "sampleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/profile-pictures": {
+      "post": {
+        "tags": [
+          "ProfilePictures"
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "$ref": "#/components/schemas/IFormFile"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/profile-pictures/{pictureId}": {
+      "delete": {
+        "tags": [
+          "ProfilePictures"
+        ],
+        "parameters": [
+          {
+            "name": "pictureId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/users/profile": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/SelfUserProfileDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SelfUserProfileDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SelfUserProfileDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserProfileDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserProfileDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserProfileDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/users/{id}": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/OtherUserProfileDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OtherUserProfileDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OtherUserProfileDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users": {
+      "delete": {
+        "tags": [
+          "Users"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/users/change-password": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AccessRefreshTokensDto": {
+        "required": [
+          "accessToken",
+          "refreshToken"
+        ],
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "refreshToken": {
+            "type": "string"
+          }
+        }
+      },
+      "AccessTokenDto": {
+        "required": [
+          "accessToken"
+        ],
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          }
+        }
+      },
+      "BandMemberDto": {
+        "required": [
+          "id",
+          "name",
+          "age",
+          "bandRoleId"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "age": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "bandRoleId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "BandRoleDto": {
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "ChangePasswordDto": {
+        "required": [
+          "oldPassword",
+          "newPassword"
+        ],
+        "type": "object",
+        "properties": {
+          "oldPassword": {
+            "type": "string"
+          },
+          "newPassword": {
+            "type": "string"
+          }
+        }
+      },
+      "CityDto": {
+        "required": [
+          "id",
+          "name",
+          "latitude",
+          "longitude",
+          "countryId"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "latitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "longitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "countryId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "CountryDto": {
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "GenderDto": {
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "IFormFile": {
+        "type": "string",
+        "format": "binary"
+      },
+      "LoginDto": {
+        "required": [
+          "email",
+          "password"
+        ],
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        }
+      },
+      "MatchPreferenceDto": {
+        "required": [
+          "showArtists",
+          "showBands",
+          "maxDistance",
+          "countryId",
+          "cityId",
+          "artistMinAge",
+          "artistMaxAge",
+          "artistGenderId",
+          "bandMinMembersCount",
+          "bandMaxMembersCount",
+          "filterTagsIds"
+        ],
+        "type": "object",
+        "properties": {
+          "showArtists": {
+            "type": "boolean"
+          },
+          "showBands": {
+            "type": "boolean"
+          },
+          "maxDistance": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "countryId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "cityId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "artistMinAge": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "artistMaxAge": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "artistGenderId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "bandMinMembersCount": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "bandMaxMembersCount": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "filterTagsIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
+      },
+      "MessageDto": {
+        "required": [
+          "content",
+          "timestamp",
+          "senderId",
+          "receiverId"
+        ],
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "senderId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "receiverId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "MusicSampleDto": {
+        "required": [
+          "id",
+          "fileUrl"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fileUrl": {
+            "type": "string"
+          }
+        }
+      },
+      "OtherUserProfileArtistDto": {
+        "required": [
+          "birthDate",
+          "id",
+          "isBand",
+          "name",
+          "description",
+          "countryId",
+          "cityId",
+          "tagsIds",
+          "musicSamples",
+          "profilePictures"
+        ],
+        "type": "object",
+        "properties": {
+          "birthDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "isBand": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "countryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "cityId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tagsIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "musicSamples": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MusicSampleDto"
+            }
+          },
+          "profilePictures": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProfilePictureDto"
+            }
+          }
+        }
+      },
+      "OtherUserProfileBandDto": {
+        "required": [
+          "bandMembers",
+          "id",
+          "isBand",
+          "name",
+          "description",
+          "countryId",
+          "cityId",
+          "tagsIds",
+          "musicSamples",
+          "profilePictures"
+        ],
+        "type": "object",
+        "properties": {
+          "bandMembers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BandMemberDto"
+            }
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "isBand": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "countryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "cityId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tagsIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "musicSamples": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MusicSampleDto"
+            }
+          },
+          "profilePictures": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProfilePictureDto"
+            }
+          }
+        }
+      },
+      "OtherUserProfileDto": {
+        "required": [
+          "userType"
+        ],
+        "type": "object",
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/OtherUserProfileDtoOtherUserProfileArtistDto"
+          },
+          {
+            "$ref": "#/components/schemas/OtherUserProfileDtoOtherUserProfileBandDto"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "userType",
+          "mapping": {
+            "artist": "#/components/schemas/OtherUserProfileDtoOtherUserProfileArtistDto",
+            "band": "#/components/schemas/OtherUserProfileDtoOtherUserProfileBandDto"
+          }
+        }
+      },
+      "OtherUserProfileDtoOtherUserProfileArtistDto": {
+        "required": [
+          "birthDate",
+          "id",
+          "isBand",
+          "name",
+          "description",
+          "countryId",
+          "cityId",
+          "tagsIds",
+          "musicSamples",
+          "profilePictures"
+        ],
+        "properties": {
+          "userType": {
+            "enum": [
+              "artist"
+            ],
+            "type": "string"
+          },
+          "birthDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "isBand": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "countryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "cityId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tagsIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "musicSamples": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MusicSampleDto"
+            }
+          },
+          "profilePictures": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProfilePictureDto"
+            }
+          }
+        }
+      },
+      "OtherUserProfileDtoOtherUserProfileBandDto": {
+        "required": [
+          "bandMembers",
+          "id",
+          "isBand",
+          "name",
+          "description",
+          "countryId",
+          "cityId",
+          "tagsIds",
+          "musicSamples",
+          "profilePictures"
+        ],
+        "properties": {
+          "userType": {
+            "enum": [
+              "band"
+            ],
+            "type": "string"
+          },
+          "bandMembers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BandMemberDto"
+            }
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "isBand": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "countryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "cityId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tagsIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "musicSamples": {
+            "type": "array",
+            "items": { }
+          },
+          "profilePictures": {
+            "type": "array",
+            "items": { }
+          }
+        }
+      },
+      "PasswordDto": {
+        "required": [
+          "password"
+        ],
+        "type": "object",
+        "properties": {
+          "password": {
+            "type": "string"
+          }
+        }
+      },
+      "ProfilePictureDto": {
+        "required": [
+          "id",
+          "fileUrl"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fileUrl": {
+            "type": "string"
+          }
+        }
+      },
+      "RefreshTokenDto": {
+        "required": [
+          "refreshToken"
+        ],
+        "type": "object",
+        "properties": {
+          "refreshToken": {
+            "type": "string"
+          }
+        }
+      },
+      "RegisterDto": {
+        "required": [
+          "email",
+          "password"
+        ],
+        "type": "object",
+        "properties": {
+          "email": {
+            "maxLength": 100,
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        }
+      },
+      "SelfUserProfileDto": {
+        "type": "object",
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/SelfUserProfileDtoSelfUserProfileArtistDto"
+          },
+          {
+            "$ref": "#/components/schemas/SelfUserProfileDtoSelfUserProfileBandDto"
+          },
+          {
+            "$ref": "#/components/schemas/SelfUserProfileDtoBase"
+          }
+        ]
+      },
+      "SelfUserProfileDtoBase": {
+        "required": [
+          "id",
+          "isBand",
+          "email",
+          "name",
+          "description",
+          "countryId",
+          "cityId",
+          "isFirstLogin",
+          "tagsIds",
+          "musicSamples",
+          "profilePictures"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "isBand": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "email": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "countryId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "cityId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "isFirstLogin": {
+            "type": "boolean"
+          },
+          "tagsIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "musicSamples": {
+            "type": "array",
+            "items": { }
+          },
+          "profilePictures": {
+            "type": "array",
+            "items": { }
+          }
+        }
+      },
+      "SelfUserProfileDtoSelfUserProfileArtistDto": {
+        "required": [
+          "userType",
+          "birthDate",
+          "genderId",
+          "id",
+          "isBand",
+          "email",
+          "name",
+          "description",
+          "countryId",
+          "cityId",
+          "isFirstLogin",
+          "tagsIds",
+          "musicSamples",
+          "profilePictures"
+        ],
+        "properties": {
+          "userType": {
+            "enum": [
+              "artist"
+            ],
+            "type": "string"
+          },
+          "birthDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "genderId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "isBand": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "email": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "countryId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "cityId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "isFirstLogin": {
+            "type": "boolean"
+          },
+          "tagsIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "musicSamples": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MusicSampleDto"
+            }
+          },
+          "profilePictures": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProfilePictureDto"
+            }
+          }
+        }
+      },
+      "SelfUserProfileDtoSelfUserProfileBandDto": {
+        "required": [
+          "userType",
+          "bandMembers",
+          "id",
+          "isBand",
+          "email",
+          "name",
+          "description",
+          "countryId",
+          "cityId",
+          "isFirstLogin",
+          "tagsIds",
+          "musicSamples",
+          "profilePictures"
+        ],
+        "properties": {
+          "userType": {
+            "enum": [
+              "band"
+            ],
+            "type": "string"
+          },
+          "bandMembers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BandMemberDto"
+            }
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "isBand": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "email": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "countryId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "cityId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "isFirstLogin": {
+            "type": "boolean"
+          },
+          "tagsIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "musicSamples": {
+            "type": "array",
+            "items": { }
+          },
+          "profilePictures": {
+            "type": "array",
+            "items": { }
+          }
+        }
+      },
+      "SendMessageDto": {
+        "required": [
+          "receiverId",
+          "content"
+        ],
+        "type": "object",
+        "properties": {
+          "receiverId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "content": {
+            "maxLength": 4000,
+            "type": "string"
+          }
+        }
+      },
+      "SwipeDto": {
+        "required": [
+          "receiverId"
+        ],
+        "type": "object",
+        "properties": {
+          "receiverId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "TagCategoryDto": {
+        "required": [
+          "id",
+          "name",
+          "isForBand"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "isForBand": {
+            "type": "boolean"
+          }
+        }
+      },
+      "TagDto": {
+        "required": [
+          "id",
+          "name",
+          "tagCategoryId"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "tagCategoryId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "UpdateMatchPreferenceDto": {
+        "required": [
+          "showArtists",
+          "showBands",
+          "maxDistance",
+          "countryId",
+          "cityId",
+          "artistMinAge",
+          "artistMaxAge",
+          "artistGenderId",
+          "bandMinMembersCount",
+          "bandMaxMembersCount",
+          "filterTagsIds"
+        ],
+        "type": "object",
+        "properties": {
+          "showArtists": {
+            "type": "boolean"
+          },
+          "showBands": {
+            "type": "boolean"
+          },
+          "maxDistance": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "countryId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "cityId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "artistMinAge": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "artistMaxAge": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "artistGenderId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "bandMinMembersCount": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "bandMaxMembersCount": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "filterTagsIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
+      },
+      "UpdateUserProfileDto": {
+        "required": [
+          "userType"
+        ],
+        "type": "object",
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/UpdateUserProfileDtoUpdateUserProfileArtistDto"
+          },
+          {
+            "$ref": "#/components/schemas/UpdateUserProfileDtoUpdateUserProfileBandDto"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "userType",
+          "mapping": {
+            "artist": "#/components/schemas/UpdateUserProfileDtoUpdateUserProfileArtistDto",
+            "band": "#/components/schemas/UpdateUserProfileDtoUpdateUserProfileBandDto"
+          }
+        }
+      },
+      "UpdateUserProfileDtoUpdateUserProfileArtistDto": {
+        "required": [
+          "birthDate",
+          "genderId",
+          "name",
+          "description",
+          "countryId",
+          "cityId",
+          "tagsIds",
+          "musicSamplesOrder",
+          "profilePicturesOrder"
+        ],
+        "properties": {
+          "userType": {
+            "enum": [
+              "artist"
+            ],
+            "type": "string"
+          },
+          "birthDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "genderId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "maxLength": 50,
+            "type": "string"
+          },
+          "description": {
+            "maxLength": 500,
+            "type": "string"
+          },
+          "countryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "cityId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tagsIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "musicSamplesOrder": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "profilePicturesOrder": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
+      },
+      "UpdateUserProfileDtoUpdateUserProfileBandDto": {
+        "required": [
+          "bandMembers",
+          "name",
+          "description",
+          "countryId",
+          "cityId",
+          "tagsIds",
+          "musicSamplesOrder",
+          "profilePicturesOrder"
+        ],
+        "properties": {
+          "userType": {
+            "enum": [
+              "band"
+            ],
+            "type": "string"
+          },
+          "bandMembers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BandMemberDto"
+            }
+          },
+          "name": {
+            "maxLength": 50,
+            "type": "string"
+          },
+          "description": {
+            "maxLength": 500,
+            "type": "string"
+          },
+          "countryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "cityId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tagsIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "musicSamplesOrder": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "profilePicturesOrder": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Auth"
+    },
+    {
+      "name": "Dictionaries"
+    },
+    {
+      "name": "Matching"
+    },
+    {
+      "name": "Messages"
+    },
+    {
+      "name": "MusicSamples"
+    },
+    {
+      "name": "ProfilePictures"
+    },
+    {
+      "name": "Users"
+    }
+  ]
+}

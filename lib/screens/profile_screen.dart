@@ -39,9 +39,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   List<BandRoleDto> ? _bandRoles = [];
 
   // Profile pictures and music samples
-  List<Map<String, dynamic>> _profilePictures = [];
+  List<ProfilePictureDto> _profilePictures = [];
   // ignore: unused_field
-  List<Map<String, dynamic>> _musicSamples = [];
+  List<MusicSampleDto> _musicSamples = [];
 
   // artist fields
   DateTime? _birthDate;
@@ -50,24 +50,72 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   bool _isEditing = false; // Track edit mode
   int _currentStep = 1; // 1 = basic info, 2 = tags/files/description/members
+  int _selectedTab = 0; // 0 = Your Info, 1 = Multimedia
   Map<String, List<Map<String, dynamic>>> _options = {};
   // map categoryName -> set of selected values
   final Map<String, Set<dynamic>> _selected = {};
+  // For displaying tags in view mode
+  List<String> _userTagIds = []; // Tag IDs from user profile
+  Map<String, List<TagDto>> _tagGroups = {}; // categoryId -> [TagDto]
+  Map<String, String> _categoryNames = {}; // categoryId -> categoryName
 
   @override
   void initState() {
     super.initState();
     _isEditing = widget.startInEditMode; // Start in edit mode if coming from registration
     _loadOptions();
-    _loadProfile(); // Load user profile data on initialization
     _loadCountries();
     _loadBandRoles();
     _loadProfilePictures();
+    _loadProfileAndTags(); // Load profile and tags together
+  }
+
+  Future<void> _loadProfileAndTags() async {
+    // Load both profile and tag data, then populate selected tags
+    await Future.wait([
+      _loadProfile(),
+      _loadTagData(),
+    ]);
+    
+    // After both are loaded, populate selected tags for edit mode
+    if (_userTagIds.isNotEmpty && _tagGroups.isNotEmpty) {
+      _populateSelectedTags();
+    }
   }
 
   Future<void> _loadProfilePictures() async {
     // This is now handled by _loadProfile() which gets the full profile with pictures and samples
     // Keeping this method for compatibility but it does nothing
+  }
+
+  Future<void> _loadTagData() async {
+    try {
+      final tagsResp = await widget.api.getTags();
+      final categoriesResp = await widget.api.getTagCategories();
+
+      if (tagsResp.statusCode == 200 && categoriesResp.statusCode == 200) {
+        final tagsList = (jsonDecode(tagsResp.body) as List)
+            .map((e) => TagDto.fromJson(e))
+            .toList();
+        final categoriesList = (jsonDecode(categoriesResp.body) as List)
+            .map((e) => TagCategoryDto.fromJson(e))
+            .toList();
+
+        setState(() {
+          for (final cat in categoriesList) {
+            _categoryNames[cat.id] = cat.name;
+            _tagGroups[cat.id] = [];
+          }
+          for (final tag in tagsList) {
+            if (tag.tagCategoryId != null && _tagGroups.containsKey(tag.tagCategoryId)) {
+              _tagGroups[tag.tagCategoryId]!.add(tag);
+            }
+          }
+        });
+      }
+    } catch (e) {
+      // Handle error silently
+    }
   }
 
   Future<void> _loadBandRoles() async {
@@ -161,15 +209,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
           return c.isForBand == _isBand; // Show only matching categories
         }).toList();
       
+        // Build tagGroups and categoryNames for view mode
+        final Map<String, List<TagDto>> tagGroupsTemp = {};
+        final Map<String, String> categoryNamesTemp = {};
+        
         for (final c in filteredCats) {
           print('Category: ${c.name} (${c.id}) - isForBand: ${c.isForBand}');
           final List<Map<String, dynamic>> opts = [];
           final ctTags = tags.where((t) => t.tagCategoryId == c.id).toList();
+          tagGroupsTemp[c.id] = ctTags;
+          categoryNamesTemp[c.id] = c.name;
           for (final t in ctTags) {
             opts.add({'value': t.id, 'label': t.name});
           }
           if (opts.isNotEmpty) groups[c.name] = opts;
         }
+        
+        setState(() {
+          _tagGroups = tagGroupsTemp;
+          _categoryNames = categoryNamesTemp;
+        });
       } else if (tags.isNotEmpty) {
         // no categories returned - put all tags under 'tags'
         final List<Map<String, dynamic>> opts = [];
@@ -229,20 +288,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
         final cityId = profile['cityId']?.toString() ?? profile['city_id']?.toString();
 
         // Extract profilePictures and musicSamples from the profile response
-        List<Map<String, dynamic>> pictures = [];
+        List<ProfilePictureDto> pictures = [];
         if (profile['profilePictures'] is List) {
           for (final pic in profile['profilePictures']) {
             if (pic is Map) {
-              pictures.add(Map<String, dynamic>.from(pic));
+              pictures.add(ProfilePictureDto.fromJson(Map<String, dynamic>.from(pic)));
             }
           }
         }
 
-        List<Map<String, dynamic>> samples = [];
+        List<MusicSampleDto> samples = [];
         if (profile['musicSamples'] is List) {
           for (final sample in profile['musicSamples']) {
             if (sample is Map) {
-              samples.add(Map<String, dynamic>.from(sample));
+              samples.add(MusicSampleDto.fromJson(Map<String, dynamic>.from(sample)));
             }
           }
         }
@@ -254,9 +313,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           selCountry = _countries.firstWhere((c) => c.name == countryVal, orElse: () => _countries.first);
         }
 
-        // enrich picture objects with usable URLs if backend returned only id/file
-        pictures = await _enrichPicturesWithUrls(pictures);
-
         setState(() {
           _name.text = nameVal;
           _desc.text = descVal;
@@ -266,6 +322,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _profilePictures = pictures;
           _musicSamples = samples;
           _isBand = profile['isBand'] is bool ? profile['isBand'] as bool : (profile['isBand']?.toString().toLowerCase() == 'true');
+          // Load user tags - backend returns 'tagsIds' not 'tags'
+          if (profile['tagsIds'] is List) {
+            _userTagIds = (profile['tagsIds'] as List).map((t) => t.toString()).toList();
+          } else if (profile['tags'] is List) {
+            _userTagIds = (profile['tags'] as List).map((t) => t.toString()).toList();
+          }
           // parse birthDate if provided (server returns yyyy-MM-dd)
           if (profile['birthDate'] != null) {
             final bd = profile['birthDate'].toString();
@@ -286,8 +348,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
           if (selCity != null) {
             setState(() {
               _selectedCity = selCity;
+              _city.text = selCity.name; // Update city name for display
             });
           }
+        }
+        
+        // Update country name for display if we have selectedCountry
+        if (selCountry != null && _selectedCountry != null) {
+          setState(() {
+            _country.text = _selectedCountry!.name;
+          });
         }
       } else {
         setState(() => _status = 'Failed to load profile: ${resp.statusCode}');
@@ -298,52 +368,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   // Merge URLs from profile-pictures endpoint into profile['profilePictures'] items
-  Future<List<Map<String, dynamic>>> _enrichPicturesWithUrls(List<Map<String, dynamic>> pics) async {
-    try {
-      // Build an ID->url map from the dedicated endpoint which is known to return URL
-      final resp = await widget.api.getProfilePictures(limit: 100, offset: 0);
-      final urlById = <String, String>{};
-      if (resp.statusCode == 200) {
-        var dec = jsonDecode(resp.body);
-        if (dec is String) dec = jsonDecode(dec);
-        if (dec is List) {
-          for (final e in dec) {
-            if (e is Map) {
-              final m = Map<String, dynamic>.from(e);
-              final id = m['id']?.toString();
-              final url = m['url']?.toString();
-              if (id != null && url != null && url.isNotEmpty) urlById[id] = url;
-            }
-          }
-        }
-      }
-
-      // Produce enriched list
-      return pics.map((p) {
-        final m = Map<String, dynamic>.from(p);
-        final id = m['id']?.toString();
-        final file = m['file']?.toString();
-        // Prefer existing url
-        var url = m['url']?.toString();
-        // If not present, try to derive from file or lookup by id
-        url ??= (file != null && file.startsWith('http')) ? file : null;
-        if (url == null && id != null && urlById.containsKey(id)) {
-          url = urlById[id];
-        }
-        // Fallback heuristic: common REST pattern to fetch file by id
-        if (url == null && id != null) {
-          url = Uri.parse(widget.api.baseUrl).resolve('profile-pictures/file/$id').toString();
-        }
-        m['url'] = url;
-        // Normalize fileName for UI hints
-        if (m['fileName'] == null && file != null) m['fileName'] = file.split('/').last;
-        return m;
-      }).toList();
-    } catch (_) {
-      // On any error, just return the original list
-      return pics;
-    }
-  }
 
   Future<void> _loadCitiesForSelectedCountry(String countryId) async {
     try {
@@ -527,8 +551,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _goToProfileView() async {
-    // Reload full profile to reflect latest data, then switch to view mode
-    await _loadProfile();
+    // Reload full profile and tag data to reflect latest data, then switch to view mode
+    await _loadProfileAndTags();
     if (!mounted) return;
     setState(() {
       _isEditing = false;
@@ -783,7 +807,7 @@ Widget _buildBandMembersSection() {
               elevation: 0,
               leading: IconButton(
                 icon: const Icon(Icons.arrow_back, color: Colors.black),
-                onPressed: () => Navigator.pop(context),
+                onPressed: () => Navigator.pushReplacementNamed(context, '/home'),
               ),
               title: const Text('Your Profile', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
               actions: [
@@ -825,12 +849,23 @@ Widget _buildBandMembersSection() {
             _name.text.isEmpty ? 'Your Name' : _name.text,
             style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 4),
-          // Location
-          Text(
-            '${_city.text.isEmpty ? 'City' : _city.text}, ${_country.text.isEmpty ? 'Country' : _country.text}',
-            style: TextStyle(fontSize: 12, color: Colors.grey[600], letterSpacing: 1.2),
-          ),
+          const SizedBox(height: 8),
+          // Location with icon
+          if (_city.text.isNotEmpty || _country.text.isNotEmpty)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
+                const SizedBox(width: 4),
+                Text(
+                  [
+                    if (_city.text.isNotEmpty) _city.text,
+                    if (_country.text.isNotEmpty) _country.text,
+                  ].join(', '),
+                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                ),
+              ],
+            ),
           const SizedBox(height: 4),
           // Birth Date (for artists)
           if (_birthDate != null)
@@ -845,32 +880,44 @@ Widget _buildBandMembersSection() {
             child: Row(
               children: [
                 Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.purple[50],
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Center(
-                      child: Text(
-                        'Your Info',
-                        style: TextStyle(fontWeight: FontWeight.w600, color: Colors.purple),
+                  child: InkWell(
+                    onTap: () => setState(() => _selectedTab = 0),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: _selectedTab == 0 ? Colors.purple[50] : Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Center(
+                        child: Text(
+                          'Your Info',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600, 
+                            color: _selectedTab == 0 ? Colors.purple : Colors.grey[700],
+                          ),
+                        ),
                       ),
                     ),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Center(
-                      child: Text(
-                        'Multimedia',
-                        style: TextStyle(fontWeight: FontWeight.w600, color: Colors.grey[700]),
+                  child: InkWell(
+                    onTap: () => setState(() => _selectedTab = 1),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: _selectedTab == 1 ? Colors.purple[50] : Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Center(
+                        child: Text(
+                          'Multimedia',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600, 
+                            color: _selectedTab == 1 ? Colors.purple : Colors.grey[700],
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -894,8 +941,192 @@ Widget _buildBandMembersSection() {
                   ),
                 ],
               ),
-              child: Column(
+              child: _selectedTab == 0 ? _buildYourInfoTab() : _buildMultimediaTab(),
+            ),
+          ),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+
+  void _populateSelectedTags() {
+    // Map user tag IDs to _selected for edit mode
+    _selected.clear();
+    
+    for (final tagId in _userTagIds) {
+      // Find which category this tag belongs to
+      for (final entry in _tagGroups.entries) {
+        final tag = entry.value.firstWhere(
+          (t) => t.id == tagId,
+          orElse: () => TagDto(id: '', name: '', tagCategoryId: ''),
+        );
+        
+        if (tag.id.isNotEmpty) {
+          final categoryName = _categoryNames[entry.key];
+          if (categoryName != null) {
+            _selected.putIfAbsent(categoryName, () => {});
+            _selected[categoryName]!.add(tagId);
+          }
+          break;
+        }
+      }
+    }
+    
+    // Trigger UI update
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  Map<String, List<String>> _groupUserTags() {
+    if (_userTagIds.isEmpty || _tagGroups.isEmpty) {
+      return {};
+    }
+
+    final Map<String, List<String>> grouped = {};
+
+    for (final tagId in _userTagIds) {
+      String? categoryId;
+      String? tagName;
+
+      for (final entry in _tagGroups.entries) {
+        final tag = entry.value.firstWhere(
+              (t) => t.id == tagId,
+          orElse: () => TagDto(id: '', name: '', tagCategoryId: ''),
+        );
+        if (tag.id.isNotEmpty) {
+          categoryId = entry.key;
+          tagName = tag.name;
+          break;
+        }
+      }
+
+      if (categoryId != null && tagName != null) {
+        final categoryName = _categoryNames[categoryId] ?? 'Other';
+        grouped.putIfAbsent(categoryName, () => []);
+        grouped[categoryName]!.add(tagName);
+      }
+    }
+
+    return grouped;
+  }
+
+  Widget _buildYourInfoTab() {
+    final tagGroups = _groupUserTags();
+    final orderedCategories = ['Instruments', 'Genres', 'Activity', 'Collaboration type'];
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Description Section
+        if (_desc.text.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'ABOUT',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black54,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  _desc.text,
+                  style: TextStyle(fontSize: 15, color: Colors.grey[800], height: 1.5),
+                ),
+              ],
+            ),
+          ),
+        // Tags Section with Edit functionality
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
+                  const Text(
+                    'TAGS',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black54,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  TextButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        _isEditing = true;
+                        _currentStep = 2;
+                      });
+                    },
+                    icon: const Icon(Icons.edit, size: 16),
+                    label: const Text('Edit'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              if (tagGroups.isEmpty)
+                Text(
+                  'No tags added yet',
+                  style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                )
+              else
+                for (final category in orderedCategories)
+                  if (tagGroups.containsKey(category) && tagGroups[category]!.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    Text(
+                      category.toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black54,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (var tagName in tagGroups[category]!)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: Colors.grey.shade300),
+                            ),
+                            child: Text(
+                              tagName,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey.shade800,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMultimediaTab() {
+    return Column(
+      children: [
                   // Photos Section - Grid with existing pictures + Add button
                   Container(
                     padding: const EdgeInsets.all(16),
@@ -984,10 +1215,9 @@ Widget _buildBandMembersSection() {
                             }
                             // Display existing picture
               final picture = _profilePictures[index];
-              final url = (picture['url'] as String?) ?? (picture['file'] is String && (picture['file'] as String).startsWith('http') ? picture['file'] as String : null) ?? (picture['id'] != null ? Uri.parse(widget.api.baseUrl).resolve('profile-pictures/file/${picture['id']}').toString() : null);
-              final fileName = (picture['fileName'] as String?) ?? (picture['file'] as String?);
-                            final isVideo = fileName != null && 
-                                (fileName.toLowerCase().endsWith('.mp4') || fileName.toLowerCase().endsWith('.mp3'));
+              final url = picture.getAbsoluteUrl(widget.api.baseUrl);
+              final fileName = picture.fileUrl.split('/').last;
+                            final isVideo = fileName.toLowerCase().endsWith('.mp4') || fileName.toLowerCase().endsWith('.mp3');
                             
                             return Container(
                               decoration: BoxDecoration(
@@ -997,7 +1227,7 @@ Widget _buildBandMembersSection() {
                               ),
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(12),
-                                child: url != null && !isVideo
+                                child: !isVideo
                                     ? Image.network(
                                         url,
                                         fit: BoxFit.cover,
@@ -1009,7 +1239,7 @@ Widget _buildBandMembersSection() {
                                       )
                                     : Center(
                                         child: Icon(
-                                          isVideo ? Icons.videocam : Icons.image,
+                                          Icons.videocam,
                                           size: 32,
                                           color: Colors.grey[400],
                                         ),
@@ -1022,7 +1252,7 @@ Widget _buildBandMembersSection() {
                     ),
                   ),
                   // Welcome Message - show only for new users (coming from registration)
-                  if (_name.text.isEmpty || _desc.text.isEmpty)
+                  if (widget.startInEditMode)
                     Container(
                       margin: const EdgeInsets.all(16),
                       padding: const EdgeInsets.all(20),
@@ -1090,32 +1320,7 @@ Widget _buildBandMembersSection() {
                         ],
                       ),
                     ),
-                  // Description Section
-                  if (_desc.text.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'About',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            _desc.text,
-                            style: TextStyle(fontSize: 14, color: Colors.grey[700]),
-                          ),
-                        ],
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-        ],
-      ),
+      ],
     );
   }
 
