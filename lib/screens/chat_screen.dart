@@ -82,10 +82,13 @@ class _ChatScreenState extends State<ChatScreen> {
           }
         }
         setState(() {
-          _messages = messages.reversed.toList();
+          _messages = messages;
           _loading = false;
         });
-        _scrollToBottom();
+        // Wait for the widget tree to rebuild before scrolling
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _scrollToBottom();
+        });
       }
     } catch (e) {
       print('Error loading messages: $e');
@@ -93,9 +96,10 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+
   void _scrollToBottom() {
     if (_scrollController.hasClients) {
-      Future.delayed(const Duration(milliseconds: 100), () {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
           duration: const Duration(milliseconds: 300),
@@ -105,19 +109,45 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+
+
   Future<void> _sendMessage() async {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
 
     _messageController.clear();
+
+    // Optimistically add the message to the list
+    final tempMessage = MessageDto(
+      content: text,
+      timestamp: DateTime.now(),
+      senderId: _currentUserId ?? '',
+      receiverId: widget.userId,
+    );
+
+    setState(() {
+      _messages.add(tempMessage);
+    });
+    _scrollToBottom();
+
     try {
       final dto = SendMessageDto(receiverId: widget.userId, content: text);
       final resp = await widget.api.sendMessage(dto);
       if (resp.statusCode == 200 || resp.statusCode == 201) {
+        // Reload to get the actual message from server
         await _loadMessages();
+      } else {
+        // Remove the optimistic message if send failed
+        setState(() {
+          _messages.removeLast();
+        });
       }
     } catch (e) {
       print('Error sending message: $e');
+      // Remove the optimistic message on error
+      setState(() {
+        _messages.removeLast();
+      });
     }
   }
 

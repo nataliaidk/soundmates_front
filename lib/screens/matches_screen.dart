@@ -19,6 +19,8 @@ class MatchesScreen extends StatefulWidget {
 class _MatchesScreenState extends State<MatchesScreen> {
   List<OtherUserProfileDto> _matches = [];
   bool _loading = true;
+  Map<String, MessageDto> _lastMessages = {};
+
 
   @override
   void initState() {
@@ -36,12 +38,14 @@ class _MatchesScreenState extends State<MatchesScreen> {
         final matches = <OtherUserProfileDto>[];
         for (final item in list) {
           try {
-            final userType = item['userType']?.toString();
-            final isBand = userType == 'band' || (item['isBand'] is bool ? item['isBand'] as bool : false);
-            if (isBand) {
-              matches.add(OtherUserProfileBandDto.fromJson(item));
-            } else {
-              matches.add(OtherUserProfileArtistDto.fromJson(item));
+            if (item is Map) {
+              final json = Map<String, dynamic>.from(item);
+              final isBand = json['isBand'] == true;
+              if (isBand) {
+                matches.add(OtherUserProfileBandDto.fromJson(json));
+              } else {
+                matches.add(OtherUserProfileArtistDto.fromJson(json));
+              }
             }
           } catch (e) {
             print('Error parsing match: $e');
@@ -51,10 +55,35 @@ class _MatchesScreenState extends State<MatchesScreen> {
           _matches = matches;
           _loading = false;
         });
+
+        await _loadLastMessages();
+      } else {
+        setState(() => _loading = false);
       }
     } catch (e) {
       print('Error loading matches: $e');
       setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _loadLastMessages() async {
+    for (final match in _matches) {
+      try {
+        final resp = await widget.api.getMessagePreviews(limit: 20);
+        debugPrint('Response for last message of ${match.id}: ${resp.statusCode} ${resp.body}');
+        if (resp.statusCode == 200) {
+          final decoded = jsonDecode(resp.body);
+          if (decoded is List && decoded.isNotEmpty) {
+            if (mounted) {
+              setState(() {
+                _lastMessages[match.id] = MessageDto.fromJson(decoded.first);
+              });
+            }
+          }
+        }
+      } catch (e) {
+        print('Error loading last message for ${match.id}: $e');
+      }
     }
   }
 
@@ -80,9 +109,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined, color: Colors.white),
-            onPressed: () {
-              // Settings action
-            },
+            onPressed: () {},
           ),
         ],
       ),
@@ -141,6 +168,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
                 itemCount: _matches.length,
                 itemBuilder: (context, index) => _MatchListItem(
                   match: _matches[index],
+                  lastMessage: _lastMessages[_matches[index].id],
                   api: widget.api,
                   tokens: widget.tokens,
                 ),
@@ -253,11 +281,13 @@ class _RecentMatchCard extends StatelessWidget {
 
 class _MatchListItem extends StatelessWidget {
   final OtherUserProfileDto match;
+  final MessageDto? lastMessage;
   final ApiClient api;
   final TokenStore tokens;
 
   const _MatchListItem({
     required this.match,
+    this.lastMessage,
     required this.api,
     required this.tokens,
   });
@@ -313,9 +343,8 @@ class _MatchListItem extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    match.description.isNotEmpty
-                        ? match.description
-                        : 'New match',
+                    lastMessage?.content ??
+                        (match.description.isNotEmpty ? match.description : 'New match'),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
