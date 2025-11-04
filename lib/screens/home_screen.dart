@@ -48,6 +48,16 @@ class HomeScreen extends StatelessWidget {
               // Use the named route to ensure all dependencies are passed
               Navigator.pushNamed(context, '/filters');
             },
+          ),
+          ElevatedButton(child: const Text('Matches'),
+          onPressed: () {
+            Navigator.pushNamed(context, '/matches');
+          },
+          ),
+          ElevatedButton(child: const Text('Visit Profile'),
+          onPressed: () {
+            Navigator.pushNamed(context, '/visit');
+          },
           )
         ]),
       ),

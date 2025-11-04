@@ -525,4 +525,34 @@ class ApiClient {
     final body = jsonEncode(dto.toJson());
     return await _withRefreshRetry(() => http.put(uri, headers: headers, body: body));
   }
+
+  Future<OtherUserProfileDto?> getOtherUserProfile(String userId) async {
+    final resp = await getUserById(userId);
+    if (resp.statusCode != 200) return null;
+
+    try {
+      final decoded = jsonDecode(resp.body);
+      final json = decoded is Map ? Map<String, dynamic>.from(decoded) : null;
+      if (json == null) return null;
+
+      // Debug prints
+      print('Raw JSON keys: ${json.keys.toList()}');
+      print('tagsIds from API: ${json['tagsIds']}');
+      print('Full JSON: $json');
+
+      final userType = json['userType']?.toString();
+      final isBand = userType == 'band' || (json['isBand'] is bool ? json['isBand'] as bool : false);
+
+      if (isBand) {
+        return OtherUserProfileBandDto.fromJson(json);
+      } else {
+        return OtherUserProfileArtistDto.fromJson(json);
+      }
+    } catch (e) {
+      print('Error parsing profile: $e');
+      return null;
+    }
+  }
+
+
 }

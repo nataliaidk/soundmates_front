@@ -232,17 +232,67 @@ class ChangePasswordDto {
 
 class ProfilePictureDto {
   final String id;
-  final String url;
-  final int displayOrder;
+  final String fileUrl;
 
-  ProfilePictureDto({required this.id, required this.url, required this.displayOrder});
+  ProfilePictureDto({required this.id, required this.fileUrl});
 
-  factory ProfilePictureDto.fromJson(Map<String, dynamic> json) => ProfilePictureDto(
-        id: json['id']?.toString() ?? '',
-        url: json['url']?.toString() ?? '',
-        displayOrder: (json['displayOrder'] is int) ? json['displayOrder'] as int : int.tryParse('${json['displayOrder'] ?? ''}') ?? 0,
-      );
+  factory ProfilePictureDto.fromJson(Map<String, dynamic> json) {
+    return ProfilePictureDto(
+      id: json['id'] ?? '',
+      fileUrl: json['fileUrl'] ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'fileUrl': fileUrl,
+    };
+  }
+
+  // Add helper method to get absolute URL
+  String getAbsoluteUrl(String baseUrl) {
+    if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
+      return fileUrl;
+    }
+    final normalizedBase = baseUrl.endsWith('/') ? baseUrl : '$baseUrl/';
+    final normalizedPath = fileUrl.startsWith('/') ? fileUrl.substring(1) : fileUrl;
+    return '$normalizedBase$normalizedPath';
+  }
 }
+
+class MusicSampleDto {
+  final String id;
+  final String fileUrl;
+
+  MusicSampleDto({required this.id, required this.fileUrl});
+
+  factory MusicSampleDto.fromJson(Map<String, dynamic> json) {
+    return MusicSampleDto(
+      id: json['id'] ?? '',
+      fileUrl: json['fileUrl'] ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'fileUrl': fileUrl,
+    };
+  }
+
+  // Add helper method to get absolute URL
+  String getAbsoluteUrl(String baseUrl) {
+    if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
+      return fileUrl;
+    }
+    final normalizedBase = baseUrl.endsWith('/') ? baseUrl : '$baseUrl/';
+    final normalizedPath = fileUrl.startsWith('/') ? fileUrl.substring(1) : fileUrl;
+    return '$normalizedBase$normalizedPath';
+  }
+}
+
+
 
 class UserDto {
   final String id;
@@ -719,3 +769,144 @@ class UpdateMatchPreferenceDto {
     };
   }
 }
+
+class OtherUserProfileDto {
+  final String id;
+  final String? name;
+  final String description;
+  final String? city;
+  final String? country;
+  final List<String> tags;
+  final List<ProfilePictureDto> profilePictures;
+  final bool isBand;
+
+  OtherUserProfileDto({
+    required this.id,
+    this.name,
+    required this.description,
+    this.city,
+    this.country,
+    required this.tags,
+    required this.profilePictures,
+    required this.isBand,
+  });
+
+  factory OtherUserProfileDto.fromJson(Map<String, dynamic> json) {
+    final isBand = json['userType']?.toString() == 'band' ||
+        (json['isBand'] is bool ? json['isBand'] as bool : false);
+
+    // Debug: Check what field names exist in the JSON
+    print('JSON keys: ${json.keys.toList()}');
+    print('tagsIds value: ${json['tagsIds']}');
+
+    return OtherUserProfileDto(
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString(),
+      description: json['description']?.toString() ?? '',
+      city: json['city']?.toString(),
+      country: json['country']?.toString(),
+      tags: (json['tagsIds'] is List)
+          ? List<String>.from(json['tagsIds'].map((e) => e.toString()))
+          : [],
+      profilePictures: (json['profilePictures'] is List)
+          ? List<ProfilePictureDto>.from(
+          json['profilePictures'].map((e) => ProfilePictureDto.fromJson(e)))
+          : [],
+      isBand: isBand,
+    );
+  }
+
+}
+
+class OtherUserProfileArtistDto extends OtherUserProfileDto {
+  final int age;
+  final String? gender;
+
+  OtherUserProfileArtistDto({
+    required String id,
+    String? name,
+    required String description,
+    String? city,
+    String? country,
+    required List<String> tags,
+    required List<ProfilePictureDto> profilePictures,
+    required this.age,
+    this.gender,
+  }) : super(
+    id: id,
+    name: name,
+    description: description,
+    city: city,
+    country: country,
+    tags: tags,
+    profilePictures: profilePictures,
+    isBand: false,
+  );
+
+  factory OtherUserProfileArtistDto.fromJson(Map<String, dynamic> json) {
+    return OtherUserProfileArtistDto(
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString(),
+      description: json['description']?.toString() ?? '',
+      city: json['city']?.toString(),
+      country: json['country']?.toString(),
+      tags: (json['tagsIds'] is List)  // Changed from 'tags' to 'tagsIds'
+          ? List<String>.from(json['tagsIds'].map((e) => e.toString()))
+          : [],
+      profilePictures: (json['profilePictures'] is List)
+          ? List<ProfilePictureDto>.from(
+          json['profilePictures'].map((e) => ProfilePictureDto.fromJson(e)))
+          : [],
+      age: (json['age'] is int) ? json['age'] as int : int.tryParse(json['age']?.toString() ?? '0') ?? 0,
+      gender: json['gender']?.toString(),
+    );
+  }
+
+}
+
+class OtherUserProfileBandDto extends OtherUserProfileDto {
+  final List<BandMemberDto> bandMembers;
+
+  OtherUserProfileBandDto({
+    required String id,
+    String? name,
+    required String description,
+    String? city,
+    String? country,
+    required List<String> tags,
+    required List<ProfilePictureDto> profilePictures,
+    required this.bandMembers,
+  }) : super(
+    id: id,
+    name: name,
+    description: description,
+    city: city,
+    country: country,
+    tags: tags,
+    profilePictures: profilePictures,
+    isBand: true,
+  );
+
+  factory OtherUserProfileBandDto.fromJson(Map<String, dynamic> json) {
+    return OtherUserProfileBandDto(
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString(),
+      description: json['description']?.toString() ?? '',
+      city: json['city']?.toString(),
+      country: json['country']?.toString(),
+      tags: (json['tagsIds'] is List)  // Changed from 'tags' to 'tagsIds'
+          ? List<String>.from(json['tagsIds'].map((e) => e.toString()))
+          : [],
+      profilePictures: (json['profilePictures'] is List)
+          ? List<ProfilePictureDto>.from(
+          json['profilePictures'].map((e) => ProfilePictureDto.fromJson(e)))
+          : [],
+      bandMembers: (json['bandMembers'] is List)
+          ? List<BandMemberDto>.from(
+          json['bandMembers'].map((e) => BandMemberDto.fromJson(e)))
+          : [],
+    );
+  }
+
+}
+

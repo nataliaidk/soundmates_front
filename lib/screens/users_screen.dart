@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:zpi_test/screens/visit_profile_screen.dart';
 import '../api/api_client.dart';
 import '../api/token_store.dart';
 import '../api/models.dart';
@@ -285,6 +286,8 @@ class _UsersScreenState extends State<UsersScreen> {
                               setState(() => _users.removeAt(index));
                             },
                             isDraggable: top,
+                            api: widget.api,  // Add this
+                            tokens: widget.tokens,  // Add this
                           ),
                         );
                       }),
@@ -308,6 +311,8 @@ class DraggableCard extends StatefulWidget {
   final VoidCallback onSwipedLeft;
   final VoidCallback onSwipedRight;
   final bool isDraggable;
+  final ApiClient api;  // Add this
+  final TokenStore tokens;  // Add this
 
   const DraggableCard({
     super.key,
@@ -321,11 +326,14 @@ class DraggableCard extends StatefulWidget {
     required this.onSwipedLeft,
     required this.onSwipedRight,
     this.isDraggable = true,
+    required this.api,  // Add this
+    required this.tokens,  // Add this
   });
 
   @override
   State<DraggableCard> createState() => _DraggableCardState();
 }
+
 
 class _DraggableCardState extends State<DraggableCard> with SingleTickerProviderStateMixin {
   Offset _pos = Offset.zero;
@@ -539,13 +547,38 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
                                 Row(
                                   children: [
                                     Expanded(
-                                      child: Text(
-                                        '${widget.name}${age != null ? ', $age' : ''}',
-                                        style: const TextStyle(
-                                          fontSize: 28,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
-                                          shadows: [Shadow(color: Colors.black45, blurRadius: 8)],
+                                      child: GestureDetector(  // Add this wrapper
+                                        onTap: () {
+                                          // Navigate to visit profile screen
+                                          final userId = widget.userData['id']?.toString() ?? '';
+                                          final age = widget.userData['age']?.toString() ??
+                                              (widget.userData['birthDate'] != null
+                                                  ? (DateTime.now().year - DateTime.parse(widget.userData['birthDate'].toString()).year).toString()
+                                                  : '0');
+                                          final location = [widget.city, widget.country]
+                                              .where((e) => e != null && e.isNotEmpty)
+                                              .join(', ');
+
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) => VisitProfileScreen(
+                                                api: widget.api,
+                                                tokens: widget.tokens,
+                                                userId: userId,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                        child: Text(
+                                          '${widget.name}${age != null ? ', $age' : ''}',
+                                          style: const TextStyle(
+                                            fontSize: 28,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                            decoration: TextDecoration.underline,  // Optional: indicate it's clickable
+                                            shadows: [Shadow(color: Colors.black45, blurRadius: 8)],
+                                          ),
                                         ),
                                       ),
                                     ),

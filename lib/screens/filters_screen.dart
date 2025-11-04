@@ -84,6 +84,7 @@ class _FiltersScreenState extends State<FiltersScreen> {
       final Map<String, List<TagDto>> groups = {};
       if (allCategories.isNotEmpty && allTags.isNotEmpty) {
         for (final category in allCategories) {
+          print('Processing category: ${category.name} : ${category.id}'); // Debug print
           final categoryTags = allTags.where((t) => t.tagCategoryId == category.id).toList();
           if (categoryTags.isNotEmpty) {
             groups[category.name] = categoryTags;

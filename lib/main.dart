@@ -10,7 +10,8 @@ import 'screens/profile_screen.dart';
 import 'screens/messages_screen.dart';
 import 'screens/users_screen.dart';
 import 'screens/filters_screen.dart';
-import 'screens/change_password_screen.dart';
+import 'screens/visit_profile_screen.dart';
+
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,22 +32,12 @@ class MyApp extends StatelessWidget {
       initialRoute: '/login',
       routes: {
         '/login': (c) => LoginScreen(api: api, tokens: tokens, onLoggedIn: () => Navigator.pushReplacementNamed(c, '/home')),
-        '/register': (c) => RegisterScreen(
-          api: api, 
-          tokens: tokens, 
-          onRegistered: () => Navigator.pushReplacement(
-            c,
-            MaterialPageRoute(
-              builder: (_) => ProfileScreen(api: api, tokens: tokens, startInEditMode: true),
-            ),
-          ),
-        ),
+        '/register': (c) => RegisterScreen(api: api, tokens: tokens, onRegistered: () => Navigator.pushReplacementNamed(c, '/profile')),
         '/home': (c) => HomeScreen(api: api, tokens: tokens),
-        '/profile': (c) => ProfileScreen(api: api, tokens: tokens, startInEditMode: false),
+        '/profile': (c) => ProfileScreen(api: api, tokens: tokens),
         '/messages': (c) => MessagesScreen(api: api, tokens: tokens),
         '/users': (c) => UsersScreen(api: api, tokens: tokens),
         '/filters': (c) => FiltersScreen(api: api, tokens: tokens),
-        '/change-password': (c) => ChangePasswordScreen(api: api, tokens: tokens),
       },
     );
   }
