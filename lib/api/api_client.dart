@@ -535,11 +535,6 @@ class ApiClient {
       final json = decoded is Map ? Map<String, dynamic>.from(decoded) : null;
       if (json == null) return null;
 
-      // Debug prints
-      print('Raw JSON keys: ${json.keys.toList()}');
-      print('tagsIds from API: ${json['tagsIds']}');
-      print('Full JSON: $json');
-
       final userType = json['userType']?.toString();
       final isBand = userType == 'band' || (json['isBand'] is bool ? json['isBand'] as bool : false);
 

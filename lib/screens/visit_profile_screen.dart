@@ -28,6 +28,8 @@ class _VisitProfileScreenState extends State<VisitProfileScreen> with SingleTick
 
   final Map<String, List<TagDto>> _tagGroups = {};
   final Map<String, String> _categoryIdToName = {};
+  final Map<String, String> _countryIdToName = {};
+  final Map<String, String> _cityIdToName = {};
 
   @override
   void initState() {
@@ -35,6 +37,40 @@ class _VisitProfileScreenState extends State<VisitProfileScreen> with SingleTick
     _tabController = TabController(length: 2, vsync: this);
     _loadProfile();
     _loadTagData();
+  }
+
+  Future<void> _loadLocationData() async {
+    try {
+      final countriesResp = await widget.api.getCountries();
+
+      if (countriesResp.statusCode == 200) {
+        final decoded = jsonDecode(countriesResp.body);
+        final list = decoded is List ? decoded : [];
+
+        for (final c in list) {
+          final country = CountryDto.fromJson(c);
+          _countryIdToName[country.id] = country.name;
+        }
+      }
+
+      if (_profile?.country != null) {
+        final citiesResp = await widget.api.getCities(_profile!.country!);
+
+        if (citiesResp.statusCode == 200) {
+          final decoded = jsonDecode(citiesResp.body);
+          final list = decoded is List ? decoded : [];
+
+          for (final c in list) {
+            final city = CityDto.fromJson(c);
+            _cityIdToName[city.id] = city.name;
+          }
+        }
+      }
+
+      if (mounted) setState(() {});
+    } catch (e) {
+      // Handle error silently
+    }
   }
 
   @override
@@ -69,7 +105,7 @@ class _VisitProfileScreenState extends State<VisitProfileScreen> with SingleTick
         });
       }
     } catch (e) {
-      print('Error loading tag data: $e');
+      // Handle error silently
     }
   }
 
@@ -117,6 +153,7 @@ class _VisitProfileScreenState extends State<VisitProfileScreen> with SingleTick
           _profile = profile;
           _loading = false;
         });
+        await _loadLocationData();
       } else {
         setState(() {
           _error = 'Failed to load profile';
@@ -185,7 +222,6 @@ class _VisitProfileScreenState extends State<VisitProfileScreen> with SingleTick
       backgroundColor: Colors.white,
       body: CustomScrollView(
         slivers: [
-          // Hero section with image
           SliverAppBar(
             expandedHeight: 400,
             pinned: true,
@@ -227,7 +263,6 @@ class _VisitProfileScreenState extends State<VisitProfileScreen> with SingleTick
                       color: Colors.grey.shade200,
                       child: Icon(Icons.person, size: 80, color: Colors.grey.shade400),
                     ),
-                  // Gradient overlay at bottom
                   Positioned(
                     bottom: 0,
                     left: 0,
@@ -246,7 +281,6 @@ class _VisitProfileScreenState extends State<VisitProfileScreen> with SingleTick
                       ),
                     ),
                   ),
-                  // Profile info overlay
                   Positioned(
                     bottom: 20,
                     left: 20,
@@ -268,11 +302,10 @@ class _VisitProfileScreenState extends State<VisitProfileScreen> with SingleTick
                             const SizedBox(width: 8),
                             if (_profile is OtherUserProfileArtistDto)
                               Text(
-                                '${(_profile as OtherUserProfileArtistDto).age}',
+                                ', ${(_profile as OtherUserProfileArtistDto).calculatedAge ?? 'N/A'}',
                                 style: const TextStyle(
                                   color: Colors.white,
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.w300,
+                                  fontSize: 32,
                                 ),
                               ),
                             const SizedBox(width: 8),
@@ -327,11 +360,14 @@ class _VisitProfileScreenState extends State<VisitProfileScreen> with SingleTick
                               Icon(Icons.location_on, size: 16, color: Colors.white.withOpacity(0.9)),
                               const SizedBox(width: 4),
                               Text(
-                                [_profile!.city, _profile!.country]
-                                    .where((e) => e != null)
-                                    .join(', '),
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.9),
+                                [
+                                  if (_profile!.city != null && _cityIdToName[_profile!.city] != null)
+                                    _cityIdToName[_profile!.city],
+                                  if (_profile!.country != null && _countryIdToName[_profile!.country] != null)
+                                    _countryIdToName[_profile!.country],
+                                ].where((s) => s != null && s.isNotEmpty).join(', '),
+                                style: const TextStyle(
+                                  color: Colors.white,
                                   fontSize: 14,
                                 ),
                               ),
@@ -346,7 +382,6 @@ class _VisitProfileScreenState extends State<VisitProfileScreen> with SingleTick
             ),
           ),
 
-          // Tab bar
           SliverPersistentHeader(
             pinned: true,
             delegate: _SliverTabBarDelegate(
@@ -372,7 +407,6 @@ class _VisitProfileScreenState extends State<VisitProfileScreen> with SingleTick
             ),
           ),
 
-          // Tab content
           SliverFillRemaining(
             child: TabBarView(
               controller: _tabController,
@@ -396,7 +430,6 @@ class _VisitProfileScreenState extends State<VisitProfileScreen> with SingleTick
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // About section
           _buildSectionTitle('About'),
           const SizedBox(height: 12),
           Text(
@@ -409,14 +442,12 @@ class _VisitProfileScreenState extends State<VisitProfileScreen> with SingleTick
           ),
           const SizedBox(height: 32),
 
-          // Tags sections
           for (final category in orderedCategories)
             if (tagGroups.containsKey(category) && tagGroups[category]!.isNotEmpty) ...[
               _buildTagSection(category, tagGroups[category]!),
               const SizedBox(height: 24),
             ],
 
-          // Band members (if band)
           if (_profile is OtherUserProfileBandDto) ...[
             _buildSectionTitle('Band Members'),
             const SizedBox(height: 12),
@@ -475,7 +506,6 @@ class _VisitProfileScreenState extends State<VisitProfileScreen> with SingleTick
             const SizedBox(height: 32),
           ],
 
-          // Gender (if artist)
           if (_profile is OtherUserProfileArtistDto &&
               (_profile as OtherUserProfileArtistDto).gender != null) ...[
             _buildSectionTitle('Gender'),

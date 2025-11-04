@@ -795,16 +795,12 @@ class OtherUserProfileDto {
     final isBand = json['userType']?.toString() == 'band' ||
         (json['isBand'] is bool ? json['isBand'] as bool : false);
 
-    // Debug: Check what field names exist in the JSON
-    print('JSON keys: ${json.keys.toList()}');
-    print('tagsIds value: ${json['tagsIds']}');
-
     return OtherUserProfileDto(
       id: json['id']?.toString() ?? '',
       name: json['name']?.toString(),
       description: json['description']?.toString() ?? '',
-      city: json['city']?.toString(),
-      country: json['country']?.toString(),
+      city: json['cityId']?.toString() ?? json['city_id']?.toString(),
+      country: json['countryId']?.toString() ?? json['country_id']?.toString(),
       tags: (json['tagsIds'] is List)
           ? List<String>.from(json['tagsIds'].map((e) => e.toString()))
           : [],
@@ -815,12 +811,13 @@ class OtherUserProfileDto {
       isBand: isBand,
     );
   }
-
 }
 
+
 class OtherUserProfileArtistDto extends OtherUserProfileDto {
-  final int age;
+  final int? age;
   final String? gender;
+  final DateTime? birthDate;
 
   OtherUserProfileArtistDto({
     required String id,
@@ -830,8 +827,9 @@ class OtherUserProfileArtistDto extends OtherUserProfileDto {
     String? country,
     required List<String> tags,
     required List<ProfilePictureDto> profilePictures,
-    required this.age,
+    this.age,
     this.gender,
+    this.birthDate,
   }) : super(
     id: id,
     name: name,
@@ -843,28 +841,48 @@ class OtherUserProfileArtistDto extends OtherUserProfileDto {
     isBand: false,
   );
 
+  int? get calculatedAge {
+    if (birthDate == null) return age;
+    final now = DateTime.now();
+    int years = now.year - birthDate!.year;
+    if (now.month < birthDate!.month ||
+        (now.month == birthDate!.month && now.day < birthDate!.day)) {
+      years--;
+    }
+    return years;
+  }
+
   factory OtherUserProfileArtistDto.fromJson(Map<String, dynamic> json) {
+    DateTime? parseDate(dynamic v) {
+      if (v == null) return null;
+      if (v is DateTime) return v;
+      if (v is String) return DateTime.tryParse(v);
+      return null;
+    }
+
     return OtherUserProfileArtistDto(
       id: json['id']?.toString() ?? '',
       name: json['name']?.toString(),
       description: json['description']?.toString() ?? '',
-      city: json['city']?.toString(),
-      country: json['country']?.toString(),
-      tags: (json['tagsIds'] is List)  // Changed from 'tags' to 'tagsIds'
+      city: json['cityId']?.toString() ?? json['city_id']?.toString(),
+      country: json['countryId']?.toString() ?? json['country_id']?.toString(),
+      tags: (json['tagsIds'] is List)
           ? List<String>.from(json['tagsIds'].map((e) => e.toString()))
           : [],
       profilePictures: (json['profilePictures'] is List)
           ? List<ProfilePictureDto>.from(
           json['profilePictures'].map((e) => ProfilePictureDto.fromJson(e)))
           : [],
-      age: (json['age'] is int) ? json['age'] as int : int.tryParse(json['age']?.toString() ?? '0') ?? 0,
+      age: (json['age'] is int) ? json['age'] as int : int.tryParse(
+          json['age']?.toString() ?? ''),
       gender: json['gender']?.toString(),
+      birthDate: parseDate(json['birthDate'] ?? json['birth_date']),
     );
   }
-
 }
 
-class OtherUserProfileBandDto extends OtherUserProfileDto {
+
+  class OtherUserProfileBandDto extends OtherUserProfileDto {
   final List<BandMemberDto> bandMembers;
 
   OtherUserProfileBandDto({
@@ -892,9 +910,9 @@ class OtherUserProfileBandDto extends OtherUserProfileDto {
       id: json['id']?.toString() ?? '',
       name: json['name']?.toString(),
       description: json['description']?.toString() ?? '',
-      city: json['city']?.toString(),
-      country: json['country']?.toString(),
-      tags: (json['tagsIds'] is List)  // Changed from 'tags' to 'tagsIds'
+      city: json['cityId']?.toString() ?? json['city_id']?.toString(),
+      country: json['countryId']?.toString() ?? json['country_id']?.toString(),
+      tags: (json['tagsIds'] is List)
           ? List<String>.from(json['tagsIds'].map((e) => e.toString()))
           : [],
       profilePictures: (json['profilePictures'] is List)
