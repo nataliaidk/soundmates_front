@@ -28,10 +28,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _city = TextEditingController();
   final _country = TextEditingController();
   List<PlatformFile> _pickedFiles = [];
+  PlatformFile? _pickedProfilePhoto; // Single profile photo (optional)
   String _status = '';
 
   List<CountryDto> _countries = [];
   List<CityDto> _cities = [];
+  bool _citiesLoading = false; // Track if cities are being loaded
   CountryDto? _selectedCountry;
   CityDto? _selectedCity;
   bool? _isBand;
@@ -51,6 +53,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _isEditing = false; // Track edit mode
   int _currentStep = 1; // 1 = basic info, 2 = tags/files/description/members
   int _selectedTab = 0; // 0 = Your Info, 1 = Multimedia
+  bool _isFromRegistration = false; // Track if we're in registration flow
   Map<String, List<Map<String, dynamic>>> _options = {};
   // map categoryName -> set of selected values
   final Map<String, Set<dynamic>> _selected = {};
@@ -63,6 +66,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void initState() {
     super.initState();
     _isEditing = widget.startInEditMode; // Start in edit mode if coming from registration
+    _isFromRegistration = widget.startInEditMode; // Track registration flow
     _loadOptions();
     _loadCountries();
     _loadBandRoles();
@@ -370,6 +374,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // Merge URLs from profile-pictures endpoint into profile['profilePictures'] items
 
   Future<void> _loadCitiesForSelectedCountry(String countryId) async {
+      if (_citiesLoading) return; // Prevent multiple simultaneous loads
+    
+      setState(() => _citiesLoading = true);
     try {
       final resp = await widget.api.getCities(countryId);
       if (resp.statusCode == 200) {
@@ -385,6 +392,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
     } catch (_) {
       // ignore
+      } finally {
+        setState(() => _citiesLoading = false);
     }
   }
 
@@ -397,6 +406,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
     if (res != null && res.files.isNotEmpty) {
       setState(() => _pickedFiles = res.files);
+    }
+  }
+
+  Future<void> _pickProfilePhoto() async {
+    final res = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['jpg', 'jpeg'],
+      withData: true,
+      allowMultiple: false,
+    );
+    if (res != null && res.files.isNotEmpty) {
+      setState(() => _pickedProfilePhoto = res.files.first);
     }
   }
 
@@ -436,24 +457,48 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _save() async {
     final nameErr = validateName(_name.text);
-    if (nameErr != null) return setState(() => _status = nameErr);
+    if (nameErr != null) {
+      setState(() => _status = nameErr);
+      return;
+    }
     final descErr = validateDescription(_desc.text);
-    if (descErr != null) return setState(() => _status = descErr);
+    if (descErr != null) {
+      setState(() => _status = descErr);
+      return;
+    }
     final cityValue = _selectedCity?.name ?? _city.text;
     final countryValue = _selectedCountry?.name ?? _country.text;
     final cityErr = validateCityOrCountry(cityValue, 'City');
-    if (cityErr != null) return setState(() => _status = cityErr);
+    if (cityErr != null) {
+      setState(() => _status = cityErr);
+      return;
+    }
     final countryErr = validateCityOrCountry(countryValue, 'Country');
-    if (countryErr != null) return setState(() => _status = countryErr);
-
-    setState(() => _status = 'Saving...');
-    final allSelected = _selected.values.expand((s) => s).map((v) => v.toString()).toList();
-    if (_isBand != true) {
-      if (_birthDate == null) return setState(() => _status = 'Birth date is required for artists');
-      if (_selectedGender == null) return setState(() => _status = 'Gender is required for artists');
+    if (countryErr != null) {
+      setState(() => _status = countryErr);
+      return;
     }
 
-  if (_isBand == true) {
+    setState(() => _status = 'Saving...');
+
+    final allSelected = _selected.values.expand((s) => s).map((v) => v.toString()).toList();
+
+    if (_isBand != true) {
+      if (_birthDate == null) {
+        setState(() => _status = 'Birth date is required for artists');
+        return;
+      }
+      if (_selectedGender == null) {
+        setState(() => _status = 'Gender is required for artists');
+        return;
+      }
+    }
+
+    // Preserve multimedia order
+    final picturesOrder = _profilePictures.map((p) => p.id).toList();
+    final samplesOrder = _musicSamples.map((s) => s.id).toList();
+
+    if (_isBand == true) {
       final dtoWithTags = UpdateBandProfile(
         isBand: _isBand,
         name: _name.text.trim(),
@@ -461,40 +506,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
         countryId: _selectedCountry?.id ?? '',
         cityId: _selectedCity?.id ?? '',
         tagsIds: allSelected,
-        musicSamplesOrder: const [],
-        profilePicturesOrder: const [],
+        musicSamplesOrder: samplesOrder,
+        profilePicturesOrder: picturesOrder,
         bandMembers: _bandMembers,
       );
       final resp = await widget.api.updateBandProfile(dtoWithTags, allSelected.isEmpty ? null : allSelected);
       setState(() => _status = 'Profile update: ${resp.statusCode}');
       if (resp.statusCode == 200) {
-        if (_pickedFiles.isNotEmpty) {
-          for (final file in _pickedFiles) {
-            String uploadName = file.name;
-            final extMatch = RegExp(r'^(.+?)\.(jpg|jpeg|mp3|mp4)$', caseSensitive: false).firstMatch(uploadName);
-            if (extMatch != null) {
-              uploadName = extMatch.group(0)!;
-            } else {
-              final bytes = file.bytes!;
-              // JPEG magic number
-              if (bytes.length >= 2 && bytes[0] == 0xFF && bytes[1] == 0xD8) {
-                uploadName = uploadName.trim();
-                if (!uploadName.toLowerCase().endsWith('.jpg') && !uploadName.toLowerCase().endsWith('.jpeg')) {
-                  uploadName = '$uploadName.jpg';
-                }
-              } else {
-                setState(() => _status = 'Allowed file extensions: .jpeg, .jpg, .mp3, .mp4');
-                continue;
-              }
-            }
-            final streamed = await widget.api.uploadProfilePicture(file.bytes!, uploadName);
-            final body = await streamed.stream.bytesToString();
-            if (!mounted) return;
-            setState(() => _status += ' ; upload: ${streamed.statusCode} - $body');
-          }
-          await _goToProfileView();
+        await _maybeUploadProfilePhoto();
+        if (_isFromRegistration) {
+          await _showWelcomeDialog();
         } else {
-          if (!mounted) return;
           await _goToProfileView();
         }
       } else {
@@ -510,43 +532,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
         birthDate: _birthDate,
         genderId: _selectedGender?.id,
         tagsIds: allSelected,
-        musicSamplesOrder: const [],
-        profilePicturesOrder: const [],
+        musicSamplesOrder: samplesOrder,
+        profilePicturesOrder: picturesOrder,
       );
       final resp = await widget.api.updateArtistProfile(dtoWithTags, allSelected.isEmpty ? null : allSelected);
       setState(() => _status = 'Profile update: ${resp.statusCode}');
       if (resp.statusCode == 200) {
-        if (_pickedFiles.isNotEmpty) {
-          for (final file in _pickedFiles) {
-            String uploadName = file.name;
-            final extMatch = RegExp(r'^(.+?)\.(jpg|jpeg|mp3|mp4)$', caseSensitive: false).firstMatch(uploadName);
-            if (extMatch != null) {
-              uploadName = extMatch.group(0)!;
-            } else {
-              final bytes = file.bytes!;
-              if (bytes.length >= 2 && bytes[0] == 0xFF && bytes[1] == 0xD8) {
-                uploadName = uploadName.trim();
-                if (!uploadName.toLowerCase().endsWith('.jpg') && !uploadName.toLowerCase().endsWith('.jpeg')) {
-                  uploadName = '$uploadName.jpg';
-                }
-              } else {
-                setState(() => _status = 'Allowed file extensions: .jpeg, .jpg, .mp3, .mp4');
-                continue;
-              }
-            }
-            final streamed = await widget.api.uploadProfilePicture(file.bytes!, uploadName);
-            final body = await streamed.stream.bytesToString();
-            if (!mounted) return;
-            setState(() => _status += ' ; upload: ${streamed.statusCode} - $body');
-          }
-          await _goToProfileView();
+        await _maybeUploadProfilePhoto();
+        if (_isFromRegistration) {
+          await _showWelcomeDialog();
         } else {
-          if (!mounted) return;
           await _goToProfileView();
         }
       } else {
         return;
       }
+    }
+  }
+
+  Future<void> _maybeUploadProfilePhoto() async {
+    if (_pickedProfilePhoto != null && _pickedProfilePhoto!.bytes != null) {
+      String uploadName = _pickedProfilePhoto!.name.trim();
+      final lower = uploadName.toLowerCase();
+      if (!lower.endsWith('.jpg') && !lower.endsWith('.jpeg')) {
+        uploadName = '$uploadName.jpg';
+      }
+  final streamed = await widget.api.uploadProfilePicture(_pickedProfilePhoto!.bytes!, uploadName);
+      if (!mounted) return;
+      setState(() => _status += ' ; photo upload: ${streamed.statusCode}');
+      await _loadProfileAndTags();
+      _pickedProfilePhoto = null;
     }
   }
 
@@ -559,6 +574,84 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _currentStep = 1;
     });
   }
+
+  Future<void> _showWelcomeDialog() async {
+    if (!mounted) return;
+    
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        contentPadding: const EdgeInsets.all(32),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: Colors.deepPurple.shade100,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.check_circle,
+                size: 48,
+                color: Colors.deepPurple.shade400,
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Welcome to Soundmates!',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Your profile has been created successfully. Start discovering amazing musicians!',
+              style: TextStyle(
+                fontSize: 15,
+                color: Colors.grey.shade700,
+                height: 1.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  // Navigate to home
+                  Navigator.of(context).pushReplacementNamed('/home');
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepPurple.shade400,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'OK',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  
   Future<BandMemberDto?> _showBandMemberDialog({BandMemberDto? member}) async {
   final nameCtrl = TextEditingController(text: member?.name ?? '');
   final ageCtrl = TextEditingController(text: member?.age.toString() ?? '');
@@ -801,6 +894,7 @@ Widget _buildBandMembersSection() {
       appBar: _isEditing
           ? AppBar(
               title: Text(_currentStep == 1 ? 'Profile - Step 1' : 'Profile - Step 2'),
+              automaticallyImplyLeading: !_isFromRegistration, // No back button during registration
             )
           : AppBar(
               backgroundColor: Colors.transparent,
@@ -1377,8 +1471,25 @@ Widget _buildBandMembersSection() {
               const SizedBox(height: 8),
               DropdownButtonFormField<CityDto>(
                 value: _selectedCity,
-                decoration: const InputDecoration(labelText: 'City', border: OutlineInputBorder()),
-                items: _cities.map((c) => DropdownMenuItem(value: c, child: Text(c.name))).toList(),
+                  decoration: InputDecoration(
+                    labelText: 'City',
+                    border: const OutlineInputBorder(),
+                    suffixIcon: _citiesLoading 
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: Padding(
+                            padding: EdgeInsets.all(12.0),
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        )
+                      : null,
+                  ),
+                  items: _citiesLoading 
+                    ? [] 
+                    : _cities.isEmpty && _selectedCountry != null
+                      ? [const DropdownMenuItem(value: null, child: Text('Select a country first'))]
+                      : _cities.map((c) => DropdownMenuItem(value: c, child: Text(c.name))).toList(),
                 onChanged: (v) {
                   setState(() {
                     _selectedCity = v;
@@ -1431,25 +1542,71 @@ Widget _buildBandMembersSection() {
                 child: const Text('Next'),
               ),
             ],
-            // Step 2: Tags, Files, Description, Band Members
+            // Step 2: Tags, Description, Band Members, Profile Photo
             if (_currentStep == 2) ...[
               TextField(controller: _desc, decoration: const InputDecoration(labelText: 'Description'), maxLines: 3),
               _buildTags(),
               if (_isBand == true) _buildBandMembersSection(),
-              const SizedBox(height: 8),
-              Row(children: [
-                ElevatedButton(onPressed: _pick, child: const Text('Pick Photo(s)')),
-                const SizedBox(width: 8),
-                if (_pickedFiles.isEmpty)
-                  const Text('(no files)')
-                else
-                  Expanded(
-                    child: Wrap(
-                      spacing: 8,
-                      children: _pickedFiles.map((f) => Chip(label: Text(f.name))).toList(),
+              const SizedBox(height: 12),
+              // Profile photo (optional)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Profile photo (optional)', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: _pickProfilePhoto,
+                          icon: const Icon(Icons.photo),
+                          label: const Text('Choose photo'),
+                        ),
+                        const SizedBox(width: 12),
+                        if (_pickedProfilePhoto != null)
+                          Expanded(
+                            child: Row(
+                              children: [
+                                if (_pickedProfilePhoto?.bytes != null)
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Image.memory(
+                                      _pickedProfilePhoto!.bytes!,
+                                      width: 56,
+                                      height: 56,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    _pickedProfilePhoto!.name,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(color: Colors.grey.shade700),
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.close),
+                                  onPressed: () => setState(() => _pickedProfilePhoto = null),
+                                ),
+                              ],
+                            ),
+                          )
+                        else
+                          Text('No file selected', style: TextStyle(color: Colors.grey.shade600)),
+                      ],
                     ),
-                  ),
-              ]),
+                  ],
+                ),
+              ),
               const SizedBox(height: 12),
               Row(
                 children: [
@@ -1465,10 +1622,9 @@ Widget _buildBandMembersSection() {
                       onPressed: () {
                         final descErr = validateDescription(_desc.text);
                         if (descErr != null) return setState(() => _status = descErr);
-                        setState(() => _isEditing = false);
                         _save();
                       },
-                      child: const Text('Save'),
+                      child: const Text('Complete Profile'),
                     ),
                   ),
                 ],
@@ -1477,7 +1633,7 @@ Widget _buildBandMembersSection() {
             const SizedBox(height: 12),
             Text(_status),
           ],
-        ),
+        )
       ),
     );
   }
