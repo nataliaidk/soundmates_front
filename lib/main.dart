@@ -7,7 +7,8 @@ import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/profile_screen.dart';
-import 'screens/messages_screen.dart';
+// import 'screens/messages_screen.dart';
+import 'screens/matches_screen.dart';
 import 'screens/users_screen.dart';
 import 'screens/filters_screen.dart';
 import 'screens/visit_profile_screen.dart';
@@ -35,7 +36,7 @@ class MyApp extends StatelessWidget {
         '/register': (c) => RegisterScreen(api: api, tokens: tokens, onRegistered: () => Navigator.pushReplacementNamed(c, '/profile')),
         '/home': (c) => HomeScreen(api: api, tokens: tokens),
         '/profile': (c) => ProfileScreen(api: api, tokens: tokens),
-        '/messages': (c) => MessagesScreen(api: api, tokens: tokens),
+        '/matches': (c) => MatchesScreen(api: api, tokens: tokens),
         '/users': (c) => UsersScreen(api: api, tokens: tokens),
         '/filters': (c) => FiltersScreen(api: api, tokens: tokens),
       },

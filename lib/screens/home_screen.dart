@@ -18,7 +18,7 @@ class HomeScreen extends StatelessWidget {
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           ElevatedButton(onPressed: () => Navigator.pushNamed(context, '/profile'), child: const Text('Profile')),
           const SizedBox(height: 8),
-          ElevatedButton(onPressed: () => Navigator.pushNamed(context, '/messages'), child: const Text('Messages')),
+          ElevatedButton(onPressed: () => Navigator.pushNamed(context, '/matches'), child: const Text('Matches')),
           const SizedBox(height: 8),
           ElevatedButton(onPressed: () => Navigator.pushNamed(context, '/users'), child: const Text('Users')),
           const SizedBox(height: 8),

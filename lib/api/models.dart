@@ -928,3 +928,35 @@ class OtherUserProfileArtistDto extends OtherUserProfileDto {
 
 }
 
+class MessageDto {
+  final String content;
+  final DateTime timestamp;
+  final String senderId;
+  final String receiverId;
+
+  MessageDto({
+    required this.content,
+    required this.timestamp,
+    required this.senderId,
+    required this.receiverId,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'content': content,
+    'timestamp': timestamp.toIso8601String(),
+    'senderId': senderId,
+    'receiverId': receiverId,
+  };
+
+  factory MessageDto.fromJson(Map<String, dynamic> json) {
+    return MessageDto(
+      content: json['content']?.toString() ?? '',
+      timestamp: DateTime.tryParse(json['timestamp']?.toString() ?? '') ??
+          DateTime.now(),
+      senderId: json['senderId']?.toString() ?? '',
+      receiverId: json['receiverId']?.toString() ?? '',
+    );
+  }
+}
+
+
