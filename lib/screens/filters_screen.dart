@@ -31,7 +31,6 @@ class _FiltersScreenState extends State<FiltersScreen> {
   int? _bandMaxMembersCount;
   String? _selectedCountryId;
   String? _selectedCityId;
-  GenderDto? _selectedGender;
 
   final Map<String, List<TagDto>> _tagGroups = {};
   final Map<String, Set<String>> _selectedTags = {};
@@ -482,6 +481,8 @@ class _FiltersScreenState extends State<FiltersScreen> {
                   const SizedBox(height: 20),
                   _buildAgeRangeCard(),
                   const SizedBox(height: 20),
+                  _buildGenderCard(),
+                  const SizedBox(height: 20),
                   _buildBandMembersCard(),
                   for (final category in _tagGroups.keys)
                     _buildTagCard(category, _getIconForCategory(category)),
@@ -520,6 +521,198 @@ class _FiltersScreenState extends State<FiltersScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildGenderCard() {
+    return _buildMasterpieceCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildCardTitle('Artist Gender', Icons.wc),
+          const SizedBox(height: 16),
+          GestureDetector(
+            onTap: () async {
+              if (_genders.isEmpty) return;
+              final result = await showDialog<String>(
+                context: context,
+                builder: (ctx) {
+                  String searchQuery = '';
+                  return StatefulBuilder(
+                    builder: (context, setDialogState) {
+                      final filtered = _genders.where((g) => g.name.toLowerCase().contains(searchQuery.toLowerCase())).toList();
+                      return Dialog(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                        child: Container(
+                          constraints: const BoxConstraints(maxHeight: 500, maxWidth: 400),
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      gradient: const LinearGradient(
+                                        colors: [Color(0xFF6A4C9C), Color(0xFF8B6BB7)],
+                                      ),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: const Icon(Icons.wc, color: Colors.white, size: 20),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  const Expanded(
+                                    child: Text(
+                                      'Select Artist Gender',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF3D2C5E),
+                                      ),
+                                    ),
+                                  ),
+                                  IconButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    icon: const Icon(Icons.close, color: Color(0xFF6A4C9C)),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              TextField(
+                                decoration: InputDecoration(
+                                  hintText: 'Search...',
+                                  prefixIcon: const Icon(Icons.search, color: Color(0xFF6A4C9C)),
+                                  filled: true,
+                                  fillColor: const Color(0xFFF8F5FF),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                    borderSide: BorderSide(
+                                      color: const Color(0xFF6A4C9C).withOpacity(0.2),
+                                      width: 2,
+                                    ),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                    borderSide: BorderSide(
+                                      color: const Color(0xFF6A4C9C).withOpacity(0.2),
+                                      width: 2,
+                                    ),
+                                  ),
+                                  focusedBorder: const OutlineInputBorder(
+                                    borderRadius: BorderRadius.all(Radius.circular(16)),
+                                    borderSide: BorderSide(
+                                      color: Color(0xFF6A4C9C),
+                                      width: 2,
+                                    ),
+                                  ),
+                                ),
+                                onChanged: (v) => setDialogState(() => searchQuery = v),
+                              ),
+                              const SizedBox(height: 16),
+                              Flexible(
+                                child: ListView(
+                                  shrinkWrap: true,
+                                  children: filtered.map((g) {
+                                    final isSelected = _selectedGenderId == g.id;
+                                    return Padding(
+                                      padding: const EdgeInsets.only(bottom: 8),
+                                      child: Material(
+                                        color: Colors.transparent,
+                                        child: InkWell(
+                                          onTap: () => Navigator.pop(context, g.id),
+                                          borderRadius: BorderRadius.circular(12),
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                            decoration: BoxDecoration(
+                                              color: isSelected
+                                                  ? const Color(0xFF6A4C9C).withOpacity(0.1)
+                                                  : const Color(0xFFF8F5FF),
+                                              borderRadius: BorderRadius.circular(12),
+                                              border: Border.all(
+                                                color: isSelected
+                                                    ? const Color(0xFF6A4C9C)
+                                                    : const Color(0xFF6A4C9C).withOpacity(0.2),
+                                                width: isSelected ? 2 : 1,
+                                              ),
+                                            ),
+                                            child: Row(
+                                              children: [
+                                                Expanded(
+                                                  child: Text(
+                                                    g.name,
+                                                    style: TextStyle(
+                                                      fontSize: 16,
+                                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                                      color: isSelected ? const Color(0xFF6A4C9C) : const Color(0xFF3D2C5E),
+                                                    ),
+                                                  ),
+                                                ),
+                                                if (isSelected)
+                                                  const Icon(Icons.check_circle, color: Color(0xFF6A4C9C), size: 20),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              );
+
+              if (result != null) {
+                setState(() => _selectedGenderId = result);
+              }
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8F5FF),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: const Color(0xFF6A4C9C).withOpacity(0.2),
+                  width: 2,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFF8F5FF), Color(0xFFEDE7F6)],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.wc, color: Color(0xFF6A4C9C), size: 20),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Text(
+                      _selectedGenderId != null
+                          ? (_genders.firstWhere((g) => g.id == _selectedGenderId, orElse: () => _genders.first).name)
+                          : 'Select Artist Gender',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: _selectedGenderId != null ? const Color(0xFF3D2C5E) : const Color(0xFF9E9E9E),
+                      ),
+                    ),
+                  ),
+                  const Icon(Icons.arrow_drop_down, color: Color(0xFF6A4C9C)),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1299,58 +1492,6 @@ class _FiltersScreenState extends State<FiltersScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-
-  Widget _buildRenaissanceDropdown({
-    required List<DropdownMenuItem<String>> items,
-    required String? value,
-    required ValueChanged<String?> onChanged,
-    required String hint,
-    required IconData icon,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8F5FF),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: const Color(0xFF6A4C9C).withOpacity(0.2),
-          width: 2,
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFFF8F5FF), Color(0xFFEDE7F6)],
-              ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: const Color(0xFF6A4C9C), size: 20),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: value,
-                hint: Text(hint, style: const TextStyle(color: Color(0xFF9E9E9E))),
-                isExpanded: true,
-                items: items,
-                onChanged: onChanged,
-                dropdownColor: const Color(0xFFFFFBFF),
-                style: const TextStyle(
-                  fontSize: 16,
-                  color: Color(0xFF3D2C5E),
-                ),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

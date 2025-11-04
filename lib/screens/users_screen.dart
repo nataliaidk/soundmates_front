@@ -21,11 +21,106 @@ class _UsersScreenState extends State<UsersScreen> {
   bool _showArtists = true;
   bool _showBands = true;
   bool _isLoading = false;
+  // Tag dictionaries for grouping like in ProfileScreen
+  final Map<String, List<TagDto>> _tagGroups = {}; // categoryId -> [TagDto]
+  final Map<String, String> _categoryNames = {}; // categoryId -> categoryName
+  final Map<String, TagDto> _tagById = {}; // tagId -> TagDto
+  // Location dictionaries for resolving IDs to names
+  final Map<String, String> _countryIdToName = {}; // countryId -> countryName
+  final Map<String, Map<String, String>> _citiesByCountry = {}; // countryId -> {cityId: cityName}
+  // Gender dictionary for resolving genderId to name
+  final Map<String, String> _genderIdToName = {}; // genderId -> genderName
 
   @override
   void initState() {
     super.initState();
+    _loadTagData();
+    _loadCountries();
+    _loadGenders();
     _loadPreference();
+  }
+
+  Future<void> _loadTagData() async {
+    try {
+      final tagsResp = await widget.api.getTags();
+      final categoriesResp = await widget.api.getTagCategories();
+
+      if (tagsResp.statusCode == 200 && categoriesResp.statusCode == 200) {
+        var tagsDecoded = jsonDecode(tagsResp.body);
+        if (tagsDecoded is String) tagsDecoded = jsonDecode(tagsDecoded);
+        var catsDecoded = jsonDecode(categoriesResp.body);
+        if (catsDecoded is String) catsDecoded = jsonDecode(catsDecoded);
+
+        final List<TagDto> tags = [];
+        if (tagsDecoded is List) {
+          for (final e in tagsDecoded) {
+            if (e is Map) {
+              final t = TagDto.fromJson(Map<String, dynamic>.from(e));
+              tags.add(t);
+              _tagById[t.id] = t;
+            }
+          }
+        }
+
+        if (catsDecoded is List) {
+          for (final e in catsDecoded) {
+            if (e is Map) {
+              final c = TagCategoryDto.fromJson(Map<String, dynamic>.from(e));
+              _categoryNames[c.id] = c.name;
+              _tagGroups.putIfAbsent(c.id, () => []);
+            }
+          }
+        }
+
+        for (final t in tags) {
+          if (t.tagCategoryId != null && _tagGroups.containsKey(t.tagCategoryId)) {
+            _tagGroups[t.tagCategoryId]!.add(t);
+          }
+        }
+
+        if (mounted) setState(() {});
+      }
+    } catch (_) {
+      // silent fail; UI will fallback to plain tags if needed
+    }
+  }
+
+  Future<void> _loadGenders() async {
+    try {
+      final resp = await widget.api.getGenders();
+      if (resp.statusCode == 200) {
+        var decoded = jsonDecode(resp.body);
+        if (decoded is String) decoded = jsonDecode(decoded);
+        if (decoded is List) {
+          for (final e in decoded) {
+            if (e is Map) {
+              final g = GenderDto.fromJson(Map<String, dynamic>.from(e));
+              _genderIdToName[g.id] = g.name;
+            }
+          }
+          if (mounted) setState(() {});
+        }
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _loadCountries() async {
+    try {
+      final resp = await widget.api.getCountries();
+      if (resp.statusCode == 200) {
+        var decoded = jsonDecode(resp.body);
+        if (decoded is String) decoded = jsonDecode(decoded);
+        if (decoded is List) {
+          for (final e in decoded) {
+            if (e is Map) {
+              final c = CountryDto.fromJson(Map<String, dynamic>.from(e));
+              _countryIdToName[c.id] = c.name;
+            }
+          }
+          if (mounted) setState(() {});
+        }
+      }
+    } catch (_) {}
   }
 
   Future<void> _loadPreference() async {
@@ -45,37 +140,6 @@ class _UsersScreenState extends State<UsersScreen> {
       // ignore, use defaults
     }
     _list();
-  }
-
-  Future<void> _savePreference() async {
-    try {
-      final dto = UpdateMatchPreferenceDto(
-        showArtists: _showArtists,
-        showBands: _showBands,
-        maxDistance: null,
-        countryId: null,
-        cityId: null,
-        artistMinAge: null,
-        artistMaxAge: null,
-        artistGenderId: null,
-        bandMinMembersCount: null,
-        bandMaxMembersCount: null,
-        filterTagsIds: const [],
-      );
-      await widget.api.updateMatchPreference(dto);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Preferences saved'), duration: Duration(seconds: 1)),
-        );
-      }
-      _list();
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to save preferences'), backgroundColor: Colors.red),
-        );
-      }
-    }
   }
 
   Future<void> _list() async {
@@ -122,11 +186,45 @@ class _UsersScreenState extends State<UsersScreen> {
       _out = 'Loaded ${_users.length} potential matches';
     });
 
+    // Preload cities for distinct countries present in the list (best-effort)
+    await _preloadCitiesForUsers();
+
     // Fetch images
     for (final u in _users) {
       final id = u['id']?.toString();
       if (id != null && id.isNotEmpty) _fetchUserImage(id, u);
     }
+  }
+
+  Future<void> _preloadCitiesForUsers() async {
+    try {
+      final Set<String> countryIds = {};
+      for (final u in _users) {
+        final c = (u['countryId'] ?? u['country'])?.toString();
+        if (c != null && c.isNotEmpty) countryIds.add(c);
+      }
+      for (final countryId in countryIds) {
+        if (_citiesByCountry.containsKey(countryId)) continue;
+        try {
+          final resp = await widget.api.getCities(countryId);
+          if (resp.statusCode == 200) {
+            var decoded = jsonDecode(resp.body);
+            if (decoded is String) decoded = jsonDecode(decoded);
+            final Map<String, String> map = {};
+            if (decoded is List) {
+              for (final e in decoded) {
+                if (e is Map) {
+                  final city = CityDto.fromJson(Map<String, dynamic>.from(e));
+                  map[city.id] = city.name;
+                }
+              }
+            }
+            _citiesByCountry[countryId] = map;
+          }
+        } catch (_) {}
+      }
+      if (mounted) setState(() {});
+    } catch (_) {}
   }
 
   Future<void> _fetchUserImage(String userId, Map<String, dynamic> userData) async {
@@ -200,46 +298,7 @@ class _UsersScreenState extends State<UsersScreen> {
         padding: const EdgeInsets.all(12),
         child: Column(
           children: [
-            // Preference toggles
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Show me:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: CheckboxListTile(
-                            dense: true,
-                            title: const Text('Artists'),
-                            value: _showArtists,
-                            onChanged: (v) {
-                              setState(() => _showArtists = v ?? true);
-                              _savePreference();
-                            },
-                          ),
-                        ),
-                        Expanded(
-                          child: CheckboxListTile(
-                            dense: true,
-                            title: const Text('Bands'),
-                            value: _showBands,
-                            onChanged: (v) {
-                              setState(() => _showBands = v ?? true);
-                              _savePreference();
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
+            // Preference toggles removed: preferences are managed in filters_screen
             Row(
               children: [
                 ElevatedButton(
@@ -267,16 +326,38 @@ class _UsersScreenState extends State<UsersScreen> {
                         final name = u['name']?.toString() ?? '(no name)';
                         final imageUrl = _userImages[id];
                         final top = index == _users.length - 1;
+            final rawCountryId = (u['countryId'] ?? u['country'])?.toString();
+            final rawCityId = (u['cityId'] ?? u['city'])?.toString();
+            final countryName = rawCountryId != null
+              ? (_countryIdToName[rawCountryId] ?? u['countryName']?.toString())
+              : (u['countryName']?.toString() ?? u['country']?.toString());
+            final cityName = (rawCountryId != null && rawCityId != null)
+              ? (_citiesByCountry[rawCountryId] != null
+                ? (_citiesByCountry[rawCountryId]![rawCityId] ?? u['cityName']?.toString())
+                : u['cityName']?.toString())
+              : (u['cityName']?.toString() ?? u['city']?.toString());
+                        String? gender;
+                        final isBand = u['isBand'] is bool ? u['isBand'] as bool : false;
+                        if (!isBand) {
+                          if (u['gender'] != null) {
+                            gender = u['gender'].toString();
+                          } else if (u['genderId'] != null) {
+                            gender = _genderIdToName[u['genderId'].toString()];
+                          }
+                        }
                         return Positioned.fill(
                           child: DraggableCard(
                             key: ValueKey(id),
                             name: name,
                             description: u['description']?.toString() ?? '',
                             imageUrl: imageUrl,
-                            isBand: u['isBand'] is bool ? u['isBand'] : false,
-                            city: u['city']?.toString(),
-                            country: u['country']?.toString(),
+                            isBand: isBand,
+                            city: cityName,
+                            country: countryName,
+                            gender: gender,
                             userData: u,
+                            tagById: _tagById,
+                            categoryNames: _categoryNames,
                             onSwipedLeft: () async {
                               await _dislike(id);
                               setState(() => _users.removeAt(index));
@@ -307,7 +388,10 @@ class DraggableCard extends StatefulWidget {
   final bool isBand;
   final String? city;
   final String? country;
+  final String? gender;
   final Map<String, dynamic> userData;
+  final Map<String, TagDto> tagById;
+  final Map<String, String> categoryNames;
   final VoidCallback onSwipedLeft;
   final VoidCallback onSwipedRight;
   final bool isDraggable;
@@ -322,7 +406,10 @@ class DraggableCard extends StatefulWidget {
     this.isBand = false,
     this.city,
     this.country,
+  this.gender,
     required this.userData,
+    required this.tagById,
+    required this.categoryNames,
     required this.onSwipedLeft,
     required this.onSwipedRight,
     this.isDraggable = true,
@@ -359,9 +446,22 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
       final pics = widget.userData['profilePictures'] as List;
       for (final pic in pics) {
         if (pic is Map) {
-          final url = pic['url']?.toString();
-          if (url != null && url.isNotEmpty && !images.contains(url)) {
-            images.add(url);
+          String? url;
+          // prefer explicit url field
+          url = pic['url']?.toString();
+          // fallback to fileUrl (backend uses fileUrl) and build absolute
+          url ??= pic['fileUrl']?.toString();
+          if (url != null && url.isNotEmpty) {
+            // Normalize absolute if needed
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+              final abs = Uri.parse(widget.api.baseUrl)
+                  .resolve(url.startsWith('/') ? url.substring(1) : url)
+                  .toString();
+              url = abs;
+            }
+            if (!images.contains(url)) {
+              images.add(url);
+            }
           }
         }
       }
@@ -397,10 +497,22 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
     final h = MediaQuery.of(context).size.height;
     final images = _allImages;
     
-    // Extract tags
-    final tags = <String>[];
-    if (widget.userData['tags'] is List) {
-      tags.addAll((widget.userData['tags'] as List).map((e) => e.toString()));
+    // Extract tags grouped by category (analogous to ProfileScreen)
+    final Map<String, List<String>> groupedTags = {};
+    if (widget.userData['tagsIds'] is List) {
+      for (final raw in (widget.userData['tagsIds'] as List)) {
+        final id = raw?.toString();
+        if (id == null) continue;
+        final tag = widget.tagById[id];
+        if (tag == null) continue;
+        final catId = tag.tagCategoryId ?? '';
+        final catName = widget.categoryNames[catId] ?? 'Other';
+        groupedTags.putIfAbsent(catName, () => []);
+        groupedTags[catName]!.add(tag.name);
+      }
+    } else if (widget.userData['tags'] is List) {
+      // Fallback: when backend returns names directly
+      groupedTags['Tags'] = (widget.userData['tags'] as List).map((e) => e.toString()).toList();
     }
     
     // Extract age for artists
@@ -551,13 +663,7 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
                                         onTap: () {
                                           // Navigate to visit profile screen
                                           final userId = widget.userData['id']?.toString() ?? '';
-                                          final age = widget.userData['age']?.toString() ??
-                                              (widget.userData['birthDate'] != null
-                                                  ? (DateTime.now().year - DateTime.parse(widget.userData['birthDate'].toString()).year).toString()
-                                                  : '0');
-                                          final location = [widget.city, widget.country]
-                                              .where((e) => e != null && e.isNotEmpty)
-                                              .join(', ');
+                      // age and location are not needed here for navigation
 
                                           Navigator.push(
                                             context,
@@ -582,22 +688,39 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
                                         ),
                                       ),
                                     ),
-                                    if (widget.isBand)
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                        decoration: BoxDecoration(
-                                          color: Colors.purple,
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        child: const Text(
-                                          'BAND',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.bold,
-                                          ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                // Artist/Band chip + green activity dot (styled like VisitProfile)
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: widget.isBand
+                                            ? Colors.deepPurple.shade400
+                                            : Colors.blue.shade400,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        widget.isBand ? 'BAND' : 'ARTIST',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          letterSpacing: 0.5,
                                         ),
                                       ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      width: 8,
+                                      height: 8,
+                                      decoration: const BoxDecoration(
+                                        color: Color(0xFF4CAF50),
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
                                   ],
                                 ),
                                 if (widget.city != null || widget.country != null)
@@ -642,26 +765,72 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
                             ],
                           ),
                         ),
-                      // Tags section
-                      if (tags.isNotEmpty)
+                      // Tags section (grouped like in ProfileScreen)
+                      if (groupedTags.isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Text(
-                                'Genres',
+                                'Tags',
                                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                               ),
                               const SizedBox(height: 8),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: tags.map((tag) => Chip(
-                                  label: Text(tag),
-                                  backgroundColor: Colors.purple[50],
-                                  labelStyle: TextStyle(color: Colors.purple[700], fontSize: 12),
-                                )).toList(),
+                              ...groupedTags.entries.map((entry) => Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    entry.key.toUpperCase(),
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.black54,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children: entry.value.map((tagName) => Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(20),
+                                        border: Border.all(color: Colors.grey.shade300),
+                                      ),
+                                      child: Text(
+                                        tagName,
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.grey.shade800,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    )).toList(),
+                                  ),
+                                ],
+                              )),
+                            ],
+                          ),
+                        ),
+                      // Gender section (under tags)
+                      if (widget.gender != null && widget.gender!.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Gender',
+                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                widget.gender!,
+                                style: TextStyle(fontSize: 14, color: Colors.grey[700]),
                               ),
                             ],
                           ),

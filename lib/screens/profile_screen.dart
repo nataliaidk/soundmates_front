@@ -85,6 +85,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (_userTagIds.isNotEmpty && _tagGroups.isNotEmpty) {
       _populateSelectedTags();
     }
+
+    // If profile is incomplete (e.g., right after registration), stay in editing (Step 1/2)
+    if (_shouldForceEditMode()) {
+      if (!mounted) return;
+      setState(() {
+        _isEditing = true;
+        _currentStep = 1;
+      });
+    }
+  }
+
+  bool _shouldForceEditMode() {
+    // Name required
+    if (_name.text.trim().isEmpty) return true;
+    // Country/City required
+    if (_selectedCountry == null || _selectedCity == null) return true;
+    // Artist-specific fields required
+    if (_isBand != true) {
+      if (_birthDate == null || _selectedGender == null) return true;
+    }
+    return false;
   }
 
   Future<void> _loadProfilePictures() async {
@@ -514,11 +535,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() => _status = 'Profile update: ${resp.statusCode}');
       if (resp.statusCode == 200) {
         await _maybeUploadProfilePhoto();
-        if (_isFromRegistration) {
-          await _showWelcomeDialog();
-        } else {
-          await _goToProfileView();
-        }
+        // After registration, show profile (no immediate home navigation)
+        await _goToProfileView();
       } else {
         return;
       }
@@ -539,11 +557,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() => _status = 'Profile update: ${resp.statusCode}');
       if (resp.statusCode == 200) {
         await _maybeUploadProfilePhoto();
-        if (_isFromRegistration) {
-          await _showWelcomeDialog();
-        } else {
-          await _goToProfileView();
-        }
+        // After registration, show profile (no immediate home navigation)
+        await _goToProfileView();
       } else {
         return;
       }
@@ -575,82 +590,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
-  Future<void> _showWelcomeDialog() async {
-    if (!mounted) return;
-    
-    await showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        contentPadding: const EdgeInsets.all(32),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: Colors.deepPurple.shade100,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.check_circle,
-                size: 48,
-                color: Colors.deepPurple.shade400,
-              ),
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              'Welcome to Soundmates!',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Your profile has been created successfully. Start discovering amazing musicians!',
-              style: TextStyle(
-                fontSize: 15,
-                color: Colors.grey.shade700,
-                height: 1.5,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 32),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  // Navigate to home
-                  Navigator.of(context).pushReplacementNamed('/home');
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.deepPurple.shade400,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  'OK',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  // Welcome dialog removed from flow (registration goes directly to profile view after save)
   
   Future<BandMemberDto?> _showBandMemberDialog({BandMemberDto? member}) async {
   final nameCtrl = TextEditingController(text: member?.name ?? '');
@@ -710,7 +650,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   age: int.tryParse(ageCtrl.text) ?? 0,
                   displayOrder: member?.displayOrder ?? 0,
                   bandId: 'TEMP',       // backend overwrites
-                  bandRoleId: selectedRole!.id, // ✅ roleId taken from dropdown
+                  bandRoleId: selectedRole!.id, // 
                 );
                 Navigator.pop(ctx, dto);
               },
@@ -925,18 +865,26 @@ Widget _buildBandMembersSection() {
       child: Column(
         children: [
           const SizedBox(height: 20),
-          // Profile Picture
-          Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.purple, width: 3),
-            ),
-            child: CircleAvatar(
-              radius: 50,
-              backgroundColor: Colors.grey[300],
-              child: Icon(Icons.person, size: 50, color: Colors.grey[600]),
-            ),
-          ),
+          // Profile Picture (use first uploaded photo if available)
+          Builder(builder: (context) {
+            final String? avatarUrl = _profilePictures.isNotEmpty
+                ? _profilePictures.first.getAbsoluteUrl(widget.api.baseUrl)
+                : null;
+            return Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.purple, width: 3),
+              ),
+              child: CircleAvatar(
+                radius: 50,
+                backgroundColor: Colors.grey[300],
+                backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
+                child: avatarUrl == null
+                    ? Icon(Icons.person, size: 50, color: Colors.grey[600])
+                    : null,
+              ),
+            );
+          }),
           const SizedBox(height: 16),
           // Name
           Text(

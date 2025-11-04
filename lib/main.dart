@@ -11,7 +11,6 @@ import 'screens/profile_screen.dart';
 import 'screens/matches_screen.dart';
 import 'screens/users_screen.dart';
 import 'screens/filters_screen.dart';
-import 'screens/visit_profile_screen.dart';
 
 
 Future<void> main() async {

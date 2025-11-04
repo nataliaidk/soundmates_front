@@ -86,6 +86,12 @@ class _LoginScreenState extends State<LoginScreen> {
               },
               child: const Text('Don’t have an account? Sign Up'),
             ),
+            const SizedBox(height: 12),
+            if (_status.isNotEmpty)
+              Text(
+                _status,
+                style: const TextStyle(color: Colors.grey),
+              ),
           ],
         ),
       ),
