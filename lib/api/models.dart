@@ -959,4 +959,42 @@ class MessageDto {
   }
 }
 
+class MessagePreviewDto {
+  final String userId;
+  final String userName;
+  final String? userImageUrl;
+  final String lastMessage;
+  final DateTime lastMessageTime;
+
+  MessagePreviewDto({
+    required this.userId,
+    required this.userName,
+    this.userImageUrl,
+    required this.lastMessage,
+    required this.lastMessageTime,
+  });
+
+  factory MessagePreviewDto.fromJson(Map<String, dynamic> json) {
+    // Handle messages array - take the last message
+    String lastMsg = '';
+    DateTime lastTime = DateTime.now();
+
+    if (json['messages'] is List && (json['messages'] as List).isNotEmpty) {
+      final messages = json['messages'] as List;
+      final lastMessageJson = messages.last;
+      lastMsg = lastMessageJson['content']?.toString() ?? '';
+      lastTime = DateTime.tryParse(lastMessageJson['timestamp']?.toString() ?? '') ?? DateTime.now();
+    }
+
+    return MessagePreviewDto(
+      userId: json['userId']?.toString() ?? '',
+      userName: json['userName']?.toString() ?? '',
+      userImageUrl: json['userImageUrl']?.toString(),
+      lastMessage: lastMsg,
+      lastMessageTime: lastTime,
+    );
+  }
+}
+
+
 
