@@ -121,6 +121,19 @@ class _FiltersScreenState extends State<FiltersScreen> {
 
         final prefs = MatchPreferenceDto.fromJson(data);
 
+        // Load cities first if country is selected
+        if (prefs.countryId != null) {
+          try {
+            final res = await widget.api.getCities(prefs.countryId!);
+            if (mounted) {
+              final cities = (jsonDecode(res.body) as List).map((data) => CityDto.fromJson(data)).toList();
+              _cities = cities;
+            }
+          } catch (e) {
+            print('Error loading cities: $e');
+          }
+        }
+
         setState(() {
           _showArtists = prefs.showArtists ?? true;
           _showBands = prefs.showBands ?? true;
@@ -146,18 +159,13 @@ class _FiltersScreenState extends State<FiltersScreen> {
               }
             }
           }
-
         });
-
-        // Load cities if country is selected
-        if (prefs.countryId != null) {
-          await _onCountryChanged(prefs.countryId);
-        }
       }
     } catch (e) {
       print('Error loading current preferences: $e');
     }
   }
+
 
   Future<void> _loadGenders() async {
     try {
