@@ -4,6 +4,7 @@ import '../api/token_store.dart';
 import '../api/models.dart';
 import 'dart:convert';
 import 'package:jwt_decoder/jwt_decoder.dart';
+import 'dart:async';
 
 class ChatScreen extends StatefulWidget {
   final ApiClient api;
@@ -31,12 +32,27 @@ class _ChatScreenState extends State<ChatScreen> {
   List<MessageDto> _messages = [];
   bool _loading = true;
   String? _currentUserId;
+  Timer? _refreshTimer;
 
   @override
   void initState() {
     super.initState();
     _loadCurrentUserId();
     _loadMessages();
+
+    // Start periodic refresh
+    _refreshTimer = Timer.periodic(
+      const Duration(seconds: 2),
+          (timer) => _loadMessages(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    _scrollController.dispose();
+    _refreshTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadCurrentUserId() async {
@@ -58,16 +74,13 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-
-  @override
-  void dispose() {
-    _messageController.dispose();
-    _scrollController.dispose();
-    super.dispose();
-  }
-
   Future<void> _loadMessages() async {
-    setState(() => _loading = true);
+    // Don't show loading indicator on periodic refreshes
+    final isInitialLoad = _messages.isEmpty;
+    if (isInitialLoad) {
+      setState(() => _loading = true);
+    }
+
     try {
       final resp = await widget.api.getMessages(widget.userId, limit: 50);
       if (resp.statusCode == 200) {
@@ -81,20 +94,50 @@ class _ChatScreenState extends State<ChatScreen> {
             print('Error parsing message: $e');
           }
         }
-        setState(() {
-          _messages = messages;
-          _loading = false;
-        });
-        // Wait for the widget tree to rebuild before scrolling
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _scrollToBottom();
-        });
+
+        // Only update if messages have changed
+        if (_hasMessagesChanged(messages)) {
+          // Save scroll position
+          final shouldScrollToBottom = _scrollController.hasClients &&
+              _scrollController.position.pixels >=
+                  _scrollController.position.maxScrollExtent - 100;
+
+          setState(() {
+            _messages = messages;
+            _loading = false;
+          });
+
+          // Only auto-scroll if user was already at bottom
+          if (shouldScrollToBottom) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _scrollToBottom();
+            });
+          }
+        } else if (isInitialLoad) {
+          setState(() => _loading = false);
+        }
       }
     } catch (e) {
       print('Error loading messages: $e');
-      setState(() => _loading = false);
+      if (isInitialLoad) {
+        setState(() => _loading = false);
+      }
     }
   }
+
+  bool _hasMessagesChanged(List<MessageDto> newMessages) {
+    if (newMessages.length != _messages.length) return true;
+
+    for (int i = 0; i < newMessages.length; i++) {
+      if (newMessages[i].content != _messages[i].content ||
+          newMessages[i].senderId != _messages[i].senderId) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
 
 
   void _scrollToBottom() {
