@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:zpi_test/screens/visit_profile_screen.dart';
 import '../api/api_client.dart';
 import '../api/token_store.dart';
 import '../api/models.dart';
 import 'dart:convert';
 import 'package:jwt_decoder/jwt_decoder.dart';
+import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'dart:async';
 
 class ChatScreen extends StatefulWidget {
@@ -33,6 +35,7 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _loading = true;
   String? _currentUserId;
   Timer? _refreshTimer;
+  bool _showEmojiPicker = false;
 
   @override
   void initState() {
@@ -205,31 +208,45 @@ class _ChatScreenState extends State<ChatScreen> {
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Row(
-          children: [
-            CircleAvatar(
-              radius: 18,
-              backgroundImage: widget.userImageUrl != null
-                  ? NetworkImage(widget.userImageUrl!)
-                  : null,
-              backgroundColor: Colors.grey.shade300,
-              child: widget.userImageUrl == null
-                  ? Text(
-                widget.userName.substring(0, 1).toUpperCase(),
-                style: const TextStyle(fontSize: 16, color: Colors.white),
-              )
-                  : null,
-            ),
-            const SizedBox(width: 12),
-            Text(
-              widget.userName,
-              style: const TextStyle(
-                color: Colors.black,
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
+        title: GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => VisitProfileScreen(
+                  api: widget.api,
+                  tokens: widget.tokens,
+                  userId: widget.userId,
+                ),
               ),
-            ),
-          ],
+            );
+          },
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 18,
+                backgroundImage: widget.userImageUrl != null
+                    ? NetworkImage(widget.userImageUrl!)
+                    : null,
+                backgroundColor: Colors.grey.shade300,
+                child: widget.userImageUrl == null
+                    ? Text(
+                  widget.userName.substring(0, 1).toUpperCase(),
+                  style: const TextStyle(fontSize: 16, color: Colors.white),
+                )
+                    : null,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                widget.userName,
+                style: const TextStyle(
+                  color: Colors.black,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
         ),
         actions: [
           IconButton(
@@ -243,45 +260,95 @@ class _ChatScreenState extends State<ChatScreen> {
         ],
       ),
       body: Column(
-        children: [
-          Expanded(
-            child: _loading
-                ? const Center(
-              child: CircularProgressIndicator(
-                color: Color(0xFF6B4CE6),
-              ),
-            )
-                : _messages.isEmpty
-                ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.chat_bubble_outline,
-                      size: 64, color: Colors.grey.shade400),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No messages yet',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.grey.shade600,
+          children: [
+      Expanded(
+      child: _loading
+      ? const Center(
+          child: CircularProgressIndicator(
+          color: Color(0xFF6B4CE6),
+    ),
+    )
+        : _messages.isEmpty
+    ? Center(
+    child: Column(
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+    Icon(Icons.chat_bubble_outline,
+    size: 64, color: Colors.grey.shade400),
+    const SizedBox(height: 16),
+    Text(
+    'No messages yet',
+    style: TextStyle(
+    fontSize: 18,
+    color: Colors.grey.shade600,
+    ),
+    ),
+    ],
+    ),
+    ): ListView.builder(
+        controller: _scrollController,
+        padding: const EdgeInsets.all(16),
+        itemCount: _messages.length,
+        itemBuilder: (context, index) => _MessageBubble(
+          message: _messages[index],
+          userImageUrl: widget.userImageUrl,
+          currentUserId: _currentUserId,
+          userId: widget.userId,
+          api: widget.api,
+          tokens: widget.tokens,
+        ),
+      ),
+      ),
+            _buildMessageInput(),
+            if (_showEmojiPicker)
+              SizedBox(
+                height: 250,
+                child: EmojiPicker(
+                  onEmojiSelected: (category, emoji) {
+                    _messageController.text += emoji.emoji;
+                  },
+                  config: Config(
+                    emojiViewConfig: EmojiViewConfig(
+                      columns: 7,
+                      emojiSizeMax: 32.0,
+                      backgroundColor: Colors.white,
+                      buttonMode: ButtonMode.MATERIAL,
+                      recentsLimit: 28,
+                      noRecents: const Text('No Recents', style: TextStyle(fontSize: 20)),
+                      loadingIndicator: const CircularProgressIndicator(
+                        color: Color(0xFF6B4CE6),
+                      ),
+                      gridPadding: EdgeInsets.zero,
+                      horizontalSpacing: 0,
+                      verticalSpacing: 0,
+                      replaceEmojiOnLimitExceed: false,
+                    ),
+                    categoryViewConfig: CategoryViewConfig(
+                      initCategory: Category.RECENT,
+                      backgroundColor: Colors.white,
+                      indicatorColor: const Color(0xFF6B4CE6),
+                      iconColor: Colors.grey,
+                      iconColorSelected: const Color(0xFF6B4CE6),
+                      dividerColor: Colors.grey.shade200,
+                      categoryIcons: const CategoryIcons(),
+                      recentTabBehavior: RecentTabBehavior.RECENT,
+                    ),
+                    bottomActionBarConfig: BottomActionBarConfig(
+                      backgroundColor: Colors.white,
+                      buttonColor: Colors.grey.shade200,
+                      buttonIconColor: const Color(0xFF6B4CE6),
+                    ),
+                    searchViewConfig: SearchViewConfig(
+                      backgroundColor: Colors.white,
+                      buttonIconColor: const Color(0xFF6B4CE6),
+                      hintText: 'Search emoji',
                     ),
                   ),
-                ],
+
+
+                ),
               ),
-            )
-                : ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.all(16),
-              itemCount: _messages.length,
-              itemBuilder: (context, index) => _MessageBubble(
-                message: _messages[index],
-                userImageUrl: widget.userImageUrl,
-                currentUserId: _currentUserId,
-              ),
-            ),
-          ),
-          _buildMessageInput(),
-        ],
+          ],
       ),
     );
   }
@@ -307,8 +374,15 @@ class _ChatScreenState extends State<ChatScreen> {
               onPressed: () {},
             ),
             IconButton(
-              icon: const Icon(Icons.emoji_emotions_outlined, color: Colors.grey),
-              onPressed: () {},
+              icon: Icon(
+                _showEmojiPicker ? Icons.keyboard : Icons.emoji_emotions_outlined,
+                color: Colors.grey,
+              ),
+              onPressed: () {
+                setState(() {
+                  _showEmojiPicker = !_showEmojiPicker;
+                });
+              },
             ),
             Expanded(
               child: TextField(
@@ -337,17 +411,22 @@ class _MessageBubble extends StatelessWidget {
   final MessageDto message;
   final String? userImageUrl;
   final String? currentUserId;
+  final String userId;
+  final ApiClient api;
+  final TokenStore tokens;
 
   const _MessageBubble({
     required this.message,
     this.userImageUrl,
     this.currentUserId,
+    required this.userId,
+    required this.api,
+    required this.tokens,
   });
 
   @override
   Widget build(BuildContext context) {
     final isMe = currentUserId != null && message.senderId == currentUserId;
-
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -357,11 +436,25 @@ class _MessageBubble extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isMe) ...[
-            CircleAvatar(
-              radius: 16,
-              backgroundImage:
-              userImageUrl != null ? NetworkImage(userImageUrl!) : null,
-              backgroundColor: Colors.grey.shade300,
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => VisitProfileScreen(
+                      api: api,
+                      tokens: tokens,
+                      userId: userId,
+                    ),
+                  ),
+                );
+              },
+              child: CircleAvatar(
+                radius: 16,
+                backgroundImage:
+                userImageUrl != null ? NetworkImage(userImageUrl!) : null,
+                backgroundColor: Colors.grey.shade300,
+              ),
             ),
             const SizedBox(width: 8),
           ],
@@ -391,5 +484,4 @@ class _MessageBubble extends StatelessWidget {
       ),
     );
   }
-
 }

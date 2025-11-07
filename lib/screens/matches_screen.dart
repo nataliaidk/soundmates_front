@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:jwt_decoder/jwt_decoder.dart';
 import '../api/api_client.dart';
 import '../api/token_store.dart';
 import '../api/models.dart';
@@ -20,12 +21,14 @@ class _MatchesScreenState extends State<MatchesScreen> {
   List<OtherUserProfileDto> _matches = [];
   bool _loading = true;
   Map<String, MessageDto> _lastMessages = {};
+  String? _currentUserId;
 
 
   @override
   void initState() {
     super.initState();
     _loadMatches();
+    _loadCurrentUserId();
   }
 
   Future<void> _loadMatches() async {
@@ -66,26 +69,78 @@ class _MatchesScreenState extends State<MatchesScreen> {
     }
   }
 
-  Future<void> _loadLastMessages() async {
-    for (final match in _matches) {
-      try {
-        final resp = await widget.api.getMessagePreviews(limit: 20);
-        debugPrint('Response for last message of ${match.id}: ${resp.statusCode} ${resp.body}');
-        if (resp.statusCode == 200) {
-          final decoded = jsonDecode(resp.body);
-          if (decoded is List && decoded.isNotEmpty) {
-            if (mounted) {
-              setState(() {
-                _lastMessages[match.id] = MessageDto.fromJson(decoded.first);
-              });
-            }
-          }
-        }
-      } catch (e) {
-        print('Error loading last message for ${match.id}: $e');
+  Future<void> _loadCurrentUserId() async {
+    try {
+      final token = await widget.tokens.readAccessToken();
+      if (token != null) {
+        final decoded = JwtDecoder.decode(token);
+
+
+        final userId = decoded['sub'] ?? decoded['userId'] ?? decoded['id'];
+
+
+        setState(() {
+          _currentUserId = userId;
+        });
       }
+    } catch (e) {
+      debugPrint('Error decoding token: $e');
     }
   }
+
+  Future<void> _loadLastMessages() async {
+    try {
+      final resp = await widget.api.getMessagePreviews(limit: 20);
+      debugPrint('Message previews response: ${resp.statusCode} ${resp.body}');
+
+      if (resp.statusCode == 200) {
+        final decoded = jsonDecode(resp.body);
+        if (decoded is List) {
+          final messages = decoded.map((m) => MessageDto.fromJson(m)).toList();
+
+          if (mounted) {
+            setState(() {
+              _lastMessages.clear();
+
+              for (final match in _matches) {
+                final matchMessage = messages.firstWhere(
+                      (msg) =>
+                  (msg.senderId == _currentUserId && msg.receiverId == match.id) ||
+                      (msg.senderId == match.id && msg.receiverId == _currentUserId),
+                  orElse: () => MessageDto(
+                    content: '',
+                    timestamp: DateTime.now(),
+                    senderId: '',
+                    receiverId: '',
+                  ),
+                );
+
+                if (matchMessage.content.isNotEmpty) {
+                  _lastMessages[match.id] = matchMessage;
+                }
+              }
+
+              // Sort matches by last message timestamp (most recent first)
+              _matches.sort((a, b) {
+                final aMessage = _lastMessages[a.id];
+                final bMessage = _lastMessages[b.id];
+
+                if (aMessage == null && bMessage == null) return 0;
+                if (aMessage == null) return 1;
+                if (bMessage == null) return -1;
+
+                return bMessage.timestamp.compareTo(aMessage.timestamp);
+              });
+            });
+          }
+        }
+      }
+    } catch (e) {
+      print('Error loading message previews: $e');
+    }
+  }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -171,6 +226,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
                   lastMessage: _lastMessages[_matches[index].id],
                   api: widget.api,
                   tokens: widget.tokens,
+                  onRefresh: _loadLastMessages,
                 ),
               ),
             ),
@@ -284,12 +340,14 @@ class _MatchListItem extends StatelessWidget {
   final MessageDto? lastMessage;
   final ApiClient api;
   final TokenStore tokens;
+  final VoidCallback onRefresh;
 
   const _MatchListItem({
     required this.match,
     this.lastMessage,
     required this.api,
     required this.tokens,
+    required this.onRefresh,
   });
 
   @override
@@ -299,8 +357,8 @@ class _MatchListItem extends StatelessWidget {
         : null;
 
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
+      onTap: () async {
+        await Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => ChatScreen(
@@ -312,6 +370,7 @@ class _MatchListItem extends StatelessWidget {
             ),
           ),
         );
+        onRefresh();
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
@@ -361,3 +420,4 @@ class _MatchListItem extends StatelessWidget {
     );
   }
 }
+
