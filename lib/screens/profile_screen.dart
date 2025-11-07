@@ -331,6 +331,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
           }
         }
 
+        // Extract band members if present (for band profiles)
+        final List<BandMemberDto> members = [];
+        if (profile['bandMembers'] is List) {
+          for (final m in profile['bandMembers']) {
+            if (m is Map) {
+              try {
+                members.add(BandMemberDto.fromJson(Map<String, dynamic>.from(m)));
+              } catch (_) {}
+            }
+          }
+        }
+
         CountryDto? selCountry;
         if (cid != null && cid.isNotEmpty && _countries.isNotEmpty) {
           selCountry = _countries.firstWhere((c) => c.id == cid, orElse: () => _countries.first);
@@ -347,6 +359,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _profilePictures = pictures;
           _musicSamples = samples;
           _isBand = profile['isBand'] is bool ? profile['isBand'] as bool : (profile['isBand']?.toString().toLowerCase() == 'true');
+          _bandMembers = members;
           // Load user tags - backend returns 'tagsIds' not 'tags'
           if (profile['tagsIds'] is List) {
             _userTagIds = (profile['tagsIds'] as List).map((t) => t.toString()).toList();
@@ -648,7 +661,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   id: member?.id ?? const Uuid().v4(),
                   name: nameCtrl.text.trim(),
                   age: int.tryParse(ageCtrl.text) ?? 0,
-                  displayOrder: member?.displayOrder ?? 0,
+                  displayOrder: 0,
                   bandId: 'TEMP',       // backend overwrites
                   bandRoleId: selectedRole!.id, // 
                 );
@@ -721,8 +734,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return key[0].toUpperCase() + key.substring(1);
   }
 
+  String _bandRoleName(String bandRoleId) {
+    if (_bandRoles != null) {
+      for (final r in _bandRoles!) {
+        if (r.id == bandRoleId) return r.name;
+      }
+    }
+    return bandRoleId;
+  }
+
+  IconData _iconForRoleName(String roleName) {
+    final n = roleName.toLowerCase();
+    // Specific mappings based on provided roles list
+    if (n.contains('backing') && n.contains('vocal')) return Icons.mic;
+    if (n.contains('vocalist') || n.contains('vocal') || n.contains('singer')) return Icons.mic;
+    if (n.contains('double bass')) return Icons.queue_music;
+    if (n == 'bassist' || n.contains('bassist')) return Icons.queue_music;
+    if (n.contains('guitarist') || n.contains('guitar')) return Icons.queue_music;
+    if (n.contains('keyboardist') || n.contains('keyboard') || n.contains('piano') || n.contains('keys')) return Icons.piano;
+    if (n.contains('turntablist')) return Icons.headset;
+    if (n.contains('synth')) return Icons.graphic_eq;
+    if (n.contains('brass')) return Icons.audiotrack;
+    if (n.contains('cellist') || n.contains('cello')) return Icons.queue_music;
+    if (n.contains('violinist') || n.contains('violin')) return Icons.audiotrack;
+    if (n.contains('woodwind')) return Icons.audiotrack;
+    if (n.contains('drummer') || n.contains('drum')) return Icons.music_note;
+    if (n.contains('other')) return Icons.help_outline;
+    // Generic fallbacks
+    if (n.contains('producer') || n.contains('production')) return Icons.equalizer;
+    if (n.contains('dj')) return Icons.headset;
+    if (n.contains('music')) return Icons.music_note;
+    return Icons.person;
+  }
+
   Widget _buildTags() {
-    // if not loaded yet, show button to reload
     if (_options.isEmpty) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1159,6 +1204,69 @@ Widget _buildBandMembersSection() {
                       ],
                     ),
                   ],
+              const SizedBox(height: 16),
+              if (_isBand == true && _bandMembers.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                const Text(
+                  'BAND MEMBERS',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black54,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ..._bandMembers.map((m) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    children: [
+                      // role icon avatar
+                      Builder(builder: (context) {
+                        final roleName = _bandRoleName(m.bandRoleId);
+                        final icon = _iconForRoleName(roleName);
+                        return Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: Colors.deepPurple.shade100,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            icon,
+                            color: Colors.deepPurple.shade400,
+                            size: 20,
+                          ),
+                        );
+                      }),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${m.name}${m.age > 0 ? ' (${m.age})' : ''}',
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Role: ${_bandRoleName(m.bandRoleId)}',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                )),
+              ],
             ],
           ),
         ),
