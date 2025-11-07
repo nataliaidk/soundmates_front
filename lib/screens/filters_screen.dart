@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:zpi_test/api/api_client.dart';
+import 'package:dropdown_search/dropdown_search.dart';
+
 
 import '../api/models.dart';
 import '../api/token_store.dart';
 import 'dart:convert';
-
-extension LetExtension<T> on T {
-  R let<R>(R Function(T) transform) => transform(this);
-}
 
 class FiltersScreen extends StatefulWidget {
   final ApiClient api;
@@ -31,10 +29,15 @@ class _FiltersScreenState extends State<FiltersScreen> {
   int? _bandMaxMembersCount;
   String? _selectedCountryId;
   String? _selectedCityId;
+  GenderDto? _selectedGender;
 
+  // New state for tags
+  // map categoryName -> list of tags in that category
   final Map<String, List<TagDto>> _tagGroups = {};
+  // map categoryName -> set of selected tag IDs
   final Map<String, Set<String>> _selectedTags = {};
 
+  // Data from API
   List<CountryDto> _countries = [];
   List<CityDto> _cities = [];
   List<GenderDto> _genders = [];
@@ -83,13 +86,14 @@ class _FiltersScreenState extends State<FiltersScreen> {
       final Map<String, List<TagDto>> groups = {};
       if (allCategories.isNotEmpty && allTags.isNotEmpty) {
         for (final category in allCategories) {
+          print('Processing category: ${category.name} : ${category.id}'); // Debug print
           final categoryTags = allTags.where((t) => t.tagCategoryId == category.id).toList();
           if (categoryTags.isNotEmpty) {
             groups[category.name] = categoryTags;
           }
         }
       } else if (allTags.isNotEmpty) {
-        groups['Tags'] = allTags;
+        groups['Tags'] = allTags; // Fallback if no categories
       }
 
       setState(() {
@@ -113,6 +117,8 @@ class _FiltersScreenState extends State<FiltersScreen> {
 
       if (resp.statusCode == 200) {
         final data = jsonDecode(resp.body);
+        print('Loaded preferences: $data'); // Debug print
+
         final prefs = MatchPreferenceDto.fromJson(data);
 
         setState(() {
@@ -127,22 +133,23 @@ class _FiltersScreenState extends State<FiltersScreen> {
           _bandMinMembersCount = prefs.bandMinMembersCount;
           _bandMaxMembersCount = prefs.bandMaxMembersCount;
 
+          // Load selected tags into groups
           if (prefs.filterTagsIds != null) {
             for (final tagId in prefs.filterTagsIds!) {
+              // Find which category this tag belongs to
               for (final entry in _tagGroups.entries) {
-                final tag = entry.value.firstWhere(
-                      (t) => t.id == tagId,
-                  orElse: () => TagDto(id: '', name: '', tagCategoryId: ''),
-                );
-                if (tag.id.isNotEmpty) {
-                  _selectedTags.putIfAbsent(entry.key, () => {}).add(tagId);
+                if (entry.value.any((t) => t.id == tagId)) {
+                  _selectedTags[entry.key] ??= {};
+                  _selectedTags[entry.key]!.add(tagId);
                   break;
                 }
               }
             }
           }
+
         });
 
+        // Load cities if country is selected
         if (prefs.countryId != null) {
           await _onCountryChanged(prefs.countryId);
         }
@@ -166,14 +173,18 @@ class _FiltersScreenState extends State<FiltersScreen> {
         }
         setState(() => _genders = list);
       }
-    } catch (_) {}
+    } catch (_) {
+      // ignore
+    }
   }
 
   Future<void> _savePreferences() async {
     setState(() => _isLoading = true);
 
     try {
-      final allSelectedTagIds = _selectedTags.values.expand((set) => set).toList();
+      final allSelectedTagIds = _selectedTags.values
+          .expand((set) => set)
+          .toList();
 
       final dto = UpdateMatchPreferenceDto(
         showArtists: _showArtists,
@@ -195,19 +206,7 @@ class _FiltersScreenState extends State<FiltersScreen> {
 
       if (resp.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Row(
-              children: [
-                Icon(Icons.check_circle, color: Colors.white),
-                SizedBox(width: 12),
-                Text('Preferences saved!', style: TextStyle(fontSize: 16)),
-              ],
-            ),
-            backgroundColor: const Color(0xFF6A4C9C),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            margin: const EdgeInsets.all(16),
-          ),
+          const SnackBar(content: Text('Preferences saved!')),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -229,9 +228,9 @@ class _FiltersScreenState extends State<FiltersScreen> {
 
     setState(() {
       _selectedCountryId = countryId;
-      _selectedCityId = null;
-      _cities = [];
-      _isLoading = true;
+      _selectedCityId = null; // Reset city selection
+      _cities = []; // Clear previous cities
+      _isLoading = true; // Show loading indicator for cities
     });
 
     try {
@@ -259,83 +258,33 @@ class _FiltersScreenState extends State<FiltersScreen> {
 
   Future<void> _showTagPicker(String category, List<TagDto> options) async {
     final currentSelection = Set<String>.from(_selectedTags[category] ?? {});
-    final TextEditingController searchController = TextEditingController();
     String searchQuery = '';
 
     final result = await showDialog<Set<String>>(
       context: context,
       builder: (ctx) {
         return StatefulBuilder(builder: (context, setDialogState) {
+          // Filter options based on search query
           final filteredOptions = options.where((tag) {
             return tag.name.toLowerCase().contains(searchQuery.toLowerCase());
           }).toList();
 
-          return Dialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-            child: Container(
-              constraints: const BoxConstraints(maxHeight: 500, maxWidth: 400),
-              padding: const EdgeInsets.all(24),
+          return AlertDialog(
+            title: Text('Select ${category == 'Activity' ? 'Who you are looking for' : category}'),
+            content: SizedBox(
+              width: double.maxFinite,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF6A4C9C), Color(0xFF8B6BB7)],
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(_getIconForCategory(category), color: Colors.white, size: 20),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'Select $category',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF3D2C5E),
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.close, color: Color(0xFF6A4C9C)),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
+                  // Search field
                   TextField(
-                    controller: searchController,
                     decoration: InputDecoration(
                       hintText: 'Search...',
-                      prefixIcon: const Icon(Icons.search, color: Color(0xFF6A4C9C)),
-                      filled: true,
-                      fillColor: const Color(0xFFF8F5FF),
+                      prefixIcon: const Icon(Icons.search),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide(
-                          color: const Color(0xFF6A4C9C).withOpacity(0.2),
-                          width: 2,
-                        ),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide(
-                          color: const Color(0xFF6A4C9C).withOpacity(0.2),
-                          width: 2,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(
-                          color: Color(0xFF6A4C9C),
-                          width: 2,
-                        ),
-                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     ),
                     onChanged: (value) {
                       setDialogState(() {
@@ -344,95 +293,37 @@ class _FiltersScreenState extends State<FiltersScreen> {
                     },
                   ),
                   const SizedBox(height: 16),
+                  // List of filtered tags
                   Flexible(
-                    child: filteredOptions.isEmpty
-                        ? const Center(
-                      child: Text(
-                        'No results found',
-                        style: TextStyle(
-                          color: Color(0xFF9E9E9E),
-                          fontSize: 14,
-                        ),
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: filteredOptions.map((tag) {
+                          final isSelected = currentSelection.contains(tag.id);
+                          return CheckboxListTile(
+                            title: Text(tag.name),
+                            value: isSelected,
+                            onChanged: (bool? selected) {
+                              setDialogState(() {
+                                if (selected == true) {
+                                  currentSelection.add(tag.id);
+                                } else {
+                                  currentSelection.remove(tag.id);
+                                }
+                              });
+                            },
+                          );
+                        }).toList(),
                       ),
-                    )
-                        : ListView(
-                      shrinkWrap: true,
-                      children: filteredOptions.map((tag) {
-                        final isSelected = currentSelection.contains(tag.id);
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              onTap: () {
-                                setDialogState(() {
-                                  if (isSelected) {
-                                    currentSelection.remove(tag.id);
-                                  } else {
-                                    currentSelection.add(tag.id);
-                                  }
-                                });
-                              },
-                              borderRadius: BorderRadius.circular(12),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? const Color(0xFF6A4C9C).withOpacity(0.1)
-                                      : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: isSelected
-                                        ? const Color(0xFF6A4C9C)
-                                        : const Color(0xFF6A4C9C).withOpacity(0.2),
-                                    width: 1.5,
-                                  ),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      isSelected ? Icons.check_circle : Icons.circle_outlined,
-                                      color: isSelected ? const Color(0xFF6A4C9C) : const Color(0xFF9E9E9E),
-                                      size: 22,
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Text(
-                                        tag.name,
-                                        style: TextStyle(
-                                          fontSize: 15,
-                                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                                          color: isSelected ? const Color(0xFF6A4C9C) : const Color(0xFF3D2C5E),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.pop(context, currentSelection),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF6A4C9C),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      child: const Text('Done', style: TextStyle(fontSize: 16, color: Colors.white)),
                     ),
                   ),
                 ],
               ),
             ),
+            actions: [
+              TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Cancel')),
+              ElevatedButton(onPressed: () => Navigator.of(ctx).pop(currentSelection), child: const Text('OK')),
+            ],
           );
         });
       },
@@ -445,703 +336,421 @@ class _FiltersScreenState extends State<FiltersScreen> {
     }
   }
 
-
-  IconData _getIconForCategory(String category) {
-    switch (category.toLowerCase()) {
-      case 'genre':
-        return Icons.music_note;
-      case 'instrument':
-        return Icons.piano;
-      case 'activity':
-        return Icons.directions_run;
-      default:
-        return Icons.label;
+  Widget _buildTagSection(String category) {
+    final options = _tagGroups[category] ?? [];
+    if (options.isEmpty) {
+      return const SizedBox.shrink();
     }
-  }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F5FF),
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildModernAppBar(),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.all(20),
-                children: [
-                  _buildHeaderSection(),
-                  const SizedBox(height: 20),
-                  _buildLookingForCard(),
-                  const SizedBox(height: 20),
-                  _buildDistanceCard(),
-                  const SizedBox(height: 20),
-                  _buildLocationCard(),
-                  const SizedBox(height: 20),
-                  _buildAgeRangeCard(),
-                  const SizedBox(height: 20),
-                  _buildGenderCard(),
-                  const SizedBox(height: 20),
-                  _buildBandMembersCard(),
-                  for (final category in _tagGroups.keys)
-                    _buildTagCard(category, _getIconForCategory(category)),
-                  const SizedBox(height: 32),
-                  ElevatedButton(
-                    onPressed: _isLoading ? null : _savePreferences,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF6A4C9C),
-                      padding: const EdgeInsets.symmetric(vertical: 18),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      elevation: 4,
-                    ),
-                    child: _isLoading
-                        ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
-                    )
-                        : const Text(
-                      'Save Preferences',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+    final selectedIds = _selectedTags[category] ?? {};
+    final selectedTagObjects = options.where((t) => selectedIds.contains(t.id)).toList();
 
-  Widget _buildGenderCard() {
-    return _buildMasterpieceCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildCardTitle('Artist Gender', Icons.wc),
-          const SizedBox(height: 16),
-          GestureDetector(
-            onTap: () async {
-              if (_genders.isEmpty) return;
-              final result = await showDialog<String>(
-                context: context,
-                builder: (ctx) {
-                  String searchQuery = '';
-                  return StatefulBuilder(
-                    builder: (context, setDialogState) {
-                      final filtered = _genders.where((g) => g.name.toLowerCase().contains(searchQuery.toLowerCase())).toList();
-                      return Dialog(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                        child: Container(
-                          constraints: const BoxConstraints(maxHeight: 500, maxWidth: 400),
-                          padding: const EdgeInsets.all(24),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(10),
-                                    decoration: BoxDecoration(
-                                      gradient: const LinearGradient(
-                                        colors: [Color(0xFF6A4C9C), Color(0xFF8B6BB7)],
-                                      ),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: const Icon(Icons.wc, color: Colors.white, size: 20),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  const Expanded(
-                                    child: Text(
-                                      'Select Artist Gender',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: Color(0xFF3D2C5E),
-                                      ),
-                                    ),
-                                  ),
-                                  IconButton(
-                                    onPressed: () => Navigator.pop(context),
-                                    icon: const Icon(Icons.close, color: Color(0xFF6A4C9C)),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                              TextField(
-                                decoration: InputDecoration(
-                                  hintText: 'Search...',
-                                  prefixIcon: const Icon(Icons.search, color: Color(0xFF6A4C9C)),
-                                  filled: true,
-                                  fillColor: const Color(0xFFF8F5FF),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                    borderSide: BorderSide(
-                                      color: const Color(0xFF6A4C9C).withOpacity(0.2),
-                                      width: 2,
-                                    ),
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                    borderSide: BorderSide(
-                                      color: const Color(0xFF6A4C9C).withOpacity(0.2),
-                                      width: 2,
-                                    ),
-                                  ),
-                                  focusedBorder: const OutlineInputBorder(
-                                    borderRadius: BorderRadius.all(Radius.circular(16)),
-                                    borderSide: BorderSide(
-                                      color: Color(0xFF6A4C9C),
-                                      width: 2,
-                                    ),
-                                  ),
-                                ),
-                                onChanged: (v) => setDialogState(() => searchQuery = v),
-                              ),
-                              const SizedBox(height: 16),
-                              Flexible(
-                                child: ListView(
-                                  shrinkWrap: true,
-                                  children: filtered.map((g) {
-                                    final isSelected = _selectedGenderId == g.id;
-                                    return Padding(
-                                      padding: const EdgeInsets.only(bottom: 8),
-                                      child: Material(
-                                        color: Colors.transparent,
-                                        child: InkWell(
-                                          onTap: () => Navigator.pop(context, g.id),
-                                          borderRadius: BorderRadius.circular(12),
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                                            decoration: BoxDecoration(
-                                              color: isSelected
-                                                  ? const Color(0xFF6A4C9C).withOpacity(0.1)
-                                                  : const Color(0xFFF8F5FF),
-                                              borderRadius: BorderRadius.circular(12),
-                                              border: Border.all(
-                                                color: isSelected
-                                                    ? const Color(0xFF6A4C9C)
-                                                    : const Color(0xFF6A4C9C).withOpacity(0.2),
-                                                width: isSelected ? 2 : 1,
-                                              ),
-                                            ),
-                                            child: Row(
-                                              children: [
-                                                Expanded(
-                                                  child: Text(
-                                                    g.name,
-                                                    style: TextStyle(
-                                                      fontSize: 16,
-                                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                                      color: isSelected ? const Color(0xFF6A4C9C) : const Color(0xFF3D2C5E),
-                                                    ),
-                                                  ),
-                                                ),
-                                                if (isSelected)
-                                                  const Icon(Icons.check_circle, color: Color(0xFF6A4C9C), size: 20),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  }).toList(),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                },
-              );
+    // The category 'Looking for' is named 'Activity' in profile_screen
+    final categoryTitle = category == 'Activity' ? 'Who are you looking for?' : category;
 
-              if (result != null) {
-                setState(() => _selectedGenderId = result);
-              }
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8F5FF),
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                  color: const Color(0xFF6A4C9C).withOpacity(0.2),
-                  width: 2,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFF8F5FF), Color(0xFFEDE7F6)],
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.wc, color: Color(0xFF6A4C9C), size: 20),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Text(
-                      _selectedGenderId != null
-                          ? (_genders.firstWhere((g) => g.id == _selectedGenderId, orElse: () => _genders.first).name)
-                          : 'Select Artist Gender',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: _selectedGenderId != null ? const Color(0xFF3D2C5E) : const Color(0xFF9E9E9E),
-                      ),
-                    ),
-                  ),
-                  const Icon(Icons.arrow_drop_down, color: Color(0xFF6A4C9C)),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-
-  Widget _buildModernAppBar() {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF6A4C9C), Color(0xFF8B6BB7)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF6A4C9C).withOpacity(0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
-          ),
-          const SizedBox(width: 8),
-          const Expanded(
-            child: Text(
-              'Filters',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeaderSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF6A4C9C), Color(0xFF8B6BB7)],
+        Text(categoryTitle, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        InkWell(
+          onTap: () => _showTagPicker(category, options),
+          child: InputDecorator(
+            decoration: InputDecoration(
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8.0),
+              ),
+              contentPadding: const EdgeInsets.all(12.0),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: selectedTagObjects.isNotEmpty
+                      ? Wrap(
+                    spacing: 8.0,
+                    runSpacing: 4.0,
+                    children: selectedTagObjects.map((tag) {
+                      return InputChip(
+                        label: Text(tag.name),
+                        onDeleted: () {
+                          setState(() {
+                            _selectedTags[category]?.remove(tag.id);
+                          });
+                        },
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        padding: const EdgeInsets.all(2.0),
+                      );
+                    }).toList(),
+                  )
+                      : const Text('Select...'),
                 ),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: const Icon(Icons.tune, color: Colors.white, size: 28),
+                const Icon(Icons.keyboard_arrow_down),
+              ],
             ),
-            const SizedBox(width: 16),
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Match Preferences',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF3D2C5E),
-                    ),
-                  ),
-                  Text(
-                    'Customize your perfect match',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF9E9E9E),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+          ),
         ),
+        const SizedBox(height: 16),
       ],
     );
   }
 
-  Widget _buildMasterpieceCard({required Widget child}) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(28),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Colors.white, Color(0xFFFAF8FF)],
+  // In _FiltersScreenState class, replace the current build method content with:
+
+  @override
+  Widget build(BuildContext context) {
+    const primaryColor = Color(0xFF6A4C9C);
+    const backgroundColor = Color(0xFFF8F4FF);
+    const textColor = Color(0xFF3D2C5E);
+    const cardColor = Colors.white;
+
+    return Scaffold(
+      backgroundColor: backgroundColor,
+      appBar: AppBar(
+        backgroundColor: primaryColor,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+          onPressed: () => Navigator.of(context).pop(),
         ),
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF6A4C9C).withOpacity(0.08),
-            blurRadius: 30,
-            spreadRadius: 0,
-            offset: const Offset(0, 10),
-          ),
-          BoxShadow(
-            color: Colors.white.withOpacity(0.8),
-            blurRadius: 10,
-            spreadRadius: -5,
-            offset: const Offset(-5, -5),
+        title: const Text(
+          'Filters',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 24),
+        ),
+        centerTitle: true,
+        actions: [
+          TextButton.icon(
+            onPressed: _savePreferences,
+            icon: const Icon(Icons.check, color: Colors.white),
+            label: const Text('Save', style: TextStyle(color: Colors.white, fontSize: 16)),
           ),
         ],
-        border: Border.all(
-          color: const Color(0xFF6A4C9C).withOpacity(0.1),
-          width: 1.5,
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _savePreferences,
+        backgroundColor: primaryColor,
+        icon: const Icon(Icons.check, color: Colors.white),
+        label: const Text(
+          'Save Filters',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
         ),
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: primaryColor))
+          : SingleChildScrollView(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header text
+            Text(
+              'Customize your match preferences',
+              style: TextStyle(
+                color: textColor,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Your potential matches will be suggested based on these preferences.',
+              style: TextStyle(color: textColor.withOpacity(0.7), fontSize: 14),
+            ),
+            const SizedBox(height: 24),
+
+            // Artist/Band Selector Card
+            _buildCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildCardTitle('Looking For', Icons.search),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _buildPillButton('Artists', Icons.person, _showArtists && !_showBands, primaryColor, () {
+                        setState(() {
+                          _showArtists = true;
+                          _showBands = false;
+                        });
+                      }),
+                      const SizedBox(width: 8),
+                      _buildPillButton('Both', Icons.group, _showArtists && _showBands, primaryColor, () {
+                        setState(() {
+                          _showArtists = true;
+                          _showBands = true;
+                        });
+                      }),
+                      const SizedBox(width: 8),
+                      _buildPillButton('Bands', Icons.groups, _showBands && !_showArtists, primaryColor, () {
+                        setState(() {
+                          _showArtists = false;
+                          _showBands = true;
+                        });
+                      }),
+                    ],
+                  ),
+
+
+
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Distance Card
+            _buildCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildCardTitle('Maximum Distance', Icons.location_on),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Slider(
+                          value: (_maxDistance ?? 500).toDouble(),
+                          min: 0,
+                          max: 500,
+                          divisions: 50, // 10 km increments
+                          activeColor: primaryColor,
+                          inactiveColor: primaryColor.withOpacity(0.2),
+                          onChanged: (double value) {
+                            setState(() {
+                              // Set to null if at maximum (500), otherwise use 350 as max actual value
+                              if (value >= 500) {
+                                _maxDistance = null;
+                              } else {
+                                _maxDistance = value.round();
+                              }
+                            });
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: primaryColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: primaryColor.withOpacity(0.3)),
+                        ),
+                        child: Text(
+                          _maxDistance == null ? '500+ km' : '${_maxDistance} km',
+                          style: TextStyle(
+                            color: primaryColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Location Card
+            _buildCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildCardTitle('Location', Icons.map),
+                  const SizedBox(height: 16),
+                  _buildEnhancedDropdown(
+                    items: _countries
+                        .map((c) => DropdownMenuItem(value: c.id, child: Text(c.name)))
+                        .toList(),
+                    value: _selectedCountryId,
+                    onChanged: (String? value) async {
+                      if (value != null) {
+                        await _onCountryChanged(value);
+                      } else {
+                        setState(() {
+                          _selectedCountryId = null;
+                          _selectedCityId = null;
+                          _cities = [];
+                        });
+                      }
+                    },
+                    hint: 'Select Country',
+                    icon: Icons.public,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildEnhancedDropdown(
+                    items: _cities
+                        .map((c) => DropdownMenuItem(value: c.id, child: Text(c.name)))
+                        .toList(),
+                    value: _selectedCityId,
+                    onChanged: (String? value) {
+                      setState(() {
+                        _selectedCityId = value;
+                      });
+                    },
+                    hint: 'Select City',
+                    icon: Icons.location_city,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Artist-specific filters
+            if (_showArtists) ...[
+              const SizedBox(height: 16),
+              _buildCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildCardTitle('Age Range', Icons.cake),
+                    const SizedBox(height: 8),
+                    RangeSlider(
+                      values: RangeValues(
+                        (_artistMinAge ?? 18).toDouble(),
+                        (_artistMaxAge ?? 99).toDouble(),
+                      ),
+                      min: 18,
+                      max: 99,
+                      divisions: 81,
+                      activeColor: primaryColor,
+                      inactiveColor: primaryColor.withOpacity(0.2),
+                      onChanged: (RangeValues values) {
+                        setState(() {
+                          _artistMinAge = values.start.round();
+                          _artistMaxAge = values.end.round();
+                        });
+                      },
+                    ),
+                    Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: primaryColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          '${_artistMinAge ?? 18} - ${_artistMaxAge ?? 99} years',
+                          style: TextStyle(
+                            color: primaryColor,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              if (_tagGroups.containsKey('Instruments'))
+                _buildTagCard('Instruments', Icons.music_note),
+
+              if (_tagGroups.containsKey('Activity'))
+                _buildTagCard('Activity', Icons.star),
+            ],
+
+            // Band-specific filters
+            if (_showBands) ...[
+              if (_tagGroups.containsKey('Band Status'))
+                _buildTagCard('Band Status', Icons.info_outline),
+
+              const SizedBox(height: 16),
+              _buildCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildCardTitle('Band Members', Icons.groups),
+                    const SizedBox(height: 8),
+                    RangeSlider(
+                      values: RangeValues(
+                        (_bandMinMembersCount ?? 1).toDouble(),
+                        (_bandMaxMembersCount ?? 10).toDouble(),
+                      ),
+                      min: 1,
+                      max: 10,
+                      divisions: 9,
+                      activeColor: primaryColor,
+                      inactiveColor: primaryColor.withOpacity(0.2),
+                      onChanged: (RangeValues values) {
+                        setState(() {
+                          _bandMinMembersCount = values.start.round();
+                          _bandMaxMembersCount = values.end.round();
+                        });
+                      },
+                    ),
+                    Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: primaryColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          '${_bandMinMembersCount ?? 1} - ${_bandMaxMembersCount ?? 10} members',
+                          style: TextStyle(
+                            color: primaryColor,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
+            // Other tag sections
+            ..._tagGroups.entries
+                .where((entry) =>
+            entry.key != 'Instruments' &&
+                entry.key != 'Activity' &&
+                entry.key != 'Band Status')
+                .map((entry) => _buildTagCard(entry.key, Icons.label)),
+
+            // Location Card
+            const SizedBox(height: 80),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCard({required Widget child}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: child,
     );
   }
 
   Widget _buildCardTitle(String title, IconData icon) {
+    const primaryColor = Color(0xFF6A4C9C);
     return Row(
       children: [
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFFF8F5FF), Color(0xFFEDE7F6)],
-            ),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Icon(icon, color: const Color(0xFF6A4C9C), size: 22),
-        ),
-        const SizedBox(width: 14),
+        Icon(icon, color: primaryColor, size: 22),
+        const SizedBox(width: 8),
         Text(
           title,
           style: const TextStyle(
-            fontSize: 20,
+            fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF3D2C5E),
-            letterSpacing: 0.3,
+            color: primaryColor,
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildLookingForCard() {
-    return _buildMasterpieceCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildCardTitle('Looking For', Icons.search),
-          const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8F5FF),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: const Color(0xFF6A4C9C).withOpacity(0.2),
-                width: 2,
-              ),
-            ),
-            child: Row(
-              children: [
-                _buildSegmentButton('Artists', 'artists', Icons.person),
-                const SizedBox(width: 8),
-                _buildSegmentButton('Bands', 'bands', Icons.groups),
-                const SizedBox(width: 8),
-                _buildSegmentButton('Both', 'both', Icons.people),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSegmentButton(String label, String value, IconData icon) {
-    final isSelected = (value == 'artists' && _showArtists && !_showBands) ||
-        (value == 'bands' && _showBands && !_showArtists) ||
-        (value == 'both' && _showArtists && _showBands);
-
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          setState(() {
-            _showArtists = value == 'artists' || value == 'both';
-            _showBands = value == 'bands' || value == 'both';
-          });
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          decoration: BoxDecoration(
-            gradient: isSelected
-                ? const LinearGradient(
-              colors: [Color(0xFF6A4C9C), Color(0xFF8B6BB7)],
-            )
-                : null,
-            color: isSelected ? null : Colors.transparent,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: isSelected
-                ? [
-              BoxShadow(
-                color: const Color(0xFF6A4C9C).withOpacity(0.3),
-                blurRadius: 8,
-                offset: const Offset(0, 4),
-              ),
-            ]
-                : null,
-          ),
-          child: Column(
-            children: [
-              Icon(
-                icon,
-                color: isSelected ? Colors.white : const Color(0xFF9E9E9E),
-                size: 24,
-              ),
-              const SizedBox(height: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  color: isSelected ? Colors.white : const Color(0xFF9E9E9E),
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  fontSize: 13,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDistanceCard() {
-    return _buildMasterpieceCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildCardTitle('Maximum Distance', Icons.near_me),
-          const SizedBox(height: 24),
-          SliderTheme(
-            data: SliderThemeData(
-              trackHeight: 6,
-              activeTrackColor: const Color(0xFF6A4C9C),
-              inactiveTrackColor: const Color(0xFF6A4C9C).withOpacity(0.15),
-              thumbColor: Colors.white,
-              overlayColor: const Color(0xFF6A4C9C).withOpacity(0.2),
-              thumbShape: const RoundSliderThumbShape(
-                enabledThumbRadius: 14,
-                elevation: 4,
-              ),
-              overlayShape: const RoundSliderOverlayShape(overlayRadius: 28),
-            ),
-            child: Slider(
-              value: (_maxDistance ?? 0).toDouble(),
-              min: 0,
-              max: 100,
-              divisions: 100,
-              onChanged: (value) => setState(() => _maxDistance = value.round()),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Center(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFF8F5FF), Color(0xFFEDE7F6)],
-                ),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF6A4C9C).withOpacity(0.1),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Text(
-                '${_maxDistance ?? 0} km',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF6A4C9C),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAgeRangeCard() {
-    return _buildMasterpieceCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildCardTitle('Age Range', Icons.cake),
-          const SizedBox(height: 24),
-          SliderTheme(
-            data: SliderThemeData(
-              trackHeight: 6,
-              activeTrackColor: const Color(0xFF6A4C9C),
-              inactiveTrackColor: const Color(0xFF6A4C9C).withOpacity(0.15),
-              rangeThumbShape: const RoundRangeSliderThumbShape(
-                enabledThumbRadius: 14,
-                elevation: 4,
-              ),
-              overlayColor: const Color(0xFF6A4C9C).withOpacity(0.2),
-              overlayShape: const RoundSliderOverlayShape(overlayRadius: 28),
-            ),
-            child: RangeSlider(
-              values: RangeValues(
-                (_artistMinAge ?? 18).toDouble(),
-                (_artistMaxAge ?? 99).toDouble(),
-              ),
-              min: 18,
-              max: 99,
-              divisions: 81,
-              onChanged: (values) {
-                setState(() {
-                  _artistMinAge = values.start.round();
-                  _artistMaxAge = values.end.round();
-                });
-              },
-            ),
-          ),
-          const SizedBox(height: 16),
-          Center(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFF8F5FF), Color(0xFFEDE7F6)],
-                ),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF6A4C9C).withOpacity(0.1),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Text(
-                '${_artistMinAge ?? 18} - ${_artistMaxAge ?? 99} years',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF6A4C9C),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBandMembersCard() {
-    return _buildMasterpieceCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildCardTitle('Band Members', Icons.groups),
-          const SizedBox(height: 24),
-          SliderTheme(
-            data: SliderThemeData(
-              trackHeight: 6,
-              activeTrackColor: const Color(0xFF6A4C9C),
-              inactiveTrackColor: const Color(0xFF6A4C9C).withOpacity(0.15),
-              rangeThumbShape: const RoundRangeSliderThumbShape(
-                enabledThumbRadius: 14,
-                elevation: 4,
-              ),
-              overlayColor: const Color(0xFF6A4C9C).withOpacity(0.2),
-              overlayShape: const RoundSliderOverlayShape(overlayRadius: 28),
-            ),
-            child: RangeSlider(
-              values: RangeValues(
-                (_bandMinMembersCount ?? 1).toDouble(),
-                (_bandMaxMembersCount ?? 10).toDouble(),
-              ),
-              min: 1,
-              max: 10,
-              divisions: 9,
-              onChanged: (values) {
-                setState(() {
-                  _bandMinMembersCount = values.start.round();
-                  _bandMaxMembersCount = values.end.round();
-                });
-              },
-            ),
-          ),
-          const SizedBox(height: 16),
-          Center(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFF8F5FF), Color(0xFFEDE7F6)],
-                ),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF6A4C9C).withOpacity(0.1),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Text(
-                '${_bandMinMembersCount ?? 1} - ${_bandMaxMembersCount ?? 10} members',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF6A4C9C),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -1154,72 +763,53 @@ class _FiltersScreenState extends State<FiltersScreen> {
     final categoryTitle = category == 'Activity' ? 'Who are you looking for?' : category;
 
     return Padding(
-      padding: const EdgeInsets.only(top: 20),
-      child: _buildMasterpieceCard(
+      padding: const EdgeInsets.only(top: 16),
+      child: _buildCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildCardTitle(categoryTitle, icon),
-            const SizedBox(height: 20),
-            Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () => _showTagPicker(category, options),
-                borderRadius: BorderRadius.circular(18),
-                child: Container(
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8F5FF),
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                      color: const Color(0xFF6A4C9C).withOpacity(0.2),
-                      width: 2,
-                    ),
-                  ),
-                  child: selectedTagObjects.isEmpty
-                      ? Row(
-                    children: [
-                      Icon(Icons.add_circle_outline, color: const Color(0xFF6A4C9C).withOpacity(0.6)),
-                      const SizedBox(width: 12),
-                      Text(
-                        'Select $categoryTitle',
-                        style: TextStyle(
-                          color: const Color(0xFF6A4C9C).withOpacity(0.6),
-                          fontSize: 16,
-                        ),
+            const SizedBox(height: 16),
+            InkWell(
+              onTap: () => _showTagPicker(category, options),
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(12),
+                  color: Colors.grey.shade50,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: selectedTagObjects.isNotEmpty
+                          ? Wrap(
+                        spacing: 8.0,
+                        runSpacing: 8.0,
+                        children: selectedTagObjects.map((tag) {
+                          return Chip(
+                            label: Text(tag.name, style: const TextStyle(fontSize: 13)),
+                            deleteIcon: const Icon(Icons.close, size: 18),
+                            onDeleted: () {
+                              setState(() {
+                                _selectedTags[category]?.remove(tag.id);
+                              });
+                            },
+                            backgroundColor: const Color(0xFF6A4C9C).withOpacity(0.1),
+                            deleteIconColor: const Color(0xFF6A4C9C),
+                            labelStyle: const TextStyle(color: Color(0xFF6A4C9C)),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          );
+                        }).toList(),
+                      )
+                          : Text(
+                        'Tap to select',
+                        style: TextStyle(color: Colors.grey.shade500, fontSize: 15),
                       ),
-                    ],
-                  )
-                      : Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
-                    children: selectedTagObjects.map((tag) {
-                      return Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF6A4C9C), Color(0xFF8B6BB7)],
-                          ),
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF6A4C9C).withOpacity(0.3),
-                              blurRadius: 8,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Text(
-                          tag.name,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
+                    ),
+                    const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
+                  ],
                 ),
               ),
             ),
@@ -1229,270 +819,184 @@ class _FiltersScreenState extends State<FiltersScreen> {
     );
   }
 
-  Widget _buildLocationCard() {
-    return _buildMasterpieceCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildEnhancedDropdown({
+    required List<DropdownMenuItem<String>> items,
+    required String? value,
+    required ValueChanged<String?> onChanged,
+    required String hint,
+    required IconData icon,
+  }) {
+    const primaryColor = Color(0xFF6A4C9C);
+    const textColor = Color(0xFF3D2C5E);
+
+    // Convert DropdownMenuItem to Map for easier lookup
+    final itemsMap = {
+      for (var item in items) item.value!: (item.child as Text).data!
+    };
+
+    // Ensure the selected value exists in the items map
+    final safeValue = value != null && itemsMap.containsKey(value) ? value : null;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Row(
         children: [
-          _buildCardTitle('Location', Icons.location_on),
-          const SizedBox(height: 20),
-          _buildSearchableDropdown(
-            items: _countries,
-            value: _selectedCountryId,
-            onChanged: (value) async {
-              if (value != null) {
-                await _onCountryChanged(value);
-              } else {
-                setState(() {
-                  _selectedCountryId = null;
-                  _selectedCityId = null;
-                  _cities = [];
-                });
-              }
-            },
-            hint: 'Select Country',
-            icon: Icons.public,
-            getName: (country) => country.name,
-            getId: (country) => country.id,
-          ),
-          const SizedBox(height: 16),
-          _buildSearchableDropdown(
-            items: _cities,
-            value: _selectedCityId,
-            onChanged: (value) => setState(() => _selectedCityId = value),
-            hint: 'Select City',
-            icon: Icons.location_city,
-            getName: (city) => city.name,
-            getId: (city) => city.id,
+          Icon(icon, color: primaryColor, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: DropdownSearch<String>(
+              items: itemsMap.keys.toList(),
+              selectedItem: safeValue,
+              onChanged: onChanged,
+              dropdownDecoratorProps: DropDownDecoratorProps(
+                dropdownSearchDecoration: InputDecoration(
+                  hintText: hint,
+                  border: InputBorder.none,
+                  hintStyle: TextStyle(color: Colors.grey.shade600, fontSize: 15),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              dropdownBuilder: (context, selectedItem) {
+                if (selectedItem == null || !itemsMap.containsKey(selectedItem)) {
+                  return Text(
+                    hint,
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 15),
+                  );
+                }
+                return Text(
+                  itemsMap[selectedItem]!,
+                  style: const TextStyle(
+                    color: textColor,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                  ),
+                );
+              },
+              popupProps: PopupProps.menu(
+                showSearchBox: true,
+                searchFieldProps: TextFieldProps(
+                  decoration: InputDecoration(
+                    hintText: 'Search...',
+                    prefixIcon: const Icon(Icons.search),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+                itemBuilder: (context, item, isSelected) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    child: Text(
+                      itemsMap[item] ?? '',
+                      style: TextStyle(
+                        color: isSelected ? primaryColor : textColor,
+                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                        fontSize: 15,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              dropdownButtonProps: const DropdownButtonProps(
+                icon: Icon(Icons.keyboard_arrow_down, color: primaryColor),
+              ),
+              itemAsString: (item) => itemsMap[item] ?? '',
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSearchableDropdown<T>({
-    required List<T> items,
-    required String? value,
-    required ValueChanged<String?> onChanged,
-    required String hint,
-    required IconData icon,
-    required String Function(T) getName,
-    required String Function(T) getId,
-  }) {
-    return GestureDetector(
-      onTap: () async {
-        if (items.isEmpty) return;
 
-        final result = await showDialog<String>(
-          context: context,
-          builder: (ctx) {
-            String searchQuery = '';
-            return StatefulBuilder(
-              builder: (context, setDialogState) {
-                final filteredItems = items.where((item) {
-                  return getName(item).toLowerCase().contains(searchQuery.toLowerCase());
-                }).toList();
 
-                return Dialog(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                  child: Container(
-                    constraints: const BoxConstraints(maxHeight: 500, maxWidth: 400),
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [Color(0xFF6A4C9C), Color(0xFF8B6BB7)],
-                                ),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Icon(icon, color: Colors.white, size: 20),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                hint,
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF3D2C5E),
-                                ),
-                              ),
-                            ),
-                            IconButton(
-                              onPressed: () => Navigator.pop(context),
-                              icon: const Icon(Icons.close, color: Color(0xFF6A4C9C)),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        TextField(
-                          decoration: InputDecoration(
-                            hintText: 'Search...',
-                            prefixIcon: const Icon(Icons.search, color: Color(0xFF6A4C9C)),
-                            filled: true,
-                            fillColor: const Color(0xFFF8F5FF),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: BorderSide(
-                                color: const Color(0xFF6A4C9C).withOpacity(0.2),
-                                width: 2,
-                              ),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: BorderSide(
-                                color: const Color(0xFF6A4C9C).withOpacity(0.2),
-                                width: 2,
-                              ),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: const BorderSide(
-                                color: Color(0xFF6A4C9C),
-                                width: 2,
-                              ),
-                            ),
-                          ),
-                          onChanged: (value) {
-                            setDialogState(() {
-                              searchQuery = value;
-                            });
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        Flexible(
-                          child: filteredItems.isEmpty
-                              ? const Center(
-                            child: Text(
-                              'No results found',
-                              style: TextStyle(
-                                color: Color(0xFF9E9E9E),
-                                fontSize: 16,
-                              ),
-                            ),
-                          )
-                              : ListView(
-                            shrinkWrap: true,
-                            children: filteredItems.map((item) {
-                              final itemId = getId(item);
-                              final isSelected = value == itemId;
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 8),
-                                child: Material(
-                                  color: Colors.transparent,
-                                  child: InkWell(
-                                    onTap: () {
-                                      Navigator.pop(context, itemId);
-                                    },
-                                    borderRadius: BorderRadius.circular(12),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 14,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: isSelected
-                                            ? const Color(0xFF6A4C9C).withOpacity(0.1)
-                                            : const Color(0xFFF8F5FF),
-                                        borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(
-                                          color: isSelected
-                                              ? const Color(0xFF6A4C9C)
-                                              : const Color(0xFF6A4C9C).withOpacity(0.2),
-                                          width: isSelected ? 2 : 1,
-                                        ),
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          Expanded(
-                                            child: Text(
-                                              getName(item),
-                                              style: TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: isSelected
-                                                    ? FontWeight.bold
-                                                    : FontWeight.normal,
-                                                color: isSelected
-                                                    ? const Color(0xFF6A4C9C)
-                                                    : const Color(0xFF3D2C5E),
-                                              ),
-                                            ),
-                                          ),
-                                          if (isSelected)
-                                            const Icon(
-                                              Icons.check_circle,
-                                              color: Color(0xFF6A4C9C),
-                                              size: 20,
-                                            ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            );
+
+
+
+
+
+  Widget _buildSectionTitle(String title, Color color) {
+    return Text(title, style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.bold));
+  }
+
+  Widget _buildChoiceChipGroup(
+      {required List<String> options, required String? selectedValue, required Function(String) onSelected, required Color primaryColor}) {
+    return Wrap(
+      spacing: 8.0,
+      children: options.map((option) {
+        return ChoiceChip(
+          label: Text(option),
+          selected: selectedValue == option,
+          onSelected: (selected) {
+            if (selected) onSelected(option);
           },
+          selectedColor: primaryColor.withOpacity(0.2),
+          backgroundColor: Colors.white,
+          labelStyle: TextStyle(color: selectedValue == option ? primaryColor : Colors.black),
+          shape: StadiumBorder(side: BorderSide(color: primaryColor.withOpacity(0.3))),
         );
+      }).toList(),
+    );
+  }
 
-        if (result != null) {
-          onChanged(result);
-        }
-      },
+
+  Widget _buildDropdown(
+      {required List<DropdownMenuItem<String>> items,
+        required String? value,
+        required ValueChanged<String?> onChanged,
+        required String hint}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12.0),
+      decoration: BoxDecoration(
+          color: Colors.white, borderRadius: BorderRadius.circular(12.0), border: Border.all(color: Colors.grey.shade300)),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          isExpanded: true,
+          value: value,
+          icon: const Icon(Icons.keyboard_arrow_down),
+          items: items,
+          onChanged: onChanged,
+          hint: Text(hint),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPillButton(String label, IconData icon, bool isSelected, Color primaryColor, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(24),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         decoration: BoxDecoration(
-          color: const Color(0xFFF8F5FF),
-          borderRadius: BorderRadius.circular(18),
+          color: isSelected ? primaryColor : Colors.transparent,
+          borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: const Color(0xFF6A4C9C).withOpacity(0.2),
+            color: isSelected ? primaryColor : primaryColor.withOpacity(0.5),
             width: 2,
           ),
         ),
         child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFF8F5FF), Color(0xFFEDE7F6)],
-                ),
-                borderRadius: BorderRadius.circular(12),
+            Icon(icon, size: 18, color: isSelected ? Colors.white : primaryColor),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.white : primaryColor,
+                fontWeight: FontWeight.w600,
               ),
-              child: Icon(icon, color: const Color(0xFF6A4C9C), size: 20),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Text(
-                value != null
-                    ? items.firstWhere((item) => getId(item) == value, orElse: () => items.first).let((item) => getName(item))
-                    : hint,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: value != null ? const Color(0xFF3D2C5E) : const Color(0xFF9E9E9E),
-                ),
-              ),
-            ),
-            Icon(
-              Icons.arrow_drop_down,
-              color: const Color(0xFF6A4C9C),
             ),
           ],
         ),
       ),
     );
   }
+
 }
