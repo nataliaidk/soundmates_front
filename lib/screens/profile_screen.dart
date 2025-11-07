@@ -487,6 +487,126 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
+  Future<void> _showCountryPicker() async {
+    if (_countries.isEmpty) return;
+    final result = await showDialog<CountryDto>(
+      context: context,
+      builder: (ctx) {
+        String query = '';
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            final filtered = _countries.where((c) => c.name.toLowerCase().contains(query.toLowerCase())).toList();
+            return AlertDialog(
+              title: const Text('Select Country'),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      decoration: const InputDecoration(
+                        prefixIcon: Icon(Icons.search),
+                        hintText: 'Search country...',
+                      ),
+                      onChanged: (v) => setStateDialog(() => query = v),
+                    ),
+                    const SizedBox(height: 12),
+                    Expanded(
+                      child: filtered.isEmpty
+                          ? const Center(child: Text('No results'))
+                          : ListView.builder(
+                              itemCount: filtered.length,
+                              itemBuilder: (context, i) {
+                                final c = filtered[i];
+                                return ListTile(
+                                  title: Text(c.name),
+                                  onTap: () => Navigator.pop(context, c),
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+              ],
+            );
+          },
+        );
+      },
+    );
+    if (result != null) {
+      setState(() {
+        _selectedCountry = result;
+        _country.text = result.name;
+        _selectedCity = null;
+        _city.text = '';
+        _cities = [];
+      });
+      await _loadCitiesForSelectedCountry(result.id);
+    }
+  }
+
+  Future<void> _showCityPicker() async {
+    if (_selectedCountry == null) return; // country must be selected
+    if (_citiesLoading) return; // still loading
+    if (_cities.isEmpty) return; // nothing to pick yet
+    final result = await showDialog<CityDto>(
+      context: context,
+      builder: (ctx) {
+        String query = '';
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            final filtered = _cities.where((c) => c.name.toLowerCase().contains(query.toLowerCase())).toList();
+            return AlertDialog(
+              title: Text('Select City (${_selectedCountry!.name})'),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      decoration: const InputDecoration(
+                        prefixIcon: Icon(Icons.search),
+                        hintText: 'Search city...',
+                      ),
+                      onChanged: (v) => setStateDialog(() => query = v),
+                    ),
+                    const SizedBox(height: 12),
+                    Expanded(
+                      child: filtered.isEmpty
+                          ? const Center(child: Text('No results'))
+                          : ListView.builder(
+                              itemCount: filtered.length,
+                              itemBuilder: (context, i) {
+                                final c = filtered[i];
+                                return ListTile(
+                                  title: Text(c.name),
+                                  onTap: () => Navigator.pop(context, c),
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+              ],
+            );
+          },
+        );
+      },
+    );
+    if (result != null) {
+      setState(() {
+        _selectedCity = result;
+        _city.text = result.name;
+      });
+    }
+  }
+
 
 
   Future<void> _save() async {
@@ -880,6 +1000,14 @@ Widget _buildBandMembersSection() {
           ? AppBar(
               title: Text(_currentStep == 1 ? 'Profile - Step 1' : 'Profile - Step 2'),
               automaticallyImplyLeading: !_isFromRegistration, // No back button during registration
+              leading: _currentStep == 2 && !_isFromRegistration
+                  ? IconButton(
+                      icon: const Icon(Icons.arrow_back),
+                      onPressed: () {
+                        setState(() => _currentStep = 1);
+                      },
+                    )
+                  : null,
             )
           : AppBar(
               backgroundColor: Colors.transparent,
@@ -1510,62 +1638,96 @@ Widget _buildBandMembersSection() {
                 ])
               ]),
               const SizedBox(height: 8),
-              DropdownButtonFormField<CountryDto>(
-                value: _selectedCountry,
-                decoration: const InputDecoration(labelText: 'Country', border: OutlineInputBorder()),
-                items: _countries.map((c) => DropdownMenuItem(value: c, child: Text(c.name))).toList(),
-                onChanged: (v) async {
-                  setState(() {
-                    _selectedCountry = v;
-                    _selectedCity = null;
-                    _cities = [];
-                    _country.text = v?.name ?? '';
-                  });
-                  if (v != null) await _loadCitiesForSelectedCountry(v.id);
-                },
+              InkWell(
+                onTap: _showCountryPicker,
+                child: InputDecorator(
+                  decoration: const InputDecoration(labelText: 'Country', border: OutlineInputBorder()),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _selectedCountry?.name.isNotEmpty == true ? _selectedCountry!.name : 'Tap to choose',
+                          style: TextStyle(color: _selectedCountry == null ? Colors.grey[600] : Colors.black),
+                        ),
+                      ),
+                      const Icon(Icons.search),
+                    ],
+                  ),
+                ),
               ),
               const SizedBox(height: 8),
-              DropdownButtonFormField<CityDto>(
-                value: _selectedCity,
+              InkWell(
+                onTap: _showCityPicker,
+                child: InputDecorator(
                   decoration: InputDecoration(
                     labelText: 'City',
                     border: const OutlineInputBorder(),
-                    suffixIcon: _citiesLoading 
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: Padding(
-                            padding: EdgeInsets.all(12.0),
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                        )
-                      : null,
+                    suffixIcon: _citiesLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: Padding(
+                              padding: EdgeInsets.all(12.0),
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          )
+                        : const Icon(Icons.search),
                   ),
-                  items: _citiesLoading 
-                    ? [] 
-                    : _cities.isEmpty && _selectedCountry != null
-                      ? [const DropdownMenuItem(value: null, child: Text('Select a country first'))]
-                      : _cities.map((c) => DropdownMenuItem(value: c, child: Text(c.name))).toList(),
-                onChanged: (v) {
-                  setState(() {
-                    _selectedCity = v;
-                    _city.text = v?.name ?? '';
-                  });
-                },
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _selectedCity?.name.isNotEmpty == true
+                              ? _selectedCity!.name
+                              : (_selectedCountry == null
+                                  ? 'Select country first'
+                                  : (_citiesLoading
+                                      ? 'Loading cities...'
+                                      : (_cities.isEmpty ? 'No cities available' : 'Tap to choose'))),
+                          style: TextStyle(
+                            color: _selectedCity == null ? Colors.grey[600] : Colors.black,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
               // Artist-only fields: birthDate and gender
               if (_isBand != true) ...[
                 const SizedBox(height: 8),
-                InputDecorator(
-                  decoration: const InputDecoration(labelText: 'Birth date', border: OutlineInputBorder()),
-                  child: Row(children: [
-                    Expanded(child: Text(_birthDate == null ? '(not set)' : _birthDate!.toIso8601String().split('T').first)),
-                    TextButton(onPressed: () async {
-                      final now = DateTime.now();
-                      final picked = await showDatePicker(context: context, initialDate: _birthDate ?? DateTime(now.year - 20), firstDate: DateTime(1900), lastDate: now);
-                      if (picked != null) setState(() => _birthDate = picked);
-                    }, child: const Text('Pick'))
-                  ]),
+                InkWell(
+                  onTap: () async {
+                    final now = DateTime.now();
+                    final initialDate = _birthDate ?? DateTime(now.year - 20);
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: initialDate,
+                      firstDate: DateTime(1900),
+                      lastDate: now,
+                      helpText: 'Select your birth date',
+                      cancelText: 'Cancel',
+                      confirmText: 'OK',
+                      fieldLabelText: 'Birth date',
+                      fieldHintText: 'DD/MM/YYYY',
+                    );
+                    if (picked != null) setState(() => _birthDate = picked);
+                  },
+                  child: InputDecorator(
+                    decoration: const InputDecoration(
+                      labelText: 'Birth date',
+                      border: OutlineInputBorder(),
+                      suffixIcon: Icon(Icons.calendar_today),
+                    ),
+                    child: Text(
+                      _birthDate == null
+                          ? 'Tap to select date'
+                          : '${_birthDate!.day.toString().padLeft(2, '0')}/${_birthDate!.month.toString().padLeft(2, '0')}/${_birthDate!.year}',
+                      style: TextStyle(
+                        color: _birthDate == null ? Colors.grey[600] : Colors.black,
+                      ),
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<GenderDto>(

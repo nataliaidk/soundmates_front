@@ -42,7 +42,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
     // Start periodic refresh
     _refreshTimer = Timer.periodic(
-      const Duration(seconds: 2),
+      const Duration(seconds: 1),
           (timer) => _loadMessages(),
     );
   }
