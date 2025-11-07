@@ -47,7 +47,13 @@ class _LoginScreenState extends State<LoginScreen> {
             Center(
               child: Column(
                 children: [
-                  Image.asset(dotenv.env['LOGO_PATH'] ?? 'default/path/to/logo.png'),
+                  SizedBox(
+                    height: 300,
+                    child: Image.asset(
+                      dotenv.env['LOGO_PATH'] ?? 'default/path/to/logo.png',
+                      fit: BoxFit.contain,
+                    ),
+                  ),
                   const SizedBox(height: 16),
                   const Text(
                     'The whole music scene. In one app.',

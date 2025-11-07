@@ -418,6 +418,11 @@ class _FiltersScreenState extends State<FiltersScreen> {
         ),
         centerTitle: true,
         actions: [
+          IconButton(
+            onPressed: _resetPreferences,
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            tooltip: 'Reset',
+          ),
           TextButton.icon(
             onPressed: _savePreferences,
             icon: const Icon(Icons.check, color: Colors.white),
@@ -997,6 +1002,63 @@ class _FiltersScreenState extends State<FiltersScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _resetPreferences() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final dto = UpdateMatchPreferenceDto(
+        showArtists: true,
+        showBands: true,
+        maxDistance: null,
+        countryId: null,
+        cityId: null,
+        artistMinAge: null,
+        artistMaxAge: null,
+        artistGenderId: null,
+        bandMinMembersCount: null,
+        bandMaxMembersCount: null,
+        filterTagsIds: [],
+      );
+
+      final resp = await widget.api.updateMatchPreference(dto);
+
+      if (!mounted) return;
+
+      if (resp.statusCode == 200) {
+        // Reset local state
+        setState(() {
+          _showArtists = true;
+          _showBands = true;
+          _maxDistance = null;
+          _selectedGenderId = null;
+          _artistMinAge = null;
+          _artistMaxAge = null;
+          _bandMinMembersCount = null;
+          _bandMaxMembersCount = null;
+          _selectedCountryId = null;
+          _selectedCityId = null;
+          _selectedGender = null;
+          _selectedTags.clear();
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Filters reset!')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${resp.statusCode} ${resp.body}')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
 }
