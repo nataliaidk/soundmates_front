@@ -11,6 +11,8 @@ import 'screens/profile_screen.dart';
 import 'screens/matches_screen.dart';
 import 'screens/users_screen.dart';
 import 'screens/filters_screen.dart';
+import 'screens/settings_screen.dart';
+import 'screens/terms_of_service_screen.dart';
 
 
 Future<void> main() async {
@@ -38,6 +40,8 @@ class MyApp extends StatelessWidget {
         '/matches': (c) => MatchesScreen(api: api, tokens: tokens),
         '/users': (c) => UsersScreen(api: api, tokens: tokens),
         '/filters': (c) => FiltersScreen(api: api, tokens: tokens),
+        '/settings': (c) => SettingsScreen(api: api, tokens: tokens),
+        '/terms': (c) => const TermsOfServiceScreen(),
       },
     );
   }
