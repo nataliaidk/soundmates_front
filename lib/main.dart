@@ -33,7 +33,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple)),
       initialRoute: '/login',
       routes: {
-        '/login': (c) => LoginScreen(api: api, tokens: tokens, onLoggedIn: () => Navigator.pushReplacementNamed(c, '/home')),
+        '/login': (c) => LoginScreen(api: api, tokens: tokens, onLoggedIn: () => Navigator.pushReplacementNamed(c, '/users')),
         '/register': (c) => RegisterScreen(api: api, tokens: tokens, onRegistered: () => Navigator.pushReplacementNamed(c, '/profile')),
         '/home': (c) => HomeScreen(api: api, tokens: tokens),
   '/profile': (c) => ProfileScreen(api: api, tokens: tokens),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../api/api_client.dart';
 import '../api/token_store.dart';
 import '../api/models.dart';
+import 'change_password_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   final ApiClient api;
@@ -69,6 +70,22 @@ class SettingsScreen extends StatelessWidget {
             onTap: () {
               // Navigate to profile edit step 1
               Navigator.pushNamed(context, '/profile/edit');
+            },
+          ),
+          const SizedBox(height: 8),
+          divider,
+          const SizedBox(height: 8),
+          _SettingsItem(
+            icon: Icons.lock_outline,
+            text: 'Change Password',
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ChangePasswordScreen(api: api, tokens: tokens),
+                ),
+              );
             },
           ),
           const SizedBox(height: 8),

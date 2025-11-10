@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:zpi_test/screens/visit_profile_screen.dart';
+import '../widgets/app_bottom_nav.dart';
 import '../api/api_client.dart';
 import '../api/token_store.dart';
 import '../api/models.dart';
@@ -293,11 +294,33 @@ class _UsersScreenState extends State<UsersScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Find Matches')),
-      body: Padding(
+      appBar: AppBar(
+        automaticallyImplyLeading: false, // No back arrow on navbar screen
+        title: const Text('Find Matches'),
+        actions: [
+          // Wider hit area so it doesn't get hidden under the debug banner and is easier to tap
+          SizedBox(
+            width: 96,
+            child: IconButton(
+              tooltip: 'Match Preferences',
+              iconSize: 30,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              constraints: const BoxConstraints(minWidth: 72, minHeight: 48),
+              icon: const Icon(Icons.tune, color: Color(0xFF5B3CF0)),
+              onPressed: () => Navigator.pushNamed(context, '/filters'),
+            ),
+          ),
+          const SizedBox(width: 4),
+        ],
+      ),
+      body: Stack(
+        children: [
+          Positioned.fill(
+        child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
           children: [
+            // Preferences button moved to AppBar (top right tune icon)
             // Preference toggles removed: preferences are managed in filters_screen
             Row(
               children: [
@@ -376,6 +399,10 @@ class _UsersScreenState extends State<UsersScreen> {
             ),
           ],
         ),
+        ),
+      ),
+          const Positioned(left: 0, right: 0, bottom: 18, child: AppBottomNav(current: BottomNavItem.home)),
+        ],
       ),
     );
   }
@@ -577,8 +604,7 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(16),
-              child: SizedBox(
-                height: h * 0.75,
+              child: SizedBox.expand(
                 child: SingleChildScrollView(
                   controller: _scrollController,
                   child: Column(
@@ -884,7 +910,7 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
                             ],
                           ),
                         ),
-                      const SizedBox(height: 80), // Space for swipe indicators
+                      const SizedBox(height: 24), // Small padding; allow card to reach bottom behind nav
                     ],
                   ),
                 ),

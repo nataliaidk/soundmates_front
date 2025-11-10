@@ -9,6 +9,7 @@ import 'package:uuid/uuid.dart';
 import 'package:latlong2/latlong.dart';
 import '../widgets/city_map_preview.dart';
 import 'package:http/http.dart' as http; // for optional geocoding fallback
+import '../widgets/app_bottom_nav.dart';
 class ProfileScreen extends StatefulWidget {
   final ApiClient api;
   final TokenStore tokens;
@@ -1241,6 +1242,7 @@ Widget _buildBandMembersSection() {
 
   @override
   Widget build(BuildContext context) {
+    final showNav = !_isEditing; // hide nav during editing
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: _isEditing
@@ -1259,10 +1261,7 @@ Widget _buildBandMembersSection() {
           : AppBar(
               backgroundColor: Colors.transparent,
               elevation: 0,
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.black),
-                onPressed: () => Navigator.pushReplacementNamed(context, '/home'),
-              ),
+              automaticallyImplyLeading: false, // No back arrow on navbar screens
               title: const Text('Your Profile', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
               actions: [
                 IconButton(
@@ -1273,7 +1272,20 @@ Widget _buildBandMembersSection() {
                 ),
               ],
             ),
-      body: _isEditing ? _buildEditingView() : _buildProfileView(),
+      body: _isEditing
+          ? _buildEditingView()
+          : Stack(
+              children: [
+                Positioned.fill(child: _buildProfileView()),
+                if (showNav)
+                  const Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 18,
+                    child: AppBottomNav(current: BottomNavItem.profile),
+                  ),
+              ],
+            ),
     );
   }
 
