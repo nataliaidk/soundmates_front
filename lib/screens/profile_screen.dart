@@ -13,12 +13,15 @@ class ProfileScreen extends StatefulWidget {
   final ApiClient api;
   final TokenStore tokens;
   final bool startInEditMode;
+  // True when opened from Settings -> Account to edit basic info only
+  final bool isSettingsEdit;
   
   const ProfileScreen({
     super.key, 
     required this.api, 
     required this.tokens,
     this.startInEditMode = false,
+    this.isSettingsEdit = false,
   });
 
   @override
@@ -72,8 +75,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
-    _isEditing = widget.startInEditMode; // Start in edit mode if coming from registration
-    _isFromRegistration = widget.startInEditMode; // Track registration flow
+    _isEditing = widget.startInEditMode; // Start in edit mode
+    // If opened from settings, this is NOT registration flow
+    _isFromRegistration = widget.startInEditMode && !widget.isSettingsEdit;
     _loadOptions();
     _loadCountries();
     _loadBandRoles();
@@ -1241,7 +1245,7 @@ Widget _buildBandMembersSection() {
       backgroundColor: Colors.grey[50],
       appBar: _isEditing
           ? AppBar(
-              title: Text(_currentStep == 1 ? 'Profile - Step 1' : 'Profile - Step 2'),
+              title: Text(widget.isSettingsEdit ? 'Edit Profile' : (_currentStep == 1 ? 'Profile - Step 1' : 'Profile - Step 2')),
               automaticallyImplyLeading: !_isFromRegistration, // No back button during registration
               leading: _currentStep == 2 && !_isFromRegistration
                   ? IconButton(
@@ -1852,31 +1856,32 @@ Widget _buildBandMembersSection() {
             if (_currentStep == 1) ...[
               TextField(controller: _name, decoration: const InputDecoration(labelText: 'Name')),
               const SizedBox(height: 8),
-              // Artist vs Band selection
-              Row(children: [
-                const Expanded(child: Text('Account type:')),
-                Row(children: [ 
-                  Radio<bool?>(
-                    value: false, 
-                    groupValue: _isBand, 
-                    onChanged: (v) {
-                      setState(() => _isBand = v);
-                      _loadOptions(); // Reload tag categories when changing account type
-                    },
-                  ),
-                  const Text('Artist'),
-                  const SizedBox(width: 8),
-                  Radio<bool?>(
-                    value: true, 
-                    groupValue: _isBand,      
-                    onChanged: (v) {
-                      setState(() => _isBand = v);
-                      _loadOptions(); // Reload tag categories when changing account type
-                    },
-                  ),
-                  const Text('Band'),
-                ])
-              ]),
+              // Artist vs Band selection (only during onboarding)
+              if (!widget.isSettingsEdit)
+                Row(children: [
+                  const Expanded(child: Text('Account type:')),
+                  Row(children: [ 
+                    Radio<bool?>(
+                      value: false, 
+                      groupValue: _isBand, 
+                      onChanged: (v) {
+                        setState(() => _isBand = v);
+                        _loadOptions(); // Reload tag categories when changing account type
+                      },
+                    ),
+                    const Text('Artist'),
+                    const SizedBox(width: 8),
+                    Radio<bool?>(
+                      value: true, 
+                      groupValue: _isBand,      
+                      onChanged: (v) {
+                        setState(() => _isBand = v);
+                        _loadOptions(); // Reload tag categories when changing account type
+                      },
+                    ),
+                    const Text('Band'),
+                  ])
+                ]),
               const SizedBox(height: 8),
               InkWell(
                 onTap: _showCountryPicker,
@@ -1971,35 +1976,68 @@ Widget _buildBandMembersSection() {
                   ),
                 ),
                 const SizedBox(height: 8),
-                DropdownButtonFormField<GenderDto>(
-                  value: _selectedGender,
+                DropdownButtonFormField<String>(
+                  value: _selectedGender?.id,
                   decoration: const InputDecoration(labelText: 'Gender', border: OutlineInputBorder()),
-                  items: _genders.map((g) => DropdownMenuItem(value: g, child: Text(g.name))).toList(),
-                  onChanged: (v) => setState(() => _selectedGender = v),
+                  items: _genders
+                      .map((g) => DropdownMenuItem<String>(value: g.id, child: Text(g.name)))
+                      .toList(),
+                  onChanged: (id) => setState(() {
+                    if (id == null) {
+                      _selectedGender = null;
+                    } else {
+                      // pick the matching instance from _genders to keep DTOs consistent
+                      final match = _genders.firstWhere(
+                        (g) => g.id == id,
+                        orElse: () => GenderDto(id: id, name: id),
+                      );
+                      _selectedGender = match;
+                    }
+                  }),
                 ),
               ],
               const SizedBox(height: 12),
-              ElevatedButton(
-                onPressed: () {
-                  final nameErr = validateName(_name.text);
-                  if (nameErr != null) return setState(() => _status = nameErr);
-                  final cityValue = _selectedCity?.name ?? _city.text;
-                  final countryValue = _selectedCountry?.name ?? _country.text;
-                  final cityErr = validateCityOrCountry(cityValue, 'City');
-                  if (cityErr != null) return setState(() => _status = cityErr);
-                  final countryErr = validateCityOrCountry(countryValue, 'Country');
-                  if (countryErr != null) return setState(() => _status = countryErr);
-                  if (_isBand != true) {
-                    if (_birthDate == null) return setState(() => _status = 'Birth date is required for artists');
-                    if (_selectedGender == null) return setState(() => _status = 'Gender is required for artists');
-                  }
-                  setState(() {
-                    _currentStep = 2;
-                    _status = '';
-                  });
-                },
-                child: const Text('Next'),
-              ),
+              if (widget.isSettingsEdit)
+                ElevatedButton(
+                  onPressed: () async {
+                    final nameErr = validateName(_name.text);
+                    if (nameErr != null) return setState(() => _status = nameErr);
+                    final cityValue = _selectedCity?.name ?? _city.text;
+                    final countryValue = _selectedCountry?.name ?? _country.text;
+                    final cityErr = validateCityOrCountry(cityValue, 'City');
+                    if (cityErr != null) return setState(() => _status = cityErr);
+                    final countryErr = validateCityOrCountry(countryValue, 'Country');
+                    if (countryErr != null) return setState(() => _status = countryErr);
+                    if (_isBand != true) {
+                      if (_birthDate == null) return setState(() => _status = 'Birth date is required for artists');
+                      if (_selectedGender == null) return setState(() => _status = 'Gender is required for artists');
+                    }
+                    await _save();
+                  },
+                  child: const Text('Save'),
+                )
+              else
+                ElevatedButton(
+                  onPressed: () {
+                    final nameErr = validateName(_name.text);
+                    if (nameErr != null) return setState(() => _status = nameErr);
+                    final cityValue = _selectedCity?.name ?? _city.text;
+                    final countryValue = _selectedCountry?.name ?? _country.text;
+                    final cityErr = validateCityOrCountry(cityValue, 'City');
+                    if (cityErr != null) return setState(() => _status = cityErr);
+                    final countryErr = validateCityOrCountry(countryValue, 'Country');
+                    if (countryErr != null) return setState(() => _status = countryErr);
+                    if (_isBand != true) {
+                      if (_birthDate == null) return setState(() => _status = 'Birth date is required for artists');
+                      if (_selectedGender == null) return setState(() => _status = 'Gender is required for artists');
+                    }
+                    setState(() {
+                      _currentStep = 2;
+                      _status = '';
+                    });
+                  },
+                  child: const Text('Next'),
+                ),
             ],
             // Step 2: Tags, Description, Band Members, Profile Photo
             if (_currentStep == 2) ...[

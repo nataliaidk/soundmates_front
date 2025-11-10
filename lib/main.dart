@@ -36,7 +36,9 @@ class MyApp extends StatelessWidget {
         '/login': (c) => LoginScreen(api: api, tokens: tokens, onLoggedIn: () => Navigator.pushReplacementNamed(c, '/home')),
         '/register': (c) => RegisterScreen(api: api, tokens: tokens, onRegistered: () => Navigator.pushReplacementNamed(c, '/profile')),
         '/home': (c) => HomeScreen(api: api, tokens: tokens),
-        '/profile': (c) => ProfileScreen(api: api, tokens: tokens),
+  '/profile': (c) => ProfileScreen(api: api, tokens: tokens),
+  // Open basic info editing from Settings (no step navigation)
+  '/profile/edit': (c) => ProfileScreen(api: api, tokens: tokens, startInEditMode: true, isSettingsEdit: true),
         '/matches': (c) => MatchesScreen(api: api, tokens: tokens),
         '/users': (c) => UsersScreen(api: api, tokens: tokens),
         '/filters': (c) => FiltersScreen(api: api, tokens: tokens),
