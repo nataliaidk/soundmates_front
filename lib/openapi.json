@@ -1,5 +1,5 @@
 {
-  "openapi": "3.0.1",
+  "openapi": "3.0.4",
   "info": {
     "title": "Soundmates.Api | soundmates",
     "version": "1.0.0"
@@ -197,7 +197,7 @@
         ],
         "parameters": [
           {
-            "name": "countryID",
+            "name": "countryId",
             "in": "path",
             "required": true,
             "schema": {
@@ -1119,17 +1119,12 @@
       },
       "BandMemberDto": {
         "required": [
-          "id",
           "name",
           "age",
           "bandRoleId"
         ],
         "type": "object",
         "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
           "name": {
             "type": "string"
           },
@@ -2194,7 +2189,28 @@
           "bandMembers": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/BandMemberDto"
+              "required": [
+                "name",
+                "age",
+                "bandRoleId"
+              ],
+              "type": "object",
+              "properties": {
+                "name": {
+                  "maxLength": 50,
+                  "type": "string"
+                },
+                "age": {
+                  "maximum": 100,
+                  "minimum": 0,
+                  "type": "integer",
+                  "format": "int32"
+                },
+                "bandRoleId": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
             }
           },
           "name": {
