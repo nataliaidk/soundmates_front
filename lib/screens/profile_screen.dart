@@ -6,16 +6,23 @@ import '../api/models.dart';
 import '../utils/validators.dart';
 import 'dart:convert';
 import 'package:uuid/uuid.dart';
+import 'package:latlong2/latlong.dart';
+import '../widgets/city_map_preview.dart';
+import 'package:http/http.dart' as http; // for optional geocoding fallback
+import '../widgets/app_bottom_nav.dart';
 class ProfileScreen extends StatefulWidget {
   final ApiClient api;
   final TokenStore tokens;
   final bool startInEditMode;
+  // True when opened from Settings -> Account to edit basic info only
+  final bool isSettingsEdit;
   
   const ProfileScreen({
     super.key, 
     required this.api, 
     required this.tokens,
     this.startInEditMode = false,
+    this.isSettingsEdit = false,
   });
 
   @override
@@ -39,6 +46,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool? _isBand;
   List<BandMemberDto> _bandMembers = [];
   List<BandRoleDto> ? _bandRoles = [];
+  // city id -> coordinates (from backend); we don't modify CityDto
+  final Map<String, LatLng> _cityCoords = {};
+  // Optional geocode cache for names without provided coordinates
+  final Map<String, LatLng> _geocodeCache = {};
 
   // Profile pictures and music samples
   List<ProfilePictureDto> _profilePictures = [];
@@ -65,8 +76,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
-    _isEditing = widget.startInEditMode; // Start in edit mode if coming from registration
-    _isFromRegistration = widget.startInEditMode; // Track registration flow
+    _isEditing = widget.startInEditMode; // Start in edit mode
+    // If opened from settings, this is NOT registration flow
+    _isFromRegistration = widget.startInEditMode && !widget.isSettingsEdit;
     _loadOptions();
     _loadCountries();
     _loadBandRoles();
@@ -418,8 +430,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
         if (decoded is String) decoded = jsonDecode(decoded);
         final List<CityDto> list = [];
         if (decoded is List) {
+          // clear previous coords for this country
+          _cityCoords.clear();
           for (final e in decoded) {
-            if (e is Map) list.add(CityDto.fromJson(Map<String, dynamic>.from(e)));
+            if (e is Map) {
+              final map = Map<String, dynamic>.from(e);
+              final city = CityDto.fromJson(map);
+              list.add(city);
+              // try to parse coordinates from common keys
+              double? _toDouble(dynamic v) {
+                if (v == null) return null;
+                if (v is num) return v.toDouble();
+                return double.tryParse(v.toString());
+              }
+              final lat = _toDouble(map['latitude'] ?? map['lat'] ?? map['Latitude']);
+              final lon = _toDouble(map['longitude'] ?? map['lng'] ?? map['lon'] ?? map['Longitude']);
+              if (lat != null && lon != null) {
+                _cityCoords[city.id] = LatLng(lat, lon);
+              }
+            }
           }
         }
         setState(() => _cities = list);
@@ -429,6 +458,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
       } finally {
         setState(() => _citiesLoading = false);
     }
+  }
+
+  // Attempt geocode (OpenStreetMap Nominatim) if backend doesn't supply coords.
+  // Does NOT modify CityDto. Respects existing map cache to avoid repeated lookups.
+  Future<LatLng?> _geocodeCity(CityDto city) async {
+    if (_cityCoords.containsKey(city.id)) return _cityCoords[city.id];
+    if (_geocodeCache.containsKey(city.id)) return _geocodeCache[city.id];
+    final countryName = _selectedCountry?.name ?? '';
+    final query = [city.name, if (countryName.isNotEmpty) countryName].join(', ');
+    final uri = Uri.parse('https://nominatim.openstreetmap.org/search?q=${Uri.encodeComponent(query)}&format=json&limit=1');
+    try {
+      final resp = await http.get(uri, headers: {
+        'User-Agent': 'soundmates_front/1.0 (map preview)',
+        'Accept': 'application/json'
+      });
+      if (resp.statusCode == 200) {
+        final decoded = jsonDecode(resp.body);
+        if (decoded is List && decoded.isNotEmpty) {
+          final first = decoded.first;
+          final lat = double.tryParse(first['lat']?.toString() ?? '');
+          final lon = double.tryParse(first['lon']?.toString() ?? first['lng']?.toString() ?? '');
+          if (lat != null && lon != null) {
+            final ll = LatLng(lat, lon);
+            _geocodeCache[city.id] = ll; // cache
+            return ll;
+          }
+        }
+      }
+    } catch (_) {
+      // silent failure
+    }
+    return null;
   }
 
   Future<void> _pick() async {
@@ -556,39 +617,226 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (ctx) {
         String query = '';
+        CityDto? hoveredCity;
+        LatLng? hoveredLatLng;
+        bool geocoding = false; // show subtle progress if fetching
         return StatefulBuilder(
           builder: (context, setStateDialog) {
             final filtered = _cities.where((c) => c.name.toLowerCase().contains(query.toLowerCase())).toList();
             return AlertDialog(
               title: Text('Select City (${_selectedCountry!.name})'),
               content: SizedBox(
-                width: double.maxFinite,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      decoration: const InputDecoration(
-                        prefixIcon: Icon(Icons.search),
-                        hintText: 'Search city...',
-                      ),
-                      onChanged: (v) => setStateDialog(() => query = v),
-                    ),
-                    const SizedBox(height: 12),
-                    Expanded(
-                      child: filtered.isEmpty
-                          ? const Center(child: Text('No results'))
-                          : ListView.builder(
-                              itemCount: filtered.length,
-                              itemBuilder: (context, i) {
-                                final c = filtered[i];
-                                return ListTile(
-                                  title: Text(c.name),
-                                  onTap: () => Navigator.pop(context, c),
-                                );
-                              },
+                width: 720,
+                height: 520,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final showSidePreview = constraints.maxWidth >= 560;
+                    final listPane = Expanded(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.max,
+                        children: [
+                          TextField(
+                            decoration: const InputDecoration(
+                              prefixIcon: Icon(Icons.search),
+                              hintText: 'Search city...',
                             ),
-                    ),
-                  ],
+                            onChanged: (v) => setStateDialog(() => query = v),
+                          ),
+                          const SizedBox(height: 12),
+                          Expanded(
+                            child: filtered.isEmpty
+                                ? const Center(child: Text('No results'))
+                                : ListView.builder(
+                                    itemCount: filtered.length,
+                                    itemBuilder: (context, i) {
+                                      final c = filtered[i];
+                                      final coords = _cityCoords[c.id];
+                                      return MouseRegion(
+                                        onEnter: (_) {
+                                          setStateDialog(() {
+                                            hoveredCity = c;
+                                            hoveredLatLng = coords;
+                                          });
+                                          if (coords == null) {
+                                            geocoding = true;
+                                            _geocodeCity(c).then((ll) {
+                                              if (ll != null) {
+                                                if (mounted) {
+                                                  setStateDialog(() {
+                                                    // Only update if still hovering same city
+                                                    if (hoveredCity?.id == c.id) {
+                                                      hoveredLatLng = ll;
+                                                    }
+                                                    geocoding = false;
+                                                  });
+                                                }
+                                              } else {
+                                                if (mounted) setStateDialog(() => geocoding = false);
+                                              }
+                                            });
+                                          }
+                                        },
+                                        onExit: (_) {
+                                          setStateDialog(() {
+                                            hoveredCity = null;
+                                            hoveredLatLng = null;
+                                          });
+                                        },
+                                        child: ListTile(
+                                          title: Text(c.name),
+                                          subtitle: coords != null
+                                              ? Text(
+                                                  'lat ${coords.latitude.toStringAsFixed(3)}, lon ${coords.longitude.toStringAsFixed(3)}',
+                                                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                                                )
+                                              : null,
+                                          trailing: coords == null
+                        ? geocoding && hoveredCity?.id == c.id
+                          ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                          : null
+                        : Icon(Icons.map, size: 18, color: Colors.purple.shade300),
+                                          onTap: () => Navigator.pop(context, c),
+                                          onLongPress: () {
+                                            // Touch fallback: preview without closing
+                                            setStateDialog(() {
+                                              hoveredCity = c;
+                                              hoveredLatLng = coords;
+                                            });
+                                          },
+                                        ),
+                                      );
+                                    },
+                                  ),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (!showSidePreview) {
+                      // Mobile / narrow: show list first (full height), map preview below
+                      return Column(
+                        children: [
+                          // List/search region (take available vertical space)
+                          Expanded(
+                            child: Column(
+                              children: [
+                                TextField(
+                                  decoration: const InputDecoration(
+                                    prefixIcon: Icon(Icons.search),
+                                    hintText: 'Search city...',
+                                  ),
+                                  onChanged: (v) => setStateDialog(() => query = v),
+                                ),
+                                const SizedBox(height: 12),
+                                Expanded(
+                                  child: filtered.isEmpty
+                                      ? const Center(child: Text('No results'))
+                                      : ListView.builder(
+                                          itemCount: filtered.length,
+                                          itemBuilder: (context, i) {
+                                            final c = filtered[i];
+                                            final coords = _cityCoords[c.id];
+                                            return MouseRegion(
+                                              onEnter: (_) {
+                                                setStateDialog(() {
+                                                  hoveredCity = c;
+                                                  hoveredLatLng = coords;
+                                                });
+                                                if (coords == null) {
+                                                  geocoding = true;
+                                                  _geocodeCity(c).then((ll) {
+                                                    if (ll != null) {
+                                                      if (mounted) {
+                                                        setStateDialog(() {
+                                                          if (hoveredCity?.id == c.id) {
+                                                            hoveredLatLng = ll;
+                                                          }
+                                                          geocoding = false;
+                                                        });
+                                                      }
+                                                    } else {
+                                                      if (mounted) setStateDialog(() => geocoding = false);
+                                                    }
+                                                  });
+                                                }
+                                              },
+                                              onExit: (_) {
+                                                setStateDialog(() {
+                                                  hoveredCity = null;
+                                                  hoveredLatLng = null;
+                                                });
+                                              },
+                                              child: ListTile(
+                                                title: Text(c.name),
+                                                subtitle: coords != null
+                                                    ? Text(
+                                                        'lat ${coords.latitude.toStringAsFixed(3)}, lon ${coords.longitude.toStringAsFixed(3)}',
+                                                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                                                      )
+                                                    : null,
+                                                trailing: coords == null
+                                                    ? geocoding && hoveredCity?.id == c.id
+                                                        ? const SizedBox(
+                                                            width: 16,
+                                                            height: 16,
+                                                            child: CircularProgressIndicator(strokeWidth: 2),
+                                                          )
+                                                        : null
+                                                    : Icon(Icons.map, size: 18, color: Colors.purple.shade300),
+                                                onTap: () => Navigator.pop(context, c),
+                                                onLongPress: () {
+                                                  setStateDialog(() {
+                                                    hoveredCity = c;
+                                                    hoveredLatLng = coords;
+                                                  });
+                                                  if (coords == null) {
+                                                    geocoding = true;
+                                                    _geocodeCity(c).then((ll) {
+                                                      if (ll != null) {
+                                                        if (mounted) {
+                                                          setStateDialog(() {
+                                                            if (hoveredCity?.id == c.id) {
+                                                              hoveredLatLng = ll;
+                                                            }
+                                                            geocoding = false;
+                                                          });
+                                                        }
+                                                      } else {
+                                                        if (mounted) setStateDialog(() => geocoding = false);
+                                                      }
+                                                    });
+                                                  }
+                                                },
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            height: 140,
+                            child: CityMapPreview(center: hoveredLatLng, cityName: hoveredCity?.name, height: 140),
+                          ),
+                        ],
+                      );
+                    }
+                    return Row(
+                      children: [
+                        listPane,
+                        const SizedBox(width: 16),
+                        SizedBox(
+                          width: 320,
+                          child: CityMapPreview(center: hoveredLatLng, cityName: hoveredCity?.name),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
               actions: [
@@ -994,11 +1242,12 @@ Widget _buildBandMembersSection() {
 
   @override
   Widget build(BuildContext context) {
+    final showNav = !_isEditing; // hide nav during editing
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: _isEditing
           ? AppBar(
-              title: Text(_currentStep == 1 ? 'Profile - Step 1' : 'Profile - Step 2'),
+              title: Text(widget.isSettingsEdit ? 'Edit Profile' : (_currentStep == 1 ? 'Profile - Step 1' : 'Profile - Step 2')),
               automaticallyImplyLeading: !_isFromRegistration, // No back button during registration
               leading: _currentStep == 2 && !_isFromRegistration
                   ? IconButton(
@@ -1012,24 +1261,31 @@ Widget _buildBandMembersSection() {
           : AppBar(
               backgroundColor: Colors.transparent,
               elevation: 0,
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.black),
-                onPressed: () => Navigator.pushReplacementNamed(context, '/home'),
-              ),
+              automaticallyImplyLeading: false, // No back arrow on navbar screens
               title: const Text('Your Profile', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
               actions: [
                 IconButton(
                   icon: const Icon(Icons.settings, color: Colors.black),
                   onPressed: () {
-                    setState(() {
-                      _isEditing = true;
-                      _currentStep = 1;
-                    });
+                    Navigator.pushNamed(context, '/settings');
                   },
                 ),
               ],
             ),
-      body: _isEditing ? _buildEditingView() : _buildProfileView(),
+      body: _isEditing
+          ? _buildEditingView()
+          : Stack(
+              children: [
+                Positioned.fill(child: _buildProfileView()),
+                if (showNav)
+                  const Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 18,
+                    child: AppBottomNav(current: BottomNavItem.profile),
+                  ),
+              ],
+            ),
     );
   }
 
@@ -1612,31 +1868,32 @@ Widget _buildBandMembersSection() {
             if (_currentStep == 1) ...[
               TextField(controller: _name, decoration: const InputDecoration(labelText: 'Name')),
               const SizedBox(height: 8),
-              // Artist vs Band selection
-              Row(children: [
-                const Expanded(child: Text('Account type:')),
-                Row(children: [ 
-                  Radio<bool?>(
-                    value: false, 
-                    groupValue: _isBand, 
-                    onChanged: (v) {
-                      setState(() => _isBand = v);
-                      _loadOptions(); // Reload tag categories when changing account type
-                    },
-                  ),
-                  const Text('Artist'),
-                  const SizedBox(width: 8),
-                  Radio<bool?>(
-                    value: true, 
-                    groupValue: _isBand,      
-                    onChanged: (v) {
-                      setState(() => _isBand = v);
-                      _loadOptions(); // Reload tag categories when changing account type
-                    },
-                  ),
-                  const Text('Band'),
-                ])
-              ]),
+              // Artist vs Band selection (only during onboarding)
+              if (!widget.isSettingsEdit)
+                Row(children: [
+                  const Expanded(child: Text('Account type:')),
+                  Row(children: [ 
+                    Radio<bool?>(
+                      value: false, 
+                      groupValue: _isBand, 
+                      onChanged: (v) {
+                        setState(() => _isBand = v);
+                        _loadOptions(); // Reload tag categories when changing account type
+                      },
+                    ),
+                    const Text('Artist'),
+                    const SizedBox(width: 8),
+                    Radio<bool?>(
+                      value: true, 
+                      groupValue: _isBand,      
+                      onChanged: (v) {
+                        setState(() => _isBand = v);
+                        _loadOptions(); // Reload tag categories when changing account type
+                      },
+                    ),
+                    const Text('Band'),
+                  ])
+                ]),
               const SizedBox(height: 8),
               InkWell(
                 onTap: _showCountryPicker,
@@ -1693,6 +1950,7 @@ Widget _buildBandMembersSection() {
                   ),
                 ),
               ),
+              // (Removed inline city preview by request; no map after selection.)
               // Artist-only fields: birthDate and gender
               if (_isBand != true) ...[
                 const SizedBox(height: 8),
@@ -1730,35 +1988,68 @@ Widget _buildBandMembersSection() {
                   ),
                 ),
                 const SizedBox(height: 8),
-                DropdownButtonFormField<GenderDto>(
-                  value: _selectedGender,
+                DropdownButtonFormField<String>(
+                  value: _selectedGender?.id,
                   decoration: const InputDecoration(labelText: 'Gender', border: OutlineInputBorder()),
-                  items: _genders.map((g) => DropdownMenuItem(value: g, child: Text(g.name))).toList(),
-                  onChanged: (v) => setState(() => _selectedGender = v),
+                  items: _genders
+                      .map((g) => DropdownMenuItem<String>(value: g.id, child: Text(g.name)))
+                      .toList(),
+                  onChanged: (id) => setState(() {
+                    if (id == null) {
+                      _selectedGender = null;
+                    } else {
+                      // pick the matching instance from _genders to keep DTOs consistent
+                      final match = _genders.firstWhere(
+                        (g) => g.id == id,
+                        orElse: () => GenderDto(id: id, name: id),
+                      );
+                      _selectedGender = match;
+                    }
+                  }),
                 ),
               ],
               const SizedBox(height: 12),
-              ElevatedButton(
-                onPressed: () {
-                  final nameErr = validateName(_name.text);
-                  if (nameErr != null) return setState(() => _status = nameErr);
-                  final cityValue = _selectedCity?.name ?? _city.text;
-                  final countryValue = _selectedCountry?.name ?? _country.text;
-                  final cityErr = validateCityOrCountry(cityValue, 'City');
-                  if (cityErr != null) return setState(() => _status = cityErr);
-                  final countryErr = validateCityOrCountry(countryValue, 'Country');
-                  if (countryErr != null) return setState(() => _status = countryErr);
-                  if (_isBand != true) {
-                    if (_birthDate == null) return setState(() => _status = 'Birth date is required for artists');
-                    if (_selectedGender == null) return setState(() => _status = 'Gender is required for artists');
-                  }
-                  setState(() {
-                    _currentStep = 2;
-                    _status = '';
-                  });
-                },
-                child: const Text('Next'),
-              ),
+              if (widget.isSettingsEdit)
+                ElevatedButton(
+                  onPressed: () async {
+                    final nameErr = validateName(_name.text);
+                    if (nameErr != null) return setState(() => _status = nameErr);
+                    final cityValue = _selectedCity?.name ?? _city.text;
+                    final countryValue = _selectedCountry?.name ?? _country.text;
+                    final cityErr = validateCityOrCountry(cityValue, 'City');
+                    if (cityErr != null) return setState(() => _status = cityErr);
+                    final countryErr = validateCityOrCountry(countryValue, 'Country');
+                    if (countryErr != null) return setState(() => _status = countryErr);
+                    if (_isBand != true) {
+                      if (_birthDate == null) return setState(() => _status = 'Birth date is required for artists');
+                      if (_selectedGender == null) return setState(() => _status = 'Gender is required for artists');
+                    }
+                    await _save();
+                  },
+                  child: const Text('Save'),
+                )
+              else
+                ElevatedButton(
+                  onPressed: () {
+                    final nameErr = validateName(_name.text);
+                    if (nameErr != null) return setState(() => _status = nameErr);
+                    final cityValue = _selectedCity?.name ?? _city.text;
+                    final countryValue = _selectedCountry?.name ?? _country.text;
+                    final cityErr = validateCityOrCountry(cityValue, 'City');
+                    if (cityErr != null) return setState(() => _status = cityErr);
+                    final countryErr = validateCityOrCountry(countryValue, 'Country');
+                    if (countryErr != null) return setState(() => _status = countryErr);
+                    if (_isBand != true) {
+                      if (_birthDate == null) return setState(() => _status = 'Birth date is required for artists');
+                      if (_selectedGender == null) return setState(() => _status = 'Gender is required for artists');
+                    }
+                    setState(() {
+                      _currentStep = 2;
+                      _status = '';
+                    });
+                  },
+                  child: const Text('Next'),
+                ),
             ],
             // Step 2: Tags, Description, Band Members, Profile Photo
             if (_currentStep == 2) ...[

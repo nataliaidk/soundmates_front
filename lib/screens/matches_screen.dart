@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
+import '../widgets/app_bottom_nav.dart';
 import '../api/api_client.dart';
 import '../api/token_store.dart';
 import '../api/models.dart';
@@ -144,15 +145,12 @@ class _MatchesScreenState extends State<MatchesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+  return Scaffold(
       backgroundColor: const Color(0xFF1A1525),
       appBar: AppBar(
         backgroundColor: const Color(0xFF2A2D3E),
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
+        automaticallyImplyLeading: false, // No back arrow on navbar screen
         title: const Text(
           'Messages',
           style: TextStyle(
@@ -164,13 +162,15 @@ class _MatchesScreenState extends State<MatchesScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined, color: Colors.white),
-            onPressed: () {},
+            onPressed: () => Navigator.pushNamed(context, '/settings'),
           ),
         ],
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator(color: Colors.white))
-          : Column(
+      body: Stack(
+        children: [
+          _loading
+              ? const Center(child: CircularProgressIndicator(color: Colors.white))
+              : Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Padding(
@@ -231,6 +231,9 @@ class _MatchesScreenState extends State<MatchesScreen> {
               ),
             ),
           ),
+        ],
+      ),
+          const Positioned(left: 0, right: 0, bottom: 18, child: AppBottomNav(current: BottomNavItem.messages)),
         ],
       ),
     );

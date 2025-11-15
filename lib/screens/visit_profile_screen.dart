@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../api/api_client.dart';
 import '../api/token_store.dart';
 import '../api/models.dart';
+import '../widgets/app_bottom_nav.dart';
 import 'dart:convert';
 
 class VisitProfileScreen extends StatefulWidget {
@@ -220,7 +221,10 @@ class _VisitProfileScreenState extends State<VisitProfileScreen> with SingleTick
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: CustomScrollView(
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: CustomScrollView(
         slivers: [
           SliverAppBar(
             expandedHeight: 400,
@@ -416,6 +420,10 @@ class _VisitProfileScreenState extends State<VisitProfileScreen> with SingleTick
               ],
             ),
           ),
+        ],
+      ),
+          ),
+              const Positioned(left: 0, right: 0, bottom: 18, child: AppBottomNav(current: BottomNavItem.home)),
         ],
       ),
     );

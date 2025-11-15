@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:zpi_test/screens/visit_profile_screen.dart';
+import 'package:flutter/services.dart';
+import '../widgets/app_bottom_nav.dart';
 import '../api/api_client.dart';
 import '../api/token_store.dart';
 import '../api/models.dart';
@@ -21,6 +23,9 @@ class _UsersScreenState extends State<UsersScreen> {
   bool _showArtists = true;
   bool _showBands = true;
   bool _isLoading = false;
+  // Keyboard focus and top card control
+  final FocusNode _focusNode = FocusNode();
+  GlobalKey<_DraggableCardState>? _topCardKey;
   // Tag dictionaries for grouping like in ProfileScreen
   final Map<String, List<TagDto>> _tagGroups = {}; // categoryId -> [TagDto]
   final Map<String, String> _categoryNames = {}; // categoryId -> categoryName
@@ -38,6 +43,10 @@ class _UsersScreenState extends State<UsersScreen> {
     _loadCountries();
     _loadGenders();
     _loadPreference();
+    // Ensure the screen captures keyboard focus for arrow key swipes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _focusNode.requestFocus();
+    });
   }
 
   Future<void> _loadTagData() async {
@@ -291,13 +300,53 @@ class _UsersScreenState extends State<UsersScreen> {
   }
 
   @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Find Matches')),
-      body: Padding(
+      appBar: AppBar(
+        automaticallyImplyLeading: false, // No back arrow on navbar screen
+        title: const Text('Find Matches'),
+        actions: [
+          // Wider hit area so it doesn't get hidden under the debug banner and is easier to tap
+          SizedBox(
+            width: 96,
+            child: IconButton(
+              tooltip: 'Match Preferences',
+              iconSize: 30,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              constraints: const BoxConstraints(minWidth: 72, minHeight: 48),
+              icon: const Icon(Icons.tune, color: Color(0xFF5B3CF0)),
+              onPressed: () => Navigator.pushNamed(context, '/filters'),
+            ),
+          ),
+          const SizedBox(width: 4),
+        ],
+      ),
+      body: RawKeyboardListener(
+        focusNode: _focusNode,
+        onKey: (event) {
+          if (event is RawKeyDownEvent) {
+            final key = event.logicalKey;
+            if (key == LogicalKeyboardKey.arrowRight) {
+              _topCardKey?.currentState?.swipeRight();
+            } else if (key == LogicalKeyboardKey.arrowLeft) {
+              _topCardKey?.currentState?.swipeLeft();
+            }
+          }
+        },
+        child: Stack(
+        children: [
+          Positioned.fill(
+        child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
           children: [
+            // Preferences button moved to AppBar (top right tune icon)
             // Preference toggles removed: preferences are managed in filters_screen
             Row(
               children: [
@@ -345,9 +394,12 @@ class _UsersScreenState extends State<UsersScreen> {
                             gender = _genderIdToName[u['genderId'].toString()];
                           }
                         }
+                        // Assign a GlobalKey to the top-most card so we can trigger programmatic swipes
+                        final cardKey = top ? GlobalKey<_DraggableCardState>() : null;
+                        if (top) _topCardKey = cardKey;
                         return Positioned.fill(
                           child: DraggableCard(
-                            key: ValueKey(id),
+                            key: cardKey ?? ValueKey(id),
                             name: name,
                             description: u['description']?.toString() ?? '',
                             imageUrl: imageUrl,
@@ -376,6 +428,12 @@ class _UsersScreenState extends State<UsersScreen> {
             ),
           ],
         ),
+        ),
+      ),
+          // Removed heart / X FABs per request; keyboard & swipe gestures remain
+          const Positioned(left: 0, right: 0, bottom: 18, child: AppBottomNav(current: BottomNavItem.home)),
+        ],
+      ),
       ),
     );
   }
@@ -430,6 +488,8 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
   late Animation<double> _animRot;
   final ScrollController _scrollController = ScrollController();
   int _currentImageIndex = 0;
+  bool _isAnimating = false;
+  _Decision _decision = _Decision.none; // explicit decision state for keyboard swipes
 
   @override
   void initState() {
@@ -479,9 +539,30 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
       });
     });
     _ctrl.addStatusListener((s) {
-      if (s == AnimationStatus.completed) onComplete();
+      if (s == AnimationStatus.completed) {
+        _isAnimating = false;
+        _decision = _Decision.none; // reset decision after animation completes
+        onComplete();
+      }
     });
     _ctrl.forward(from: 0);
+  }
+
+  // Programmatic swipe controls (used by arrow keys)
+  void swipeRight() {
+    if (_isAnimating || !widget.isDraggable) return;
+    _isAnimating = true;
+    _decision = _Decision.like;
+    final w = MediaQuery.of(context).size.width;
+    _runOffScreen(Offset(w * 1.5, _pos.dy), 0.5, widget.onSwipedRight);
+  }
+
+  void swipeLeft() {
+    if (_isAnimating || !widget.isDraggable) return;
+    _isAnimating = true;
+    _decision = _Decision.nope;
+    final w = MediaQuery.of(context).size.width;
+    _runOffScreen(Offset(-w * 1.5, _pos.dy), -0.5, widget.onSwipedLeft);
   }
 
   @override
@@ -496,6 +577,11 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
     final w = MediaQuery.of(context).size.width;
     final h = MediaQuery.of(context).size.height;
     final images = _allImages;
+    final threshold = w * 0.25;
+    final dragLike = (_pos.dx / threshold).clamp(0.0, 1.0);
+    final dragNope = (-_pos.dx / threshold).clamp(0.0, 1.0);
+    final likeOpacity = _decision == _Decision.like ? 1.0 : dragLike;
+    final nopeOpacity = _decision == _Decision.nope ? 1.0 : dragNope;
     
     // Extract tags grouped by category (analogous to ProfileScreen)
     final Map<String, List<String>> groupedTags = {};
@@ -577,11 +663,14 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(16),
-              child: SizedBox(
-                height: h * 0.75,
-                child: SingleChildScrollView(
-                  controller: _scrollController,
-                  child: Column(
+              child: SizedBox.expand(
+                child: Stack(
+                  children: [
+                    // Scrollable content
+                    Positioned.fill(
+                      child: SingleChildScrollView(
+                        controller: _scrollController,
+                        child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Main image section with indicators
@@ -607,6 +696,7 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
                                     child: Icon(Icons.person, size: 100, color: Colors.grey[500]),
                                   ),
                           ),
+                          // (Removed small overlays; replaced by global stamps below)
                           // Image indicators
                           if (images.length > 1)
                             Positioned(
@@ -884,9 +974,80 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
                             ],
                           ),
                         ),
-                      const SizedBox(height: 80), // Space for swipe indicators
+                      const SizedBox(height: 24), // Small padding; allow card to reach bottom behind nav
                     ],
                   ),
+                      ),
+                    ),
+                    // Tinted decision overlay
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: likeOpacity > 0
+                                ? Colors.green.withOpacity(0.10 * likeOpacity + 0.05)
+                                : nopeOpacity > 0
+                                    ? Colors.redAccent.withOpacity(0.10 * nopeOpacity + 0.05)
+                                    : Colors.transparent,
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Large LIKE stamp
+                    Positioned(
+                      top: 28,
+                      right: 24,
+                      child: Opacity(
+                        opacity: likeOpacity,
+                        child: Transform.rotate(
+                          angle: 0.18,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.85),
+                              border: Border.all(color: Colors.green, width: 4),
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0,4))],
+                            ),
+                            child: const Text('LIKE',
+                                style: TextStyle(
+                                  color: Colors.green,
+                                  fontSize: 38,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 3,
+                                )),
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Large NOPE stamp
+                    Positioned(
+                      top: 28,
+                      left: 24,
+                      child: Opacity(
+                        opacity: nopeOpacity,
+                        child: Transform.rotate(
+                          angle: -0.18,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.85),
+                              border: Border.all(color: Colors.redAccent, width: 4),
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0,4))],
+                            ),
+                            child: const Text('NOPE',
+                                style: TextStyle(
+                                  color: Colors.redAccent,
+                                  fontSize: 38,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 3,
+                                )),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -896,3 +1057,5 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
     );
   }
 }
+
+enum _Decision { none, like, nope }

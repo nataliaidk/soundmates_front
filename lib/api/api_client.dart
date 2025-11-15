@@ -273,6 +273,8 @@ class ApiClient {
       ct = MediaType('audio', 'wav');
     } else if (ext == 'ogg') {
       ct = MediaType('audio', 'ogg');
+    } else if (ext == 'mp4') {
+      ct = MediaType('video', 'mp4');
     }
     if (ct != null) {
       request.files.add(http.MultipartFile.fromBytes('file', bytes, filename: filename, contentType: ct));
@@ -286,7 +288,11 @@ class ApiClient {
         final request2 = http.MultipartRequest('POST', uri);
         final headers2 = await _authHeaders();
         request2.headers.addAll(headers2);
-        request2.files.add(http.MultipartFile.fromBytes('file', bytes, filename: filename));
+        if (ct != null) {
+          request2.files.add(http.MultipartFile.fromBytes('file', bytes, filename: filename, contentType: ct));
+        } else {
+          request2.files.add(http.MultipartFile.fromBytes('file', bytes, filename: filename));
+        }
         return request2.send();
       }
     }
