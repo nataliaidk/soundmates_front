@@ -50,23 +50,27 @@ class _ProfileEditTagsScreenState extends State<ProfileEditTagsScreen> {
     final roles = await _dataLoader.loadBandRoles();
     _bandRoles = roles;
 
-    // Load tag categories and tags
-    final categories = await _dataLoader.loadTagCategories();
-    final tags = await _dataLoader.loadTags();
-    _tagManager.initialize(
-      categories: categories,
-      tags: tags,
-      filterForBand: false,
-    );
-
-    // Load profile
+    // Load profile first to get isBand value
     final profile = await _dataLoader.loadMyProfile();
     if (profile == null) {
       setState(() => _status = 'Failed to load profile');
       return;
     }
 
-    _parseProfile(profile);
+    // Parse profile to get isBand
+    _desc.text = profile['description'] ?? '';
+    _isBand = profile['isBand'] == true;
+
+    // Load tag categories and tags with correct filter
+    final categories = await _dataLoader.loadTagCategories();
+    final tags = await _dataLoader.loadTags();
+    _tagManager.initialize(
+      categories: categories,
+      tags: tags,
+      filterForBand: _isBand,
+    );
+
+    // Set user tags
     _tagManager.setUserTags(
       profile['tagsIds'] is List
           ? (profile['tagsIds'] as List).map((t) => t.toString()).toList()
@@ -74,30 +78,14 @@ class _ProfileEditTagsScreenState extends State<ProfileEditTagsScreen> {
     );
     _tagManager.populateSelectedForEdit();
 
+    // Parse rest of profile
+    _parseProfile(profile);
+
     setState(() => _status = '');
   }
 
   void _parseProfile(Map<String, dynamic> profile) {
-    _desc.text = profile['description'] ?? '';
-    _isBand = profile['isBand'] == true;
-
-    // Reload tag manager with correct filter
-    _dataLoader.loadTagCategories().then((categories) {
-      _dataLoader.loadTags().then((tags) {
-        _tagManager.initialize(
-          categories: categories,
-          tags: tags,
-          filterForBand: _isBand,
-        );
-        _tagManager.setUserTags(
-          profile['tagsIds'] is List
-              ? (profile['tagsIds'] as List).map((t) => t.toString()).toList()
-              : [],
-        );
-        _tagManager.populateSelectedForEdit();
-        setState(() {});
-      });
-    });
+    // Description and isBand are already parsed above
 
     // Band members
     if (profile['bandMembers'] is List) {

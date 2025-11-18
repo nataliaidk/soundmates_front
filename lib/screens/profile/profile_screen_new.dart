@@ -112,7 +112,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _loadProfileAndTags() async {
     setState(() => _status = 'Loading profile...');
 
-    // Load tags and categories
+    // Load profile FIRST to get isBand value
+    final profile = await _dataLoader.loadMyProfile();
+    if (profile == null) {
+      setState(() => _status = 'Failed to load profile');
+      return;
+    }
+
+    _parseProfile(profile);
+
+    // NOW load and filter tags based on isBand
     final tags = await _dataLoader.loadTags();
     final categories = await _dataLoader.loadTagCategories();
     _tagManager.initialize(
@@ -121,14 +130,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       filterForBand: _isBand,
     );
 
-    // Load profile
-    final profile = await _dataLoader.loadMyProfile();
-    if (profile == null) {
-      setState(() => _status = 'Failed to load profile');
-      return;
-    }
-
-    _parseProfile(profile);
     _tagManager.setUserTags(
       profile['tagsIds'] is List
           ? (profile['tagsIds'] as List).map((t) => t.toString()).toList()

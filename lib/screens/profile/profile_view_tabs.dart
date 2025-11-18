@@ -469,20 +469,33 @@ class _ProfileViewTabsState extends State<ProfileViewTabs> {
                                     );
                                   },
                                 )
+                              else if (media.type == _MediaType.video)
+                                // Try to show video thumbnail or fallback to icon
+                                Image.network(
+                                  media.url,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      color: Colors.blue[50],
+                                      child: const Center(
+                                        child: Icon(
+                                          Icons.videocam,
+                                          size: 48,
+                                          color: Colors.blue,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                )
                               else
+                                // Audio files
                                 Container(
-                                  color: media.type == _MediaType.audio 
-                                      ? Colors.purple[50] 
-                                      : Colors.blue[50],
-                                  child: Center(
+                                  color: Colors.purple[50],
+                                  child: const Center(
                                     child: Icon(
-                                      media.type == _MediaType.audio 
-                                          ? Icons.audiotrack 
-                                          : Icons.videocam,
+                                      Icons.audiotrack,
                                       size: 48,
-                                      color: media.type == _MediaType.audio 
-                                          ? Colors.purple 
-                                          : Colors.blue,
+                                      color: Colors.purple,
                                     ),
                                   ),
                                 ),
