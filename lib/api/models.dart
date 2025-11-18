@@ -778,6 +778,7 @@ class OtherUserProfileDto {
   final String? country;
   final List<String> tags;
   final List<ProfilePictureDto> profilePictures;
+  final List<MusicSampleDto>? musicSamples;
   final bool isBand;
 
   OtherUserProfileDto({
@@ -788,6 +789,7 @@ class OtherUserProfileDto {
     this.country,
     required this.tags,
     required this.profilePictures,
+    this.musicSamples,
     required this.isBand,
   });
 
@@ -808,6 +810,10 @@ class OtherUserProfileDto {
           ? List<ProfilePictureDto>.from(
           json['profilePictures'].map((e) => ProfilePictureDto.fromJson(e)))
           : [],
+      musicSamples: (json['musicSamples'] is List)
+          ? List<MusicSampleDto>.from(
+          json['musicSamples'].map((e) => MusicSampleDto.fromJson(e)))
+          : null,
       isBand: isBand,
     );
   }
@@ -827,6 +833,7 @@ class OtherUserProfileArtistDto extends OtherUserProfileDto {
     String? country,
     required List<String> tags,
     required List<ProfilePictureDto> profilePictures,
+    List<MusicSampleDto>? musicSamples,
     this.age,
     this.gender,
     this.birthDate,
@@ -838,6 +845,7 @@ class OtherUserProfileArtistDto extends OtherUserProfileDto {
     country: country,
     tags: tags,
     profilePictures: profilePictures,
+    musicSamples: musicSamples,
     isBand: false,
   );
 
@@ -873,6 +881,10 @@ class OtherUserProfileArtistDto extends OtherUserProfileDto {
           ? List<ProfilePictureDto>.from(
           json['profilePictures'].map((e) => ProfilePictureDto.fromJson(e)))
           : [],
+      musicSamples: (json['musicSamples'] is List)
+          ? List<MusicSampleDto>.from(
+          json['musicSamples'].map((e) => MusicSampleDto.fromJson(e)))
+          : null,
       age: (json['age'] is int) ? json['age'] as int : int.tryParse(
           json['age']?.toString() ?? ''),
       gender: json['gender']?.toString(),
@@ -893,6 +905,7 @@ class OtherUserProfileArtistDto extends OtherUserProfileDto {
     String? country,
     required List<String> tags,
     required List<ProfilePictureDto> profilePictures,
+    List<MusicSampleDto>? musicSamples,
     required this.bandMembers,
   }) : super(
     id: id,
@@ -902,6 +915,7 @@ class OtherUserProfileArtistDto extends OtherUserProfileDto {
     country: country,
     tags: tags,
     profilePictures: profilePictures,
+    musicSamples: musicSamples,
     isBand: true,
   );
 
@@ -919,6 +933,10 @@ class OtherUserProfileArtistDto extends OtherUserProfileDto {
           ? List<ProfilePictureDto>.from(
           json['profilePictures'].map((e) => ProfilePictureDto.fromJson(e)))
           : [],
+      musicSamples: (json['musicSamples'] is List)
+          ? List<MusicSampleDto>.from(
+          json['musicSamples'].map((e) => MusicSampleDto.fromJson(e)))
+          : null,
       bandMembers: (json['bandMembers'] is List)
           ? List<BandMemberDto>.from(
           json['bandMembers'].map((e) => BandMemberDto.fromJson(e)))

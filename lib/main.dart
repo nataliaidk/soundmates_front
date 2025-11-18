@@ -9,6 +9,8 @@ import 'screens/home_screen.dart';
 import 'screens/profile/profile_screen_new.dart' as profile_new;
 import 'screens/profile/profile_edit_tags_screen.dart';
 import 'screens/profile/profile_add_media_screen.dart';
+import 'screens/profile/profile_manage_media_screen.dart';
+import 'screens/profile/profile_edit_basic_info_screen.dart';
 // import 'screens/messages_screen.dart';
 import 'screens/matches_screen.dart';
 import 'screens/users_screen.dart';
@@ -40,8 +42,10 @@ class MyApp extends StatelessWidget {
         '/home': (c) => HomeScreen(api: api, tokens: tokens),
         '/profile': (c) => profile_new.ProfileScreen(api: api, tokens: tokens, startInEditMode: false),
         '/profile/create': (c) => profile_new.ProfileScreen(api: api, tokens: tokens, startInEditMode: true, isFromRegistration: true),
+        '/profile/edit': (c) => ProfileEditBasicInfoScreen(api: api, tokens: tokens),
         '/profile/edit-tags': (c) => ProfileEditTagsScreen(api: api, tokens: tokens),
         '/profile/add-media': (c) => ProfileAddMediaScreen(api: api, tokens: tokens),
+        '/profile/manage-media': (c) => ProfileManageMediaScreen(api: api, tokens: tokens),
         '/matches': (c) => MatchesScreen(api: api, tokens: tokens),
         '/users': (c) => UsersScreen(api: api, tokens: tokens),
         '/filters': (c) => FiltersScreen(api: api, tokens: tokens),

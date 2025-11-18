@@ -173,6 +173,73 @@ class ProfileEditStep2 extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
+        // Profile photo circle at the top
+        Center(
+          child: GestureDetector(
+            onTap: onPickProfilePhoto,
+            child: Stack(
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.purple, width: 3),
+                  ),
+                  child: CircleAvatar(
+                    radius: 60,
+                    backgroundColor: Colors.grey[300],
+                    backgroundImage: pickedProfilePhoto?.bytes != null
+                        ? MemoryImage(pickedProfilePhoto!.bytes!)
+                        : null,
+                    child: pickedProfilePhoto?.bytes == null
+                        ? Icon(Icons.person, size: 60, color: Colors.grey[600])
+                        : null,
+                  ),
+                ),
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.purple,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
+                      onPressed: onPickProfilePhoto,
+                      padding: const EdgeInsets.all(8),
+                      constraints: const BoxConstraints(),
+                    ),
+                  ),
+                ),
+                if (pickedProfilePhoto != null)
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white, size: 16),
+                        onPressed: onRemoveProfilePhoto,
+                        padding: const EdgeInsets.all(4),
+                        constraints: const BoxConstraints(),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Tap to ${pickedProfilePhoto == null ? 'add' : 'change'} profile photo',
+          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+        ),
+        const SizedBox(height: 24),
         TextField(
           controller: descController,
           decoration: const InputDecoration(labelText: 'Description'),
@@ -180,74 +247,7 @@ class ProfileEditStep2 extends StatelessWidget {
         ),
         _buildTags(),
         if (isBand) _buildBandMembersSection(context),
-        const SizedBox(height: 12),
-        
-        // Profile photo (optional)
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade300),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Profile photo (optional)',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  ElevatedButton.icon(
-                    onPressed: onPickProfilePhoto,
-                    icon: const Icon(Icons.photo),
-                    label: const Text('Choose photo'),
-                  ),
-                  const SizedBox(width: 12),
-                  if (pickedProfilePhoto != null)
-                    Expanded(
-                      child: Row(
-                        children: [
-                          if (pickedProfilePhoto?.bytes != null)
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: Image.memory(
-                                pickedProfilePhoto!.bytes!,
-                                width: 56,
-                                height: 56,
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              pickedProfilePhoto!.name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(color: Colors.grey.shade700),
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.close),
-                            onPressed: onRemoveProfilePhoto,
-                          ),
-                        ],
-                      ),
-                    )
-                  else
-                    Text(
-                      'No file selected',
-                      style: TextStyle(color: Colors.grey.shade600),
-                    ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 24),
         
         // Back and Complete buttons
         Row(

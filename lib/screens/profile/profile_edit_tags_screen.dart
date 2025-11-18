@@ -34,6 +34,7 @@ class _ProfileEditTagsScreenState extends State<ProfileEditTagsScreen> {
   List<BandMemberDto> _bandMembers = [];
   List<BandRoleDto> _bandRoles = [];
   PlatformFile? _pickedProfilePhoto;
+  List<ProfilePictureDto> _profilePictures = [];
   
   @override
   void initState() {
@@ -50,23 +51,27 @@ class _ProfileEditTagsScreenState extends State<ProfileEditTagsScreen> {
     final roles = await _dataLoader.loadBandRoles();
     _bandRoles = roles;
 
-    // Load tag categories and tags
-    final categories = await _dataLoader.loadTagCategories();
-    final tags = await _dataLoader.loadTags();
-    _tagManager.initialize(
-      categories: categories,
-      tags: tags,
-      filterForBand: false,
-    );
-
-    // Load profile
+    // Load profile first to get isBand value
     final profile = await _dataLoader.loadMyProfile();
     if (profile == null) {
       setState(() => _status = 'Failed to load profile');
       return;
     }
 
-    _parseProfile(profile);
+    // Parse profile to get isBand
+    _desc.text = profile['description'] ?? '';
+    _isBand = profile['isBand'] == true;
+
+    // Load tag categories and tags with correct filter
+    final categories = await _dataLoader.loadTagCategories();
+    final tags = await _dataLoader.loadTags();
+    _tagManager.initialize(
+      categories: categories,
+      tags: tags,
+      filterForBand: _isBand,
+    );
+
+    // Set user tags
     _tagManager.setUserTags(
       profile['tagsIds'] is List
           ? (profile['tagsIds'] as List).map((t) => t.toString()).toList()
@@ -74,35 +79,26 @@ class _ProfileEditTagsScreenState extends State<ProfileEditTagsScreen> {
     );
     _tagManager.populateSelectedForEdit();
 
+    // Parse rest of profile
+    _parseProfile(profile);
+
     setState(() => _status = '');
   }
 
   void _parseProfile(Map<String, dynamic> profile) {
-    _desc.text = profile['description'] ?? '';
-    _isBand = profile['isBand'] == true;
-
-    // Reload tag manager with correct filter
-    _dataLoader.loadTagCategories().then((categories) {
-      _dataLoader.loadTags().then((tags) {
-        _tagManager.initialize(
-          categories: categories,
-          tags: tags,
-          filterForBand: _isBand,
-        );
-        _tagManager.setUserTags(
-          profile['tagsIds'] is List
-              ? (profile['tagsIds'] as List).map((t) => t.toString()).toList()
-              : [],
-        );
-        _tagManager.populateSelectedForEdit();
-        setState(() {});
-      });
-    });
+    // Description and isBand are already parsed above
 
     // Band members
     if (profile['bandMembers'] is List) {
       _bandMembers = (profile['bandMembers'] as List)
           .map((m) => BandMemberDto.fromJson(Map<String, dynamic>.from(m)))
+          .toList();
+    }
+
+    // Load existing profile pictures
+    if (profile['profilePictures'] is List) {
+      _profilePictures = (profile['profilePictures'] as List)
+          .map((pic) => ProfilePictureDto.fromJson(Map<String, dynamic>.from(pic)))
           .toList();
     }
   }
@@ -360,6 +356,83 @@ class _ProfileEditTagsScreenState extends State<ProfileEditTagsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Profile photo circle at the top
+                  Center(
+                    child: GestureDetector(
+                      onTap: _pickProfilePhoto,
+                      child: Stack(
+                        children: [
+                          Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.purple, width: 3),
+                            ),
+                            child: CircleAvatar(
+                              radius: 60,
+                              backgroundColor: Colors.grey[300],
+                              backgroundImage: _pickedProfilePhoto?.bytes != null
+                                  ? MemoryImage(_pickedProfilePhoto!.bytes!)
+                                  : (_profilePictures.isNotEmpty
+                                      ? NetworkImage(_profilePictures.first.getAbsoluteUrl(widget.api.baseUrl))
+                                      : null),
+                              child: _pickedProfilePhoto?.bytes == null && _profilePictures.isEmpty
+                                  ? Icon(Icons.person, size: 60, color: Colors.grey[600])
+                                  : null,
+                            ),
+                          ),
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.purple,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white, width: 2),
+                              ),
+                              child: IconButton(
+                                icon: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
+                                onPressed: _pickProfilePhoto,
+                                padding: const EdgeInsets.all(8),
+                                constraints: const BoxConstraints(),
+                              ),
+                            ),
+                          ),
+                          if (_pickedProfilePhoto != null || _profilePictures.isNotEmpty)
+                            Positioned(
+                              top: 0,
+                              right: 0,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.red,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: Colors.white, width: 2),
+                                ),
+                                child: IconButton(
+                                  icon: const Icon(Icons.close, color: Colors.white, size: 16),
+                                  onPressed: () {
+                                    setState(() {
+                                      _pickedProfilePhoto = null;
+                                      // Note: This only clears from UI, actual deletion would need API call
+                                      _profilePictures = [];
+                                    });
+                                  },
+                                  padding: const EdgeInsets.all(4),
+                                  constraints: const BoxConstraints(),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Center(
+                    child: Text(
+                      'Tap to ${_pickedProfilePhoto == null ? 'add' : 'change'} profile photo',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
                   // Description
                   TextField(
                     controller: _desc,
@@ -490,83 +563,9 @@ class _ProfileEditTagsScreenState extends State<ProfileEditTagsScreen> {
                         foregroundColor: Colors.white,
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 32),
                   ],
 
-                  // Profile Photo
-                  const Text(
-                    'Profile Photo',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey.shade300),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            ElevatedButton.icon(
-                              onPressed: _pickProfilePhoto,
-                              icon: const Icon(Icons.photo),
-                              label: const Text('Choose Photo'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.purple,
-                                foregroundColor: Colors.white,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            if (_pickedProfilePhoto != null)
-                              Expanded(
-                                child: Row(
-                                  children: [
-                                    if (_pickedProfilePhoto?.bytes != null)
-                                      ClipRRect(
-                                        borderRadius: BorderRadius.circular(8),
-                                        child: Image.memory(
-                                          _pickedProfilePhoto!.bytes!,
-                                          width: 56,
-                                          height: 56,
-                                          fit: BoxFit.cover,
-                                        ),
-                                      ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        _pickedProfilePhoto!.name,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(color: Colors.grey.shade700),
-                                      ),
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.close),
-                                      onPressed: () {
-                                        setState(() {
-                                          _pickedProfilePhoto = null;
-                                        });
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              )
-                            else
-                              Text(
-                                'No file selected',
-                                style: TextStyle(color: Colors.grey.shade600),
-                              ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 32),
 
                   // Save Button
                   SizedBox(
