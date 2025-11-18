@@ -308,25 +308,6 @@ class _UsersScreenState extends State<UsersScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false, // No back arrow on navbar screen
-        title: const Text('Find Matches'),
-        actions: [
-          // Wider hit area so it doesn't get hidden under the debug banner and is easier to tap
-          SizedBox(
-            width: 96,
-            child: IconButton(
-              tooltip: 'Match Preferences',
-              iconSize: 30,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              constraints: const BoxConstraints(minWidth: 72, minHeight: 48),
-              icon: const Icon(Icons.tune, color: Color(0xFF5B3CF0)),
-              onPressed: () => Navigator.pushNamed(context, '/filters'),
-            ),
-          ),
-          const SizedBox(width: 4),
-        ],
-      ),
       body: RawKeyboardListener(
         focusNode: _focusNode,
         onKey: (event) {
@@ -340,28 +321,8 @@ class _UsersScreenState extends State<UsersScreen> {
           }
         },
         child: Stack(
-        children: [
-          Positioned.fill(
-        child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
           children: [
-            // Preferences button moved to AppBar (top right tune icon)
-            // Preference toggles removed: preferences are managed in filters_screen
-            Row(
-              children: [
-                ElevatedButton(
-                  onPressed: _isLoading ? null : _list,
-                  child: _isLoading ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Refresh'),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton(onPressed: _showMatches, child: const Text('Show Matches')),
-              ],
-            ),
-            const SizedBox(height: 12),
-            if (_out.isNotEmpty) Text(_out, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
-            const SizedBox(height: 12),
-            Expanded(
+            Positioned.fill(
               child: _users.isEmpty
                   ? Center(
                       child: _isLoading
@@ -375,16 +336,16 @@ class _UsersScreenState extends State<UsersScreen> {
                         final name = u['name']?.toString() ?? '(no name)';
                         final imageUrl = _userImages[id];
                         final top = index == _users.length - 1;
-            final rawCountryId = (u['countryId'] ?? u['country'])?.toString();
-            final rawCityId = (u['cityId'] ?? u['city'])?.toString();
-            final countryName = rawCountryId != null
-              ? (_countryIdToName[rawCountryId] ?? u['countryName']?.toString())
-              : (u['countryName']?.toString() ?? u['country']?.toString());
-            final cityName = (rawCountryId != null && rawCityId != null)
-              ? (_citiesByCountry[rawCountryId] != null
-                ? (_citiesByCountry[rawCountryId]![rawCityId] ?? u['cityName']?.toString())
-                : u['cityName']?.toString())
-              : (u['cityName']?.toString() ?? u['city']?.toString());
+                        final rawCountryId = (u['countryId'] ?? u['country'])?.toString();
+                        final rawCityId = (u['cityId'] ?? u['city'])?.toString();
+                        final countryName = rawCountryId != null
+                            ? (_countryIdToName[rawCountryId] ?? u['countryName']?.toString())
+                            : (u['countryName']?.toString() ?? u['country']?.toString());
+                        final cityName = (rawCountryId != null && rawCityId != null)
+                            ? (_citiesByCountry[rawCountryId] != null
+                                ? (_citiesByCountry[rawCountryId]![rawCityId] ?? u['cityName']?.toString())
+                                : u['cityName']?.toString())
+                            : (u['cityName']?.toString() ?? u['city']?.toString());
                         String? gender;
                         final isBand = u['isBand'] is bool ? u['isBand'] as bool : false;
                         if (!isBand) {
@@ -394,7 +355,6 @@ class _UsersScreenState extends State<UsersScreen> {
                             gender = _genderIdToName[u['genderId'].toString()];
                           }
                         }
-                        // Assign a GlobalKey to the top-most card so we can trigger programmatic swipes
                         final cardKey = top ? GlobalKey<_DraggableCardState>() : null;
                         if (top) _topCardKey = cardKey;
                         return Positioned.fill(
@@ -419,21 +379,83 @@ class _UsersScreenState extends State<UsersScreen> {
                               setState(() => _users.removeAt(index));
                             },
                             isDraggable: top,
-                            api: widget.api,  // Add this
-                            tokens: widget.tokens,  // Add this
+                            api: widget.api,
+                            tokens: widget.tokens,
+                            showPrimaryActions: top,
+                            onPrimaryDislike: () => _topCardKey?.currentState?.swipeLeft(),
+                            onPrimaryFilter: () => Navigator.pushNamed(context, '/filters'),
+                            onPrimaryLike: () => _topCardKey?.currentState?.swipeRight(),
                           ),
                         );
                       }),
                     ),
             ),
+            if (_out.isNotEmpty)
+              Positioned(
+                top: 16,
+                left: 20,
+                right: 20,
+                child: SafeArea(
+                  bottom: false,
+                  child: Align(
+                    alignment: Alignment.topCenter,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.55),
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      child: Text(
+                        _out,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.white, fontSize: 12, letterSpacing: 0.3),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            const Positioned(left: 0, right: 0, bottom: 18, child: AppBottomNav(current: BottomNavItem.home)),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _RoundActionButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  final Color backgroundColor;
+  final Color iconColor;
+  final bool isElevated;
+
+  const _RoundActionButton({
+    required this.icon,
+    required this.onTap,
+    this.backgroundColor = Colors.white,
+    this.iconColor = Colors.black,
+    this.isElevated = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 62,
+        width: 62,
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(isElevated ? 0.25 : 0.15),
+              blurRadius: isElevated ? 18 : 10,
+              offset: const Offset(0, 8),
+            ),
+          ],
         ),
-      ),
-          // Removed heart / X FABs per request; keyboard & swipe gestures remain
-          const Positioned(left: 0, right: 0, bottom: 18, child: AppBottomNav(current: BottomNavItem.home)),
-        ],
-      ),
+        child: Icon(icon, color: iconColor, size: 26),
       ),
     );
   }
@@ -455,6 +477,10 @@ class DraggableCard extends StatefulWidget {
   final bool isDraggable;
   final ApiClient api;  // Add this
   final TokenStore tokens;  // Add this
+  final bool showPrimaryActions;
+  final VoidCallback? onPrimaryLike;
+  final VoidCallback? onPrimaryDislike;
+  final VoidCallback? onPrimaryFilter;
 
   const DraggableCard({
     super.key,
@@ -473,6 +499,10 @@ class DraggableCard extends StatefulWidget {
     this.isDraggable = true,
     required this.api,  // Add this
     required this.tokens,  // Add this
+    this.showPrimaryActions = false,
+    this.onPrimaryLike,
+    this.onPrimaryDislike,
+    this.onPrimaryFilter,
   });
 
   @override
@@ -658,11 +688,10 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
                   }
                 }
               : null,
-          child: Card(
-            elevation: 8,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
+          child: ClipRRect(
+            borderRadius: BorderRadius.zero,
+            child: Container(
+              color: Colors.white,
               child: SizedBox.expand(
                 child: Stack(
                   children: [
@@ -725,112 +754,122 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
                             left: 0,
                             right: 0,
                             child: Container(
-                              height: 120,
-                              decoration: BoxDecoration(
+                              height: 320,
+                              decoration: const BoxDecoration(
                                 gradient: LinearGradient(
                                   begin: Alignment.topCenter,
                                   end: Alignment.bottomCenter,
                                   colors: [
-                                    Colors.transparent,
-                                    Colors.black.withOpacity(0.7),
+                                    Color(0x005B3CF0),
+                                    Color(0x55240B62),
+                                    Color(0xCC130843),
+                                    Color(0xF207021F),
                                   ],
+                                  stops: [0.0, 0.42, 0.74, 1.0],
                                 ),
                               ),
                             ),
                           ),
                           // Name and location overlay
                           Positioned(
-                            bottom: 16,
-                            left: 16,
-                            right: 16,
+                            bottom: 18,
+                            left: 20,
+                            right: 20,
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: GestureDetector(  // Add this wrapper
-                                        onTap: () {
-                                          // Navigate to visit profile screen
-                                          final userId = widget.userData['id']?.toString() ?? '';
-                      // age and location are not needed here for navigation
-
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) => VisitProfileScreen(
-                                                api: widget.api,
-                                                tokens: widget.tokens,
-                                                userId: userId,
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                        child: Text(
-                                          '${widget.name}${age != null ? ', $age' : ''}',
-                                          style: const TextStyle(
-                                            fontSize: 28,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white,
-                                            decoration: TextDecoration.underline,  // Optional: indicate it's clickable
-                                            shadows: [Shadow(color: Colors.black45, blurRadius: 8)],
-                                          ),
+                                GestureDetector(
+                                  onTap: () {
+                                    final userId = widget.userData['id']?.toString() ?? '';
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => VisitProfileScreen(
+                                          api: widget.api,
+                                          tokens: widget.tokens,
+                                          userId: userId,
                                         ),
                                       ),
+                                    );
+                                  },
+                                  child: Text(
+                                    '${widget.name}${age != null ? ', $age' : ''}',
+                                    style: const TextStyle(
+                                      fontSize: 32,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                      letterSpacing: 0.5,
+                                      shadows: [Shadow(color: Colors.black45, blurRadius: 10)],
                                     ),
-                                  ],
+                                  ),
                                 ),
-                                const SizedBox(height: 8),
-                                // Artist/Band chip + green activity dot (styled like VisitProfile)
+                                if ((widget.city ?? '').isNotEmpty || (widget.country ?? '').isNotEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 6),
+                                    child: Text(
+                                      [widget.city, widget.country]
+                                          .where((e) => e != null && e.isNotEmpty)
+                                          .join(', ')
+                                          .toUpperCase(),
+                                      style: const TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 12,
+                                        letterSpacing: 1.2,
+                                      ),
+                                    ),
+                                  ),
+                                const SizedBox(height: 10),
                                 Row(
                                   children: [
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                                       decoration: BoxDecoration(
                                         color: widget.isBand
-                                            ? Colors.deepPurple.shade400
-                                            : Colors.blue.shade400,
-                                        borderRadius: BorderRadius.circular(12),
+                                            ? const Color(0xFF5B3CF0)
+                                            : const Color(0xFF8C6BF7),
+                                        borderRadius: BorderRadius.circular(16),
                                       ),
                                       child: Text(
                                         widget.isBand ? 'BAND' : 'ARTIST',
                                         style: const TextStyle(
                                           color: Colors.white,
-                                          fontSize: 11,
+                                          fontSize: 12,
                                           fontWeight: FontWeight.w600,
-                                          letterSpacing: 0.5,
+                                          letterSpacing: 0.6,
                                         ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Container(
-                                      width: 8,
-                                      height: 8,
-                                      decoration: const BoxDecoration(
-                                        color: Color(0xFF4CAF50),
-                                        shape: BoxShape.circle,
                                       ),
                                     ),
                                   ],
                                 ),
-                                if (widget.city != null || widget.country != null)
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 4),
-                                    child: Row(
-                                      children: [
-                                        const Icon(Icons.location_on, color: Colors.white, size: 16),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          [widget.city, widget.country].where((e) => e != null && e.isNotEmpty).join(', '),
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 14,
-                                            shadows: [Shadow(color: Colors.black45, blurRadius: 8)],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+                                if (widget.showPrimaryActions) ...[
+                                  const SizedBox(height: 20),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      _RoundActionButton(
+                                        icon: Icons.close,
+                                        backgroundColor: const Color(0xFFB388FF),
+                                        iconColor: Colors.white,
+                                        onTap: widget.onPrimaryDislike ?? () {},
+                                      ),
+                                      const SizedBox(width: 18),
+                                      _RoundActionButton(
+                                        icon: Icons.tune,
+                                        backgroundColor: Colors.white,
+                                        iconColor: const Color(0xFF5B3CF0),
+                                        onTap: widget.onPrimaryFilter ?? () {},
+                                        isElevated: true,
+                                      ),
+                                      const SizedBox(width: 18),
+                                      _RoundActionButton(
+                                        icon: Icons.favorite,
+                                        backgroundColor: Colors.white,
+                                        iconColor: Colors.pinkAccent,
+                                        onTap: widget.onPrimaryLike ?? () {},
+                                      ),
+                                    ],
                                   ),
+                                ],
                               ],
                             ),
                           ),
@@ -839,71 +878,76 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
                       // About section
                       if (widget.description.isNotEmpty)
                         Padding(
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(20),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Text(
-                                'About',
-                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                'ABOUT',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  letterSpacing: 1.1,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF5B3CF0),
+                                ),
                               ),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 10),
                               Text(
                                 widget.description,
-                                style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  height: 1.5,
+                                  color: Color(0xFF1F1F1F),
+                                ),
                               ),
                             ],
                           ),
                         ),
-                      // Tags section (grouped like in ProfileScreen)
+                      // Tag sections styled per mock
                       if (groupedTags.isNotEmpty)
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Tags',
-                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                              ),
-                              const SizedBox(height: 8),
-                              ...groupedTags.entries.map((entry) => Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    entry.key.toUpperCase(),
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.black54,
-                                      letterSpacing: 0.5,
+                            children: groupedTags.entries.map((entry) {
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 18),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      entry.key.toUpperCase(),
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        letterSpacing: 0.9,
+                                        color: Color(0xFF6A4DBE),
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Wrap(
-                                    spacing: 8,
-                                    runSpacing: 8,
-                                    children: entry.value.map((tagName) => Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(20),
-                                        border: Border.all(color: Colors.grey.shade300),
-                                      ),
-                                      child: Text(
-                                        tagName,
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: Colors.grey.shade800,
-                                          fontWeight: FontWeight.w500,
+                                    const SizedBox(height: 8),
+                                    Wrap(
+                                      spacing: 8,
+                                      runSpacing: 10,
+                                      children: entry.value.map((tagName) => Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFF5EEFF),
+                                          borderRadius: BorderRadius.circular(18),
                                         ),
-                                      ),
-                                    )).toList(),
-                                  ),
-                                ],
-                              )),
-                            ],
+                                        child: Text(
+                                          tagName,
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                            color: Color(0xFF5B3CF0),
+                                          ),
+                                        ),
+                                      )).toList(),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
                           ),
                         ),
                       // Gender section (under tags)
