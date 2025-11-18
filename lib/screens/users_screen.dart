@@ -414,6 +414,24 @@ class _UsersScreenState extends State<UsersScreen> {
                   ),
                 ),
               ),
+            if (_users.isEmpty)
+              Positioned(
+                top: 16,
+                right: 16,
+                child: SafeArea(
+                  bottom: false,
+                  child: Material(
+                    color: Colors.white.withOpacity(0.92),
+                    shape: const CircleBorder(),
+                    elevation: 6,
+                    child: IconButton(
+                      tooltip: 'Adjust filters',
+                      icon: const Icon(Icons.tune, color: Color(0xFF5B3CF0)),
+                      onPressed: () => Navigator.pushNamed(context, '/filters'),
+                    ),
+                  ),
+                ),
+              ),
             const Positioned(left: 0, right: 0, bottom: 18, child: AppBottomNav(current: BottomNavItem.home)),
           ],
         ),
