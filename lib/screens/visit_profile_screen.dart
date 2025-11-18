@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../api/api_client.dart';
 import '../api/token_store.dart';
 import '../api/models.dart';
@@ -577,12 +579,37 @@ class _VisitProfileScreenState extends State<VisitProfileScreen> with SingleTick
   }
 
   Widget _buildMultimediaTab() {
+    // Combine all media into one list for grid display
+    final List<_MediaItem> allMedia = [];
+    
+    // Add photos
+    for (final pic in _profile!.profilePictures) {
+      allMedia.add(_MediaItem(
+        type: _MediaType.image,
+        url: pic.getAbsoluteUrl(widget.api.baseUrl),
+        fileName: pic.fileUrl.split('/').last,
+      ));
+    }
+    
+    // Add music samples (audio/video) if available
+    if (_profile!.musicSamples != null) {
+      for (final sample in _profile!.musicSamples!) {
+        final fileName = sample.fileUrl.split('/').last;
+        final isAudio = fileName.toLowerCase().endsWith('.mp3');
+        allMedia.add(_MediaItem(
+          type: isAudio ? _MediaType.audio : _MediaType.video,
+          url: sample.getAbsoluteUrl(widget.api.baseUrl),
+          fileName: fileName,
+        ));
+      }
+    }
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (_profile!.profilePictures.isNotEmpty)
+          if (allMedia.isNotEmpty)
             GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -592,18 +619,80 @@ class _VisitProfileScreenState extends State<VisitProfileScreen> with SingleTick
                 mainAxisSpacing: 12,
                 childAspectRatio: 0.75,
               ),
-              itemCount: _profile!.profilePictures.length,
+              itemCount: allMedia.length,
               itemBuilder: (context, index) {
-                final pic = _profile!.profilePictures[index];
-                final url = pic.getAbsoluteUrl(widget.api.baseUrl);
-                return ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    url,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      color: Colors.grey.shade200,
-                      child: Icon(Icons.image, color: Colors.grey.shade400),
+                final media = allMedia[index];
+                return GestureDetector(
+                  onTap: () => _openMedia(media),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        // Background based on media type
+                        if (media.type == _MediaType.image)
+                          Image.network(
+                            media.url,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              color: Colors.grey.shade200,
+                              child: Icon(Icons.image, color: Colors.grey.shade400),
+                            ),
+                          )
+                        else if (media.type == _MediaType.video)
+                          // Try to show video thumbnail or fallback to icon
+                          Image.network(
+                            media.url,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                color: Colors.blue[50],
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.videocam,
+                                    size: 48,
+                                    color: Colors.blue,
+                                  ),
+                                ),
+                              );
+                            },
+                          )
+                        else
+                          // Audio files
+                          Container(
+                            color: Colors.purple[50],
+                            child: const Center(
+                              child: Icon(
+                                Icons.audiotrack,
+                                size: 48,
+                                color: Colors.purple,
+                              ),
+                            ),
+                          ),
+                        
+                        // Play button overlay for audio/video
+                        if (media.type != _MediaType.image)
+                          Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Colors.transparent,
+                                  Colors.black.withOpacity(0.3),
+                                ],
+                              ),
+                            ),
+                            child: const Align(
+                              alignment: Alignment.center,
+                              child: Icon(
+                                Icons.play_circle_outline,
+                                size: 40,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 );
@@ -644,6 +733,136 @@ class _VisitProfileScreenState extends State<VisitProfileScreen> with SingleTick
       ),
     );
   }
+
+  void _openMedia(_MediaItem media) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.black,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header with close button
+            Container(
+              color: Colors.black87,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      media.fileName,
+                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
+            // Media content
+            if (media.type == _MediaType.image)
+              InteractiveViewer(
+                child: Image.network(
+                  media.url,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(32.0),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.error, color: Colors.white, size: 48),
+                            SizedBox(height: 12),
+                            Text('Failed to load image', style: TextStyle(color: Colors.white)),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              )
+            else
+              Container(
+                padding: const EdgeInsets.all(48),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      media.type == _MediaType.audio ? Icons.audiotrack : Icons.videocam,
+                      size: 80,
+                      color: media.type == _MediaType.audio ? Colors.purple[300] : Colors.blue[300],
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      media.type == _MediaType.audio ? 'Audio File' : 'Video File',
+                      style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      media.fileName,
+                      style: TextStyle(color: Colors.grey[400], fontSize: 14),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        try {
+                          final uri = Uri.parse(media.url);
+                          final launched = await launchUrl(
+                            uri,
+                            mode: LaunchMode.externalApplication,
+                          );
+                          
+                          if (!launched && context.mounted) {
+                            final launched2 = await launchUrl(
+                              uri,
+                              mode: LaunchMode.platformDefault,
+                            );
+                            
+                            if (!launched2 && context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Cannot open: ${media.url}'),
+                                  backgroundColor: Colors.red,
+                                  duration: const Duration(seconds: 5),
+                                ),
+                              );
+                            }
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Error opening file: $e'),
+                                backgroundColor: Colors.red,
+                                duration: const Duration(seconds: 5),
+                              ),
+                            );
+                          }
+                        }
+                      },
+                      icon: const Icon(Icons.play_arrow),
+                      label: const Text('Play / Download'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.purple,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
@@ -667,4 +886,19 @@ class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   bool shouldRebuild(_SliverTabBarDelegate oldDelegate) => false;
+}
+
+// Helper classes for media items
+enum _MediaType { image, audio, video }
+
+class _MediaItem {
+  final _MediaType type;
+  final String url;
+  final String fileName;
+
+  _MediaItem({
+    required this.type,
+    required this.url,
+    required this.fileName,
+  });
 }

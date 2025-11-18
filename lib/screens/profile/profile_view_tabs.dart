@@ -717,25 +717,6 @@ class _ProfileViewTabsState extends State<ProfileViewTabs> {
                         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    TextButton.icon(
-                      onPressed: () async {
-                        await Clipboard.setData(ClipboardData(text: media.url));
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('URL copied to clipboard'),
-                              duration: Duration(seconds: 2),
-                            ),
-                          );
-                        }
-                      },
-                      icon: const Icon(Icons.copy, size: 18),
-                      label: const Text('Copy URL'),
-                      style: TextButton.styleFrom(
-                        foregroundColor: Colors.grey[400],
-                      ),
-                    ),
                   ],
                 ),
               ),
