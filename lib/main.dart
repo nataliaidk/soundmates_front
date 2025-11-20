@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'api/api_client.dart';
+import 'api/event_hub_service.dart';
 import 'api/token_store.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
@@ -30,14 +31,26 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = TokenStore();
-    final api = ApiClient(tokenStore: tokens);
+    final eventHub = EventHubService(tokenStore: tokens);
+    final api = ApiClient(tokenStore: tokens, eventHubService: eventHub);
+
+    void onAuthSuccess(BuildContext navContext) {
+      eventHub.connect();
+      Navigator.pushReplacementNamed(navContext, '/users');
+    }
+
+    void onRegisterSuccess(BuildContext navContext) {
+      eventHub.connect();
+      Navigator.pushReplacementNamed(navContext, '/profile/create');
+    }
+
     return MaterialApp(
       title: 'Soundmates Demo',
       theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple)),
       initialRoute: '/login',
       routes: {
-        '/login': (c) => LoginScreen(api: api, tokens: tokens, onLoggedIn: () => Navigator.pushReplacementNamed(c, '/users')),
-        '/register': (c) => RegisterScreen(api: api, tokens: tokens, onRegistered: () => Navigator.pushReplacementNamed(c, '/profile/create')),
+        '/login': (c) => LoginScreen(api: api, tokens: tokens, onLoggedIn: () => onAuthSuccess(c)),
+        '/register': (c) => RegisterScreen(api: api, tokens: tokens, onRegistered: () => onRegisterSuccess(c)),
         '/home': (c) => HomeScreen(api: api, tokens: tokens),
         '/profile': (c) => profile_new.ProfileScreen(api: api, tokens: tokens, startInEditMode: false),
         '/profile/create': (c) => profile_new.ProfileScreen(api: api, tokens: tokens, startInEditMode: true, isFromRegistration: true),
