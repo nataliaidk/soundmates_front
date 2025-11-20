@@ -253,66 +253,178 @@ class _FiltersScreenState extends State<FiltersScreen> {
       context: context,
       builder: (ctx) {
         return StatefulBuilder(builder: (context, setDialogState) {
-          // Filter options based on search query
           final filteredOptions = options.where((tag) {
             return tag.name.toLowerCase().contains(searchQuery.toLowerCase());
           }).toList();
 
-          return AlertDialog(
-            title: Text('Select ${category == 'Activity' ? 'Who you are looking for' : category}'),
-            content: SizedBox(
-              width: double.maxFinite,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Search field
-                  TextField(
-                    decoration: InputDecoration(
-                      hintText: 'Search...',
-                      prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    ),
-                    onChanged: (value) {
-                      setDialogState(() {
-                        searchQuery = value;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  // List of filtered tags
-                  Flexible(
-                    child: SingleChildScrollView(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: filteredOptions.map((tag) {
-                          final isSelected = currentSelection.contains(tag.id);
-                          return CheckboxListTile(
-                            title: Text(tag.name),
-                            value: isSelected,
-                            onChanged: (bool? selected) {
-                              setDialogState(() {
-                                if (selected == true) {
-                                  currentSelection.add(tag.id);
-                                } else {
-                                  currentSelection.remove(tag.id);
-                                }
-                              });
-                            },
-                          );
-                        }).toList(),
-                      ),
-                    ),
+          final dialogTitle = 'Select ${category == 'Activity' ? 'Who you are looking for' : category}';
+
+          return Dialog(
+            backgroundColor: Colors.transparent,
+            insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+            child: Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.82,
+                maxWidth: 900,
+              ),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE7DBFF),
+                borderRadius: BorderRadius.circular(32),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.18),
+                    blurRadius: 34,
+                    offset: const Offset(0, 18),
                   ),
                 ],
               ),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(28, 28, 28, 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            dialogTitle,
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF2D1B4E),
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.of(ctx).pop(),
+                          icon: const Icon(Icons.close, color: Color(0xFF7A5AD7)),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      decoration: InputDecoration(
+                        hintText: 'Search by name...',
+                        hintStyle: const TextStyle(color: Color(0xFF8B78C8)),
+                        prefixIcon: const Icon(Icons.search, color: Color(0xFF7A5AD7)),
+                        filled: true,
+                        fillColor: const Color(0xFFF3ECFF),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(18),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                      ),
+                      onChanged: (value) => setDialogState(() => searchQuery = value),
+                    ),
+                    if (currentSelection.isNotEmpty) ...[
+                      const SizedBox(height: 14),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: currentSelection.map((tagId) {
+                          final tag = options.firstWhere((t) => t.id == tagId, orElse: () => TagDto(id: tagId, name: tagId));
+                          return Chip(
+                            label: Text(tag.name, style: const TextStyle(color: Color(0xFF2D1B4E))),
+                            backgroundColor: const Color(0xFFD7C4FF),
+                            deleteIcon: const Icon(Icons.close, size: 16, color: Color(0xFF2D1B4E)),
+                            onDeleted: () => setDialogState(() => currentSelection.remove(tagId)),
+                          );
+                        }).toList(),
+                      ),
+                    ] else
+                      const SizedBox(height: 14),
+                    const Divider(height: 32, color: Color(0xFFE2D5FF)),
+                    Expanded(
+                      child: filteredOptions.isEmpty
+                          ? const Center(
+                              child: Text(
+                                'No matches for your search.',
+                                style: TextStyle(color: Color(0xFF7A5AD7), fontWeight: FontWeight.w600),
+                              ),
+                            )
+                          : ListView.separated(
+                              itemCount: filteredOptions.length,
+                              separatorBuilder: (_, __) => const SizedBox(height: 8),
+                              itemBuilder: (_, index) {
+                                final tag = filteredOptions[index];
+                                final isSelected = currentSelection.contains(tag.id);
+                                return InkWell(
+                                  onTap: () => setDialogState(() {
+                                    if (isSelected) {
+                                      currentSelection.remove(tag.id);
+                                    } else {
+                                      currentSelection.add(tag.id);
+                                    }
+                                  }),
+                                  borderRadius: BorderRadius.circular(20),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? const Color(0xFFCDB7FF)
+                                          : const Color(0xFFF2EBFF),
+                                      borderRadius: BorderRadius.circular(18),
+                                      border: Border.all(
+                                        color: isSelected ? const Color(0xFF5F3BCB) : const Color(0xFFD3C1FF),
+                                        width: 1.2,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
+                                          color: isSelected ? const Color(0xFF5F3BCB) : const Color(0xFFA495D9),
+                                        ),
+                                        const SizedBox(width: 16),
+                                        Expanded(
+                                          child: Text(
+                                            tag.name,
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                                              color: const Color(0xFF1F123A),
+                                            ),
+                                          ),
+                                        ),
+                                        if (isSelected)
+                                          const Icon(Icons.keyboard_arrow_right, color: Color(0xFF6F4BD8)),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                    ),
+                    const SizedBox(height: 18),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.of(ctx).pop(),
+                          child: const Text('Cancel', style: TextStyle(color: Color(0xFF5F3BCB), fontSize: 16)),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF5F3BCB),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                            elevation: 0,
+                          ),
+                          onPressed: () => Navigator.of(ctx).pop(currentSelection),
+                          child: const Text(
+                            'Save',
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ),
-            actions: [
-              TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Cancel')),
-              ElevatedButton(onPressed: () => Navigator.of(ctx).pop(currentSelection), child: const Text('OK')),
-            ],
           );
         });
       },

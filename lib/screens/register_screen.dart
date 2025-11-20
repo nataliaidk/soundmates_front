@@ -18,14 +18,19 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final _email = TextEditingController();
   final _pass = TextEditingController();
+  final _confirmPass = TextEditingController();
   String _status = '';
   bool _obscurePassword = true;
+  bool _obscureConfirm = true;
 
   Future<void> _register() async {
     final emailErr = validateEmail(_email.text);
     if (emailErr != null) return setState(() => _status = emailErr);
     final passErr = validatePassword(_pass.text);
     if (passErr != null) return setState(() => _status = passErr);
+    if (_pass.text != _confirmPass.text) {
+      return setState(() => _status = 'Passwords do not match');
+    }
 
     setState(() => _status = 'Registering...');
     final resp = await widget.api.register(RegisterDto(email: _email.text.trim(), password: _pass.text));
@@ -124,6 +129,37 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         color: Colors.grey,
                       ),
                       onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFF6A4C9C), width: 2),
+                    ),
+                    filled: true,
+                    fillColor: Colors.grey.shade50,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _confirmPass,
+                  obscureText: _obscureConfirm,
+                  decoration: InputDecoration(
+                    labelText: 'Confirm Password',
+                    hintText: 'Re-enter your password',
+                    prefixIcon: const Icon(Icons.lock_reset_outlined, color: Color(0xFF6A4C9C)),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscureConfirm ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                        color: Colors.grey,
+                      ),
+                      onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
