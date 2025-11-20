@@ -7,13 +7,15 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'models.dart';
 import 'token_store.dart';
 import '../state/auth_notifier.dart';
+import 'event_hub_service.dart';
 
 class ApiClient {
   final String baseUrl;
   final TokenStore? tokenStore;
   final AuthNotifier? authNotifier;
+  final EventHubService? eventHubService;
 
-  ApiClient({this.tokenStore, this.authNotifier, String? baseUrl}) : baseUrl = _normalizeBase(baseUrl ?? dotenv.get('API_BASE_URL', fallback: 'http://localhost:5000/'));
+  ApiClient({this.tokenStore, this.authNotifier, this.eventHubService, String? baseUrl}) : baseUrl = _normalizeBase(baseUrl ?? dotenv.get('API_BASE_URL', fallback: 'http://localhost:5000/'));
 
   static String _normalizeBase(String url) {
     if (!url.endsWith('/')) return '$url/';
@@ -32,8 +34,8 @@ class ApiClient {
   }
 
   Future<http.Response> register(RegisterDto dto) async {
-  final headers = _jsonHeaders();
-  final resp = await http.post(_uri('/auth/register'), headers: headers, body: jsonEncode(dto.toJson()));
+    final headers = _jsonHeaders();
+    final resp = await http.post(_uri('/auth/register'), headers: headers, body: jsonEncode(dto.toJson()));
     // try to save tokens immediately
     await saveTokensFromResponseBody(resp.body);
     // also check response headers for Authorization: Bearer ...
@@ -121,6 +123,7 @@ class ApiClient {
     final resp = await http.post(uri, headers: headers);
     await clearTokens();
     if (authNotifier != null) await authNotifier!.clear();
+    await eventHubService?.disconnect();
     return resp;
   }
 
@@ -477,9 +480,9 @@ class ApiClient {
   }
 
   Map<String, String> _jsonHeaders() => {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      };
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  };
 
   Future<Map<String, String>> _authHeaders() async {
     final headers = Map<String, String>.from(_jsonHeaders());
@@ -504,7 +507,7 @@ class ApiClient {
     final refreshToken = await tokenStore!.readRefreshToken();
     if (refreshToken == null || refreshToken.isEmpty) return false;
     try {
-  final resp = await refresh(RefreshTokenDto(refreshToken: refreshToken));
+      final resp = await refresh(RefreshTokenDto(refreshToken: refreshToken));
       return resp.statusCode == 200;
     } catch (_) {
       return false;
