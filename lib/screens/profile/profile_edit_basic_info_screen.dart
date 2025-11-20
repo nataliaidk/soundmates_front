@@ -339,11 +339,19 @@ class _ProfileEditBasicInfoScreenState extends State<ProfileEditBasicInfoScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Edit Basic Information'),
+        elevation: 0,
+        backgroundColor: Colors.white,
+        title: const Text(
+          'Edit Basic Information',
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
       ),

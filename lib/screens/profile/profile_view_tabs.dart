@@ -65,59 +65,80 @@ class _ProfileViewTabsState extends State<ProfileViewTabs> {
         children: [
           const SizedBox(height: 20),
           
-          // Profile Picture (use first uploaded photo if available)
-          Builder(builder: (context) {
-            final String? avatarUrl = widget.profilePictures.isNotEmpty
-                ? widget.profilePictures.first.getAbsoluteUrl(widget.api.baseUrl)
-                : null;
-            return Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.purple, width: 3),
-              ),
-              child: CircleAvatar(
-                radius: 50,
-                backgroundColor: Colors.grey[300],
-                backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
-                child: avatarUrl == null
-                    ? Icon(Icons.person, size: 50, color: Colors.grey[600])
-                    : null,
-              ),
-            );
-          }),
-          const SizedBox(height: 16),
-          
-          // Name
-          Text(
-            widget.name.isEmpty ? 'Your Name' : widget.name,
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          
-          // Location with icon
-          if (widget.city.isNotEmpty || widget.country.isNotEmpty)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+          // Profile Header - Horizontal Layout
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Row(
               children: [
-                Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
-                const SizedBox(width: 4),
-                Text(
-                  [
-                    if (widget.city.isNotEmpty) widget.city,
-                    if (widget.country.isNotEmpty) widget.country,
-                  ].join(', '),
-                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                // Profile Picture (use first uploaded photo if available)
+                Builder(builder: (context) {
+                  final String? avatarUrl = widget.profilePictures.isNotEmpty
+                      ? widget.profilePictures.first.getAbsoluteUrl(widget.api.baseUrl)
+                      : null;
+                  return Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.deepPurple.shade400, width: 3),
+                    ),
+                    child: CircleAvatar(
+                      radius: 60,
+                      backgroundColor: Colors.deepPurple.shade50,
+                      backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
+                      child: avatarUrl == null
+                          ? Icon(Icons.person, size: 60, color: Colors.grey[600])
+                          : null,
+                    ),
+                  );
+                }),
+                const SizedBox(width: 20),
+                
+                // User Info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Name
+                      Text(
+                        widget.name.isEmpty ? 'Your Name' : widget.name,
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      
+                      // Location
+                      if (widget.city.isNotEmpty || widget.country.isNotEmpty)
+                        Row(
+                          children: [
+                            Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                [
+                                  if (widget.city.isNotEmpty) widget.city,
+                                  if (widget.country.isNotEmpty) widget.country,
+                                ].join(', '),
+                                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                              ),
+                            ),
+                          ],
+                        ),
+                      
+                      // Birth Date (for artists)
+                      if (widget.birthDate != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          widget.birthDate!.toIso8601String().split('T').first.replaceAll('-', '/'),
+                          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
               ],
             ),
-          const SizedBox(height: 4),
-          
-          // Birth Date (for artists)
-          if (widget.birthDate != null)
-            Text(
-              widget.birthDate!.toIso8601String().split('T').first.replaceAll('-', '/'),
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-            ),
+          ),
           const SizedBox(height: 24),
           
           // Tabs
@@ -131,7 +152,7 @@ class _ProfileViewTabsState extends State<ProfileViewTabs> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       decoration: BoxDecoration(
-                        color: _selectedTab == 0 ? Colors.purple : Colors.grey[200],
+                        color: _selectedTab == 0 ? Colors.deepPurple.shade400 : Colors.grey[200],
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Center(
@@ -153,7 +174,7 @@ class _ProfileViewTabsState extends State<ProfileViewTabs> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       decoration: BoxDecoration(
-                        color: _selectedTab == 1 ? Colors.purple : Colors.grey[200],
+                        color: _selectedTab == 1 ? Colors.deepPurple.shade400 : Colors.grey[200],
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Center(
@@ -198,7 +219,11 @@ class _ProfileViewTabsState extends State<ProfileViewTabs> {
   }
 
   Widget _buildYourInfoTab() {
-    const orderedCategories = ['Instruments', 'Genres', 'Activity', 'Collaboration type'];
+    // Get all categories with tags and sort alphabetically
+    final allCategories = widget.tagGroups.keys
+        .where((cat) => widget.tagGroups[cat]!.isNotEmpty)
+        .toList()
+      ..sort();
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -234,35 +259,23 @@ class _ProfileViewTabsState extends State<ProfileViewTabs> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'TAGS',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black54,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  TextButton.icon(
-                    onPressed: widget.onEditProfile,
-                    icon: const Icon(Icons.edit, size: 16),
-                    label: const Text('Edit'),
-                  ),
-                ],
+              // Edit button aligned to the right
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: widget.onEditProfile,
+                  icon: const Icon(Icons.edit, size: 16),
+                  label: const Text('Edit'),
+                ),
               ),
-              const SizedBox(height: 12),
               if (widget.tagGroups.isEmpty)
                 Text(
                   'No tags added yet',
                   style: TextStyle(fontSize: 14, color: Colors.grey[500]),
                 )
               else
-                for (final category in orderedCategories)
-                  if (widget.tagGroups.containsKey(category) &&
-                      widget.tagGroups[category]!.isNotEmpty) ...[
+                for (final category in allCategories)
+                  if (widget.tagGroups[category]!.isNotEmpty) ...[
                     const SizedBox(height: 16),
                     Text(
                       category.toUpperCase(),
@@ -284,14 +297,14 @@ class _ProfileViewTabsState extends State<ProfileViewTabs> {
                                   vertical: 10,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.purple.shade50,
+                                  color: Colors.deepPurple.shade50,
                                   borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: Colors.purple.shade200),
+                                  border: Border.all(color: Colors.deepPurple.shade200),
                                 ),
                                 child: Text(
                                   tag,
                                   style: TextStyle(
-                                    color: Colors.purple.shade700,
+                                    color: Colors.deepPurple.shade700,
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
@@ -321,12 +334,12 @@ class _ProfileViewTabsState extends State<ProfileViewTabs> {
                             width: 48,
                             height: 48,
                             decoration: BoxDecoration(
-                              color: Colors.purple.shade50,
+                              color: Colors.deepPurple.shade50,
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
                               getIconForRoleName(_bandRoleName(m.bandRoleId)),
-                              color: Colors.purple.shade700,
+                              color: Colors.deepPurple.shade700,
                               size: 24,
                             ),
                           ),
@@ -503,12 +516,12 @@ class _ProfileViewTabsState extends State<ProfileViewTabs> {
                               else
                                 // Audio files
                                 Container(
-                                  color: Colors.purple[50],
-                                  child: const Center(
+                                  color: Colors.deepPurple.shade50,
+                                  child: Center(
                                     child: Icon(
                                       Icons.audiotrack,
                                       size: 48,
-                                      color: Colors.purple,
+                                      color: Colors.deepPurple.shade400,
                                     ),
                                   ),
                                 ),
@@ -591,7 +604,7 @@ class _ProfileViewTabsState extends State<ProfileViewTabs> {
                     onPressed: () => Navigator.pushReplacementNamed(context, '/users'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
-                      foregroundColor: Colors.purple,
+                      foregroundColor: Colors.deepPurple.shade400,
                       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),
@@ -669,7 +682,7 @@ class _ProfileViewTabsState extends State<ProfileViewTabs> {
                     Icon(
                       media.type == _MediaType.audio ? Icons.audiotrack : Icons.videocam,
                       size: 80,
-                      color: media.type == _MediaType.audio ? Colors.purple[300] : Colors.blue[300],
+                      color: media.type == _MediaType.audio ? Colors.deepPurple.shade300 : Colors.blue[300],
                     ),
                     const SizedBox(height: 24),
                     Text(
@@ -725,7 +738,7 @@ class _ProfileViewTabsState extends State<ProfileViewTabs> {
                       icon: const Icon(Icons.play_arrow),
                       label: const Text('Play / Download'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.purple,
+                        backgroundColor: Colors.deepPurple.shade400,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                       ),
