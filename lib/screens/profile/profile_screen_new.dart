@@ -579,6 +579,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         await _loadProfileAndTags();
                       }
                     },
+                    onManageMedia: () async {
+                      await Navigator.pushNamed(context, '/profile/manage-media');
+                      // Reload profile after managing media
+                      await _loadProfileAndTags();
+                    },
                     startInEditMode: widget.startInEditMode,
                   ),
                 ),

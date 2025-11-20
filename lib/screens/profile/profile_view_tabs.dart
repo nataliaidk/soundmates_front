@@ -21,6 +21,7 @@ class ProfileViewTabs extends StatefulWidget {
   final bool isBand;
   final VoidCallback onEditProfile;
   final VoidCallback? onAddMedia;
+  final VoidCallback? onManageMedia;
   final bool startInEditMode;
 
   const ProfileViewTabs({
@@ -39,6 +40,7 @@ class ProfileViewTabs extends StatefulWidget {
     required this.isBand,
     required this.onEditProfile,
     this.onAddMedia,
+    this.onManageMedia,
     required this.startInEditMode,
   });
 
@@ -407,10 +409,21 @@ class _ProfileViewTabsState extends State<ProfileViewTabs> {
                     'Photos & Media',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
-                  TextButton.icon(
-                    onPressed: widget.onAddMedia ?? widget.onEditProfile,
-                    icon: const Icon(Icons.add_photo_alternate, size: 16),
-                    label: const Text('Add Media'),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextButton.icon(
+                        onPressed: widget.onManageMedia,
+                        icon: const Icon(Icons.edit, size: 16),
+                        label: const Text('Manage'),
+                      ),
+                      const SizedBox(width: 4),
+                      TextButton.icon(
+                        onPressed: widget.onAddMedia ?? widget.onEditProfile,
+                        icon: const Icon(Icons.add_photo_alternate, size: 16),
+                        label: const Text('Add'),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -715,25 +728,6 @@ class _ProfileViewTabsState extends State<ProfileViewTabs> {
                         backgroundColor: Colors.purple,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextButton.icon(
-                      onPressed: () async {
-                        await Clipboard.setData(ClipboardData(text: media.url));
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('URL copied to clipboard'),
-                              duration: Duration(seconds: 2),
-                            ),
-                          );
-                        }
-                      },
-                      icon: const Icon(Icons.copy, size: 18),
-                      label: const Text('Copy URL'),
-                      style: TextButton.styleFrom(
-                        foregroundColor: Colors.grey[400],
                       ),
                     ),
                   ],
