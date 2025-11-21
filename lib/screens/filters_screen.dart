@@ -369,421 +369,407 @@ class _FiltersScreenState extends State<FiltersScreen> {
           ),
         ],
       ),
-
-      body: Stack(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: Colors.white))
+          : Column(
         children: [
           // Main scrollable content
-          _isLoading
-              ? const Center(child: CircularProgressIndicator(color: Colors.white))
-              : Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 600),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20.0, 20.0, 20.0, 100.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Main card container
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: cardColor,
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Header text
-                          const Text(
-                            'Customize your match preferences',
-                            style: TextStyle(
-                              color: textColor,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
+          Expanded(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 475),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Main card container
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: cardColor,
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Header text
+                            const Text(
+                              'Customize your match preferences',
+                              style: TextStyle(
+                                color: textColor,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Your potential matches will be suggested based on these preferences.',
-                            style: TextStyle(
-                              color: textColor.withOpacity(0.7),
-                              fontSize: 14,
+                            const SizedBox(height: 8),
+                            Text(
+                              'Your potential matches will be suggested based on these preferences.',
+                              style: TextStyle(
+                                color: textColor.withOpacity(0.7),
+                                fontSize: 14,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 24),
+                            const SizedBox(height: 24),
 
-                          // Looking For Section
-                          Row(
-                            children: [
-                              const Icon(Icons.search, color: textColor, size: 20),
-                              const SizedBox(width: 8),
-                              const Text(
-                                'Looking For',
-                                style: TextStyle(
-                                  color: textColor,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
+                            // Looking For Section
+                            Row(
+                              children: [
+                                const Icon(Icons.search, color: textColor, size: 20),
+                                const SizedBox(width: 8),
+                                const Text(
+                                  'Looking For',
+                                  style: TextStyle(
+                                    color: textColor,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _buildPurpleButton(
-                                  'Artists',
-                                  Icons.person,
-                                  _showArtists && !_showBands,
-                                      () {
-                                    setState(() {
-                                      _showArtists = true;
-                                      _showBands = false;
-                                    });
-                                  },
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: _buildPurpleButton(
-                                  'Both',
-                                  Icons.group,
-                                  _showArtists && _showBands,
-                                      () {
-                                    setState(() {
-                                      _showArtists = true;
-                                      _showBands = true;
-                                    });
-                                  },
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: _buildPurpleButton(
-                                  'Bands',
-                                  Icons.groups,
-                                  _showBands && !_showArtists,
-                                      () {
-                                    setState(() {
-                                      _showArtists = false;
-                                      _showBands = true;
-                                    });
-                                  },
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 24),
-
-                          // Maximum Distance Section
-                          Row(
-                            children: [
-                              const Icon(Icons.location_on, color: textColor, size: 20),
-                              const SizedBox(width: 8),
-                              const Text(
-                                'Maximum Distance',
-                                style: TextStyle(
-                                  color: textColor,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          SliderTheme(
-                            data: SliderThemeData(
-                              activeTrackColor: Colors.white,
-                              inactiveTrackColor: Colors.white.withOpacity(0.3),
-                              thumbColor: Colors.white,
-                              overlayColor: Colors.white.withOpacity(0.2),
-                              trackHeight: 4,
+                              ],
                             ),
-                            child: Slider(
-                              value: (_maxDistance ?? 500).toDouble(),
-                              min: 0,
-                              max: 500,
-                              divisions: 50,
-                              onChanged: (double value) {
+                            const SizedBox(height: 16),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildPurpleButton(
+                                    'Artists',
+                                    Icons.person,
+                                    _showArtists && !_showBands,
+                                        () {
+                                      setState(() {
+                                        _showArtists = true;
+                                        _showBands = false;
+                                      });
+                                    },
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: _buildPurpleButton(
+                                    'Both',
+                                    Icons.group,
+                                    _showArtists && _showBands,
+                                        () {
+                                      setState(() {
+                                        _showArtists = true;
+                                        _showBands = true;
+                                      });
+                                    },
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: _buildPurpleButton(
+                                    'Bands',
+                                    Icons.groups,
+                                    _showBands && !_showArtists,
+                                        () {
+                                      setState(() {
+                                        _showArtists = false;
+                                        _showBands = true;
+                                      });
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 24),
+
+                            // Maximum Distance Section
+                            Row(
+                              children: [
+                                const Icon(Icons.location_on, color: textColor, size: 20),
+                                const SizedBox(width: 8),
+                                const Text(
+                                  'Maximum Distance',
+                                  style: TextStyle(
+                                    color: textColor,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            SliderTheme(
+                              data: SliderThemeData(
+                                activeTrackColor: Colors.white,
+                                inactiveTrackColor: Colors.white.withOpacity(0.3),
+                                thumbColor: Colors.white,
+                                overlayColor: Colors.white.withOpacity(0.2),
+                                trackHeight: 4,
+                              ),
+                              child: Slider(
+                                value: (_maxDistance ?? 500).toDouble(),
+                                min: 0,
+                                max: 500,
+                                divisions: 50,
+                                onChanged: (double value) {
+                                  setState(() {
+                                    if (value >= 500) {
+                                      _maxDistance = null;
+                                    } else {
+                                      _maxDistance = value.round();
+                                    }
+                                  });
+                                },
+                              ),
+                            ),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: primaryColor,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  _maxDistance == null ? '500+ km' : '$_maxDistance km',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+
+                            // Location Section
+                            Row(
+                              children: [
+                                const Icon(Icons.public, color: textColor, size: 20),
+                                const SizedBox(width: 8),
+                                const Text(
+                                  'Location',
+                                  style: TextStyle(
+                                    color: textColor,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            _buildPurpleDropdown(
+                              items: _countries
+                                  .map((c) => DropdownMenuItem(value: c.id, child: Text(c.name)))
+                                  .toList(),
+                              value: _selectedCountryId,
+                              onChanged: (String? value) async {
+                                if (value != null) {
+                                  await _onCountryChanged(value);
+                                } else {
+                                  setState(() {
+                                    _selectedCountryId = null;
+                                    _selectedCityId = null;
+                                    _cities = [];
+                                  });
+                                }
+                              },
+                              hint: 'Select Country',
+                              icon: Icons.public,
+                            ),
+                            const SizedBox(height: 12),
+                            _buildPurpleDropdown(
+                              items: _cities
+                                  .map((c) => DropdownMenuItem(value: c.id, child: Text(c.name)))
+                                  .toList(),
+                              value: _selectedCityId,
+                              onChanged: (String? value) {
                                 setState(() {
-                                  if (value >= 500) {
-                                    _maxDistance = null;
-                                  } else {
-                                    _maxDistance = value.round();
-                                  }
+                                  _selectedCityId = value;
                                 });
                               },
+                              hint: 'Select City',
+                              icon: Icons.location_city,
                             ),
-                          ),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: primaryColor,
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(
-                                _maxDistance == null ? '500+ km' : '${_maxDistance} km',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 24),
+                            const SizedBox(height: 24),
 
-                          // Location Section
-                          Row(
-                            children: [
-                              const Icon(Icons.public, color: textColor, size: 20),
-                              const SizedBox(width: 8),
-                              const Text(
-                                'Location',
-                                style: TextStyle(
-                                  color: textColor,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
+                            // Age Range (if showing artists)
+                            if (_showArtists) ...[
+                              Row(
+                                children: [
+                                  const Icon(Icons.cake, color: textColor, size: 20),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    'Age Range',
+                                    style: TextStyle(
+                                      color: textColor,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              SliderTheme(
+                                data: SliderThemeData(
+                                  activeTrackColor: Colors.white,
+                                  inactiveTrackColor: Colors.white.withOpacity(0.3),
+                                  thumbColor: Colors.white,
+                                  overlayColor: Colors.white.withOpacity(0.2),
+                                  trackHeight: 4,
+                                ),
+                                child: RangeSlider(
+                                  values: RangeValues(
+                                    (_artistMinAge ?? 18).toDouble(),
+                                    (_artistMaxAge ?? 99).toDouble(),
+                                  ),
+                                  min: 18,
+                                  max: 99,
+                                  divisions: 81,
+                                  onChanged: (RangeValues values) {
+                                    setState(() {
+                                      _artistMinAge = values.start.round();
+                                      _artistMaxAge = values.end.round();
+                                    });
+                                  },
                                 ),
                               ),
+                              Center(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: primaryColor,
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    '${_artistMinAge ?? 18} - ${_artistMaxAge ?? 99} years',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 24),
                             ],
-                          ),
-                          const SizedBox(height: 16),
-                          _buildPurpleDropdown(
-                            items: _countries
-                                .map((c) => DropdownMenuItem(value: c.id, child: Text(c.name)))
-                                .toList(),
-                            value: _selectedCountryId,
-                            onChanged: (String? value) async {
-                              if (value != null) {
-                                await _onCountryChanged(value);
-                              } else {
-                                setState(() {
-                                  _selectedCountryId = null;
-                                  _selectedCityId = null;
-                                  _cities = [];
-                                });
-                              }
-                            },
-                            hint: 'Select Country',
-                            icon: Icons.public,
-                          ),
-                          const SizedBox(height: 12),
-                          _buildPurpleDropdown(
-                            items: _cities
-                                .map((c) => DropdownMenuItem(value: c.id, child: Text(c.name)))
-                                .toList(),
-                            value: _selectedCityId,
-                            onChanged: (String? value) {
-                              setState(() {
-                                _selectedCityId = value;
-                              });
-                            },
-                            hint: 'Select City',
-                            icon: Icons.location_city,
-                          ),
-                          const SizedBox(height: 24),
 
-                          // Age Range (if showing artists)
-                          if (_showArtists) ...[
-                            Row(
-                              children: [
-                                const Icon(Icons.cake, color: textColor, size: 20),
-                                const SizedBox(width: 8),
-                                const Text(
-                                  'Age Range',
-                                  style: TextStyle(
-                                    color: textColor,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
+                            // Instruments (if showing artists)
+                            if (_showArtists && _tagGroups.containsKey('Instruments'))
+                              _buildPurpleTagSection('Instruments', Icons.music_note),
+
+                            // Activity (if showing artists)
+                            if (_showArtists && _tagGroups.containsKey('Activity'))
+                              _buildPurpleTagSection('Activity', Icons.star),
+
+                            // Band Status (if showing bands)
+                            if (_showBands && _tagGroups.containsKey('Band Status'))
+                              _buildPurpleTagSection('Band Status', Icons.info_outline),
+
+                            // Band Members (if showing bands)
+                            if (_showBands) ...[
+                              Row(
+                                children: [
+                                  const Icon(Icons.groups, color: textColor, size: 20),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    'Band Members',
+                                    style: TextStyle(
+                                      color: textColor,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              SliderTheme(
+                                data: SliderThemeData(
+                                  activeTrackColor: Colors.white,
+                                  inactiveTrackColor: Colors.white.withOpacity(0.3),
+                                  thumbColor: Colors.white,
+                                  overlayColor: Colors.white.withOpacity(0.2),
+                                  trackHeight: 4,
+                                ),
+                                child: RangeSlider(
+                                  values: RangeValues(
+                                    (_bandMinMembersCount ?? 1).toDouble(),
+                                    (_bandMaxMembersCount ?? 10).toDouble(),
+                                  ),
+                                  min: 1,
+                                  max: 10,
+                                  divisions: 9,
+                                  onChanged: (RangeValues values) {
+                                    setState(() {
+                                      _bandMinMembersCount = values.start.round();
+                                      _bandMaxMembersCount = values.end.round();
+                                    });
+                                  },
+                                ),
+                              ),
+                              Center(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: primaryColor,
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    '${_bandMinMembersCount ?? 1} - ${_bandMaxMembersCount ?? 10} members',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14,
+                                    ),
                                   ),
                                 ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            SliderTheme(
-                              data: SliderThemeData(
-                                activeTrackColor: Colors.white,
-                                inactiveTrackColor: Colors.white.withOpacity(0.3),
-                                thumbColor: Colors.white,
-                                overlayColor: Colors.white.withOpacity(0.2),
-                                trackHeight: 4,
                               ),
-                              child: RangeSlider(
-                                values: RangeValues(
-                                  (_artistMinAge ?? 18).toDouble(),
-                                  (_artistMaxAge ?? 99).toDouble(),
-                                ),
-                                min: 18,
-                                max: 99,
-                                divisions: 81,
-                                onChanged: (RangeValues values) {
-                                  setState(() {
-                                    _artistMinAge = values.start.round();
-                                    _artistMaxAge = values.end.round();
-                                  });
-                                },
-                              ),
-                            ),
-                            Center(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: primaryColor,
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  '${_artistMinAge ?? 18} - ${_artistMaxAge ?? 99} years',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 24),
+                              const SizedBox(height: 24),
+                            ],
+
+                            // Other tag sections
+                            ..._tagGroups.entries
+                                .where((entry) =>
+                            entry.key != 'Instruments' &&
+                                entry.key != 'Activity' &&
+                                entry.key != 'Band Status')
+                                .map((entry) => _buildPurpleTagSection(entry.key, Icons.label)),
                           ],
-
-                          // Instruments (if showing artists)
-                          if (_showArtists && _tagGroups.containsKey('Instruments'))
-                            _buildPurpleTagSection('Instruments', Icons.music_note),
-
-                          // Activity (if showing artists)
-                          if (_showArtists && _tagGroups.containsKey('Activity'))
-                            _buildPurpleTagSection('Activity', Icons.star),
-
-                          // Band Status (if showing bands)
-                          if (_showBands && _tagGroups.containsKey('Band Status'))
-                            _buildPurpleTagSection('Band Status', Icons.info_outline),
-
-                          // Band Members (if showing bands)
-                          if (_showBands) ...[
-                            Row(
-                              children: [
-                                const Icon(Icons.groups, color: textColor, size: 20),
-                                const SizedBox(width: 8),
-                                const Text(
-                                  'Band Members',
-                                  style: TextStyle(
-                                    color: textColor,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            SliderTheme(
-                              data: SliderThemeData(
-                                activeTrackColor: Colors.white,
-                                inactiveTrackColor: Colors.white.withOpacity(0.3),
-                                thumbColor: Colors.white,
-                                overlayColor: Colors.white.withOpacity(0.2),
-                                trackHeight: 4,
-                              ),
-                              child: RangeSlider(
-                                values: RangeValues(
-                                  (_bandMinMembersCount ?? 1).toDouble(),
-                                  (_bandMaxMembersCount ?? 10).toDouble(),
-                                ),
-                                min: 1,
-                                max: 10,
-                                divisions: 9,
-                                onChanged: (RangeValues values) {
-                                  setState(() {
-                                    _bandMinMembersCount = values.start.round();
-                                    _bandMaxMembersCount = values.end.round();
-                                  });
-                                },
-                              ),
-                            ),
-                            Center(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: primaryColor,
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  '${_bandMinMembersCount ?? 1} - ${_bandMaxMembersCount ?? 10} members',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-                          ],
-
-                          // Other tag sections
-                          ..._tagGroups.entries
-                              .where((entry) =>
-                          entry.key != 'Instruments' &&
-                              entry.key != 'Activity' &&
-                              entry.key != 'Band Status')
-                              .map((entry) => _buildPurpleTagSection(entry.key, Icons.label)),
-                        ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
 
-          // Floating Save Button
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 10,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16), // Changed to symmetric padding
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    backgroundColor.withOpacity(0.0),
-                    backgroundColor,
-                  ],
-                ),
-              ),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 600),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _savePreferences,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: primaryColor,
-                        padding: const EdgeInsets.symmetric(vertical: 18), // Increased from 16 to 18
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                        elevation: 8,
+          // Save Button Area
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 450),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _savePreferences,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: primaryColor,
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
                       ),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.check),
-                          SizedBox(width: 8),
-                          Text(
-                            'Save Filters',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
+                      elevation: 8,
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.check),
+                        SizedBox(width: 8),
+                        Text(
+                          'Save Filters',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -794,6 +780,7 @@ class _FiltersScreenState extends State<FiltersScreen> {
       ),
     );
   }
+
 
 
   Widget _buildPurpleButton(String label, IconData icon, bool isSelected, VoidCallback onTap) {
