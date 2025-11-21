@@ -7,10 +7,16 @@ import 'token_store.dart';
 class EventHubService {
   HubConnection? _connection;
   final TokenStore tokenStore;
+  
+  // Callbacks for events
+  Function(dynamic)? onMessageReceived;
+  Function(dynamic)? onMatchReceived;
+  Function(dynamic)? onMatchCreated;
 
   EventHubService({required this.tokenStore});
 
   String? get connectionId => _connection?.connectionId;
+  HubConnection? get connection => _connection;
 
   Future<void> connect() async {
     await disconnect(); // Ensure any existing connection is closed
@@ -53,19 +59,37 @@ class EventHubService {
 
   void _setupListeners() {
     if (_connection == null) return;
+    
     // When a message comes from someone
     _connection!.on("MessageReceived", (args) {
       print("📩 MessageReceived: $args");
+      if (onMessageReceived != null && args != null && args.isNotEmpty) {
+        onMessageReceived!(args[0]);
+      }
     });
 
     // When user gets matched by someone else
     _connection!.on("MatchReceived", (args) {
       print("❤️ MatchReceived: $args");
+      print("❤️ onMatchReceived callback: ${onMatchReceived != null ? 'SET' : 'NULL'}");
+      if (onMatchReceived != null && args != null && args.isNotEmpty) {
+        print("❤️ Invoking onMatchReceived callback with: ${args[0]}");
+        onMatchReceived!(args[0]);
+      } else {
+        print("⚠️ Cannot invoke callback - onMatchReceived is null or args empty");
+      }
     });
 
     // When both users match each other
     _connection!.on("MatchCreated", (args) {
       print("🔥 MatchCreated: $args");
+      print("🔥 onMatchCreated callback: ${onMatchCreated != null ? 'SET' : 'NULL'}");
+      if (onMatchCreated != null && args != null && args.isNotEmpty) {
+        print("🔥 Invoking onMatchCreated callback with: ${args[0]}");
+        onMatchCreated!(args[0]);
+      } else {
+        print("⚠️ Cannot invoke callback - onMatchCreated is null or args empty");
+      }
     });
   }
 

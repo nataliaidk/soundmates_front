@@ -255,6 +255,12 @@ class ApiClient {
     return await _withRefreshRetry(() => http.post(uri, headers: headers, body: jsonEncode(dto.toJson())));
   }
 
+  Future<http.Response> viewConversation(String userId) async {
+    final uri = _uri('messages/view-conversation/$userId');
+    final headers = await _authHeaders();
+    return await _withRefreshRetry(() => http.post(uri, headers: headers));
+  }
+
   Future<http.Response> getMusicSamples({int limit = 20, int offset = 0}) async {
     final uri = _uri('music-samples?limit=$limit&offset=$offset');
     final headers = await _authHeaders();
