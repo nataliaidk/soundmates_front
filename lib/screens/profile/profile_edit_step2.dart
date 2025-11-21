@@ -62,12 +62,22 @@ class ProfileEditStep2 extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          const SizedBox(height: 16),
+          const Text(
+            'Select tags',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          ),
           const SizedBox(height: 12),
-          const Text('Select tags:', style: TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          Text(
-            '(no tags available)',
-            style: TextStyle(color: Colors.grey[600]),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              'No tags available',
+              style: TextStyle(color: Colors.grey[600]),
+            ),
           ),
         ],
       );
@@ -77,39 +87,55 @@ class ProfileEditStep2 extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        const SizedBox(height: 16),
+        const Text(
+          'Select tags',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
         const SizedBox(height: 12),
-        const Text('Select tags:', style: TextStyle(fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
         ...categories.map((cat) {
           final selectedSet = selectedTags[cat] ?? {};
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(_humanize(cat), style: const TextStyle(fontWeight: FontWeight.w600)),
-              const SizedBox(height: 6),
+              Padding(
+                padding: const EdgeInsets.only(left: 8, bottom: 8),
+                child: Text(
+                  _humanize(cat),
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+              ),
               InkWell(
                 onTap: () => onShowTagPicker(cat),
-                child: InputDecorator(
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    hintText: 'Click to select',
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                  decoration: BoxDecoration(
+                    color: Colors.deepPurple.shade50,
+                    borderRadius: BorderRadius.circular(30),
                   ),
                   child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Expanded(
-                        child: Text(
-                          selectedSet.isEmpty
-                              ? '(none selected)'
-                              : '${selectedSet.length} selected',
+                      Text(
+                        selectedSet.isEmpty
+                            ? 'Tap to select'
+                            : '${selectedSet.length} selected',
+                        style: TextStyle(
+                          color: selectedSet.isEmpty ? Colors.grey.shade500 : Colors.black,
+                          fontSize: 16,
                         ),
                       ),
-                      const Icon(Icons.arrow_drop_down),
+                      Icon(Icons.arrow_drop_down, color: Colors.grey.shade600),
                     ],
                   ),
                 ),
               ),
-              const SizedBox(height: 6),
-              if (selectedSet.isNotEmpty)
+              if (selectedSet.isNotEmpty) ...[
+                const SizedBox(height: 12),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
@@ -119,13 +145,16 @@ class ProfileEditStep2 extends StatelessWidget {
                       orElse: () => {'label': val.toString()},
                     );
                     final label = found['label']?.toString() ?? val.toString();
-                    return InputChip(
+                    return Chip(
                       label: Text(label),
+                      backgroundColor: Colors.deepPurple.shade100,
+                      deleteIconColor: Colors.deepPurple.shade700,
                       onDeleted: () => onRemoveTag(cat, val),
                     );
                   }).toList(),
                 ),
-              const SizedBox(height: 12),
+              ],
+              const SizedBox(height: 16),
             ],
           );
         }),
@@ -138,32 +167,71 @@ class ProfileEditStep2 extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 16),
-        const Text('Band members', style: TextStyle(fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
+        const Text(
+          'Band members',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 12),
         if (bandMembers.isEmpty)
-          const Text('(no members added)', style: TextStyle(color: Colors.grey)),
-        ...bandMembers.map((m) => ListTile(
-              title: Text('${m.name} (${m.age} y/o)'),
-              subtitle: Text('Role: ${_bandRoleName(m.bandRoleId)} • Order: ${m.displayOrder}'),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.edit),
-                    onPressed: () => onEditBandMember(m),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              'No members added yet',
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+          )
+        else
+          ...bandMembers.map((m) => Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                decoration: BoxDecoration(
+                  color: Colors.deepPurple.shade50,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  title: Text(
+                    '${m.name} (${m.age} y/o)',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.delete),
-                    onPressed: () => onRemoveBandMember(m),
+                  subtitle: Text(
+                    _bandRoleName(m.bandRoleId),
+                    style: TextStyle(color: Colors.grey.shade700),
                   ),
-                ],
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: Icon(Icons.edit, color: Colors.deepPurple.shade400),
+                        onPressed: () => onEditBandMember(m),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        onPressed: () => onRemoveBandMember(m),
+                      ),
+                    ],
+                  ),
+                ),
+              )),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            icon: const Icon(Icons.add),
+            label: const Text('Add member'),
+            onPressed: onAddBandMember,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.deepPurple.shade400,
+              side: BorderSide(color: Colors.deepPurple.shade400, width: 2),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(30),
               ),
-            )),
-        const SizedBox(height: 8),
-        ElevatedButton.icon(
-          icon: const Icon(Icons.add),
-          label: const Text('Add member'),
-          onPressed: onAddBandMember,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+            ),
+          ),
         ),
       ],
     );
@@ -182,16 +250,16 @@ class ProfileEditStep2 extends StatelessWidget {
                 Container(
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.purple, width: 3),
+                    border: Border.all(color: Colors.deepPurple.shade400, width: 3),
                   ),
                   child: CircleAvatar(
                     radius: 60,
-                    backgroundColor: Colors.grey[300],
+                    backgroundColor: Colors.deepPurple.shade50,
                     backgroundImage: pickedProfilePhoto?.bytes != null
                         ? MemoryImage(pickedProfilePhoto!.bytes!)
                         : null,
                     child: pickedProfilePhoto?.bytes == null
-                        ? Icon(Icons.person, size: 60, color: Colors.grey[600])
+                        ? Icon(Icons.person, size: 60, color: Colors.deepPurple.shade200)
                         : null,
                   ),
                 ),
@@ -200,7 +268,7 @@ class ProfileEditStep2 extends StatelessWidget {
                   right: 0,
                   child: Container(
                     decoration: BoxDecoration(
-                      color: Colors.purple,
+                      color: Colors.deepPurple.shade400,
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white, width: 2),
                     ),
@@ -242,8 +310,18 @@ class ProfileEditStep2 extends StatelessWidget {
         const SizedBox(height: 24),
         TextField(
           controller: descController,
-          decoration: const InputDecoration(labelText: 'Description'),
-          maxLines: 3,
+          decoration: InputDecoration(
+            labelText: 'Description',
+            hintText: 'Tell us about yourself...',
+            filled: true,
+            fillColor: Colors.deepPurple.shade50,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(20),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding: const EdgeInsets.all(20),
+          ),
+          maxLines: 4,
         ),
         _buildTags(),
         if (isBand) _buildBandMembersSection(context),
@@ -253,26 +331,67 @@ class ProfileEditStep2 extends StatelessWidget {
         Row(
           children: [
             if (showBackButton) ...[
-              ElevatedButton(
-                onPressed: onBack,
-                child: const Text('Back'),
+              SizedBox(
+                height: 56,
+                child: OutlinedButton(
+                  onPressed: onBack,
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: Colors.deepPurple.shade400, width: 2),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+                  child: Text(
+                    'Back',
+                    style: TextStyle(
+                      color: Colors.deepPurple.shade400,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
               ),
               const SizedBox(width: 12),
             ],
             Expanded(
-              child: ElevatedButton(
-                onPressed: onComplete,
-                child: const Text('Complete Profile'),
+              child: SizedBox(
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: onComplete,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurple.shade400,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: const Text(
+                    'Complete Profile',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
               ),
             ),
           ],
         ),
         
         if (status.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          Text(
-            status,
-            style: const TextStyle(color: Colors.red),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.red.shade50,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              status,
+              style: TextStyle(color: Colors.red.shade700),
+              textAlign: TextAlign.center,
+            ),
           ),
         ],
       ],
