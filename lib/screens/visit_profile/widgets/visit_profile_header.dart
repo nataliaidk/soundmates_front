@@ -412,6 +412,7 @@ class _ActionButton extends StatelessWidget {
   final VoidCallback onTap;
 
   const _ActionButton({
+    super.key, // Dodaj super.key dla wydajności
     required this.text,
     required this.icon,
     required this.color,
@@ -422,6 +423,7 @@ class _ActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      // Kontener odpowiada TYLKO za Cień i Kształt zewnętrzny
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(30),
         boxShadow: [
@@ -437,12 +439,14 @@ class _ActionButton extends StatelessWidget {
           ),
         ],
       ),
+      // Material odpowiada za Kolor tła i Przycinanie (Clipping)
       child: Material(
         color: color,
         borderRadius: BorderRadius.circular(30),
+        clipBehavior: Clip.antiAlias, // <--- TO JEST KLUCZOWA POPRAWKA
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(30),
+          // Ważne: Nie ustawiaj borderRadius w InkWell, jeśli Material już przycina
           child: Padding(
             padding: EdgeInsets.symmetric(
               horizontal: isPrimary ? 20 : 16,

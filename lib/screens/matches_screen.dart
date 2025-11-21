@@ -5,7 +5,7 @@ import '../api/api_client.dart';
 import '../api/token_store.dart';
 import '../api/models.dart';
 import 'dart:convert';
-import 'visit_profile_screen.dart';
+import 'visit_profile/visit_profile_screen.dart';
 import 'chat_screen.dart';
 
 class MatchesScreen extends StatefulWidget {
