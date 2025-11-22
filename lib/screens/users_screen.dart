@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:zpi_test/screens/visit_profile/visit_profile_screen_old.dart';
+import 'package:zpi_test/screens/visit_profile/visit_profile_screen.dart';
 import 'package:flutter/services.dart';
 import '../widgets/app_bottom_nav.dart';
 import '../api/api_client.dart';
