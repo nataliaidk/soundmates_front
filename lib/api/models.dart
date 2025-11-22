@@ -947,32 +947,46 @@ class OtherUserProfileArtistDto extends OtherUserProfileDto {
 }
 
 class MessageDto {
+  final String id;
   final String content;
   final DateTime timestamp;
   final String senderId;
   final String receiverId;
+  final bool isSeen;
 
   MessageDto({
+    required this.id,
     required this.content,
     required this.timestamp,
     required this.senderId,
     required this.receiverId,
+    this.isSeen = false,
   });
 
   Map<String, dynamic> toJson() => {
+    'id': id,
     'content': content,
     'timestamp': timestamp.toIso8601String(),
     'senderId': senderId,
     'receiverId': receiverId,
+    'isSeen': isSeen,
   };
 
   factory MessageDto.fromJson(Map<String, dynamic> json) {
+    // Generate a temporary ID if not provided by backend
+    final id = json['id']?.toString();
+    final tempId = id != null && id.isNotEmpty 
+        ? id 
+        : '${json['senderId']}-${json['timestamp']}'.replaceAll(':', '-');
+    
     return MessageDto(
+      id: tempId,
       content: json['content']?.toString() ?? '',
       timestamp: DateTime.tryParse(json['timestamp']?.toString() ?? '') ??
           DateTime.now(),
       senderId: json['senderId']?.toString() ?? '',
       receiverId: json['receiverId']?.toString() ?? '',
+      isSeen: json['isSeen'] == true,
     );
   }
 }
