@@ -13,12 +13,12 @@ import 'screens/profile/profile_add_media_screen.dart';
 import 'screens/profile/profile_manage_media_screen.dart';
 import 'screens/profile/profile_edit_basic_info_screen.dart';
 // import 'screens/messages_screen.dart';
+import 'screens/match_screen.dart';
 import 'screens/matches_screen.dart';
 import 'screens/users_screen.dart';
 import 'screens/filters_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/terms_of_service_screen.dart';
-
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -46,14 +46,14 @@ class _MyAppState extends State<MyApp> {
     tokens = TokenStore();
     eventHub = EventHubService(tokenStore: tokens);
     api = ApiClient(tokenStore: tokens, eventHubService: eventHub);
-    
+
     // Setup callbacks immediately - they will work once SignalR connects
     _setupGlobalMatchNotifications();
   }
-  
+
   void _setupGlobalMatchNotifications() {
     print("🌍 Setting up global match notifications in initState");
-    
+
     eventHub.onMatchReceived = (matchData) {
       print("🌍💜 Global MatchReceived callback triggered: $matchData");
       if (!mounted) {
@@ -62,31 +62,52 @@ class _MyAppState extends State<MyApp> {
       }
       _showGlobalMatchNotification(matchData, isMutual: false);
     };
-    
+
     eventHub.onMatchCreated = (matchData) {
       print("🌍🔥 Global MatchCreated callback triggered: $matchData");
-      if (!mounted) {
-        print("⚠️ Widget not mounted, skipping notification");
-        return;
+      if (!mounted) return;
+
+      // Extract userId from matchData
+      String? userId;
+      if (matchData is Map) {
+        userId = matchData['existingLikeUserId']?.toString();
       }
-      _showGlobalMatchNotification(matchData, isMutual: true);
+
+      if (userId != null && userId.isNotEmpty) {
+        print("🚀 Navigating to MatchScreen for user: $userId");
+        navigatorKey.currentState?.push(
+          MaterialPageRoute(
+            builder: (context) =>
+                MatchScreen(api: api, tokens: tokens, userId: userId!),
+          ),
+        );
+      } else {
+        print("⚠️ Could not extract userId from matchData for navigation");
+        // Fallback to notification if navigation fails? Or just log error.
+        // For now, let's try to show notification as fallback if parsing fails,
+        // but the primary goal is navigation.
+        _showGlobalMatchNotification(matchData, isMutual: true);
+      }
     };
   }
-  
-  void _showGlobalMatchNotification(dynamic matchData, {required bool isMutual}) {
+
+  void _showGlobalMatchNotification(
+    dynamic matchData, {
+    required bool isMutual,
+  }) {
     print("🎨 _showGlobalMatchNotification called (isMutual: $isMutual)");
-    
+
     final context = navigatorKey.currentContext;
     if (context == null) {
       print("❌ No navigator context available");
       return;
     }
     print("✅ Navigator context available");
-    
+
     try {
       String? userId;
       String userName = 'Nowy użytkownik';
-      
+
       if (matchData is Map) {
         final map = Map<String, dynamic>.from(matchData);
         print("📦 Parsing matchData: $map");
@@ -99,14 +120,14 @@ class _MyAppState extends State<MyApp> {
         }
         print("📝 Parsed: userId=$userId, userName=$userName");
       }
-      
+
       if (userId == null || userId.isEmpty) {
         print("❌ No userId in notification data");
         return;
       }
-      
+
       print("🎯 Showing SnackBar for $userName (userId: $userId)");
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -119,7 +140,7 @@ class _MyAppState extends State<MyApp> {
               SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  isMutual 
+                  isMutual
                       ? 'To jest match z $userName! 🔥'
                       : '$userName cię polubił! 💜',
                   style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
@@ -135,12 +156,18 @@ class _MyAppState extends State<MyApp> {
             label: 'ZOBACZ',
             textColor: Colors.white,
             onPressed: () {
-              Navigator.pushNamed(context, '/matches');
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      MatchScreen(api: api, tokens: tokens, userId: userId!),
+                ),
+              );
             },
           ),
         ),
       );
-      
+
       print("📱 SnackBar shown successfully");
     } catch (e, stackTrace) {
       print("❌ Error showing global notification: $e");
@@ -150,7 +177,6 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-
     void onAuthSuccess(BuildContext navContext) {
       print("🔐 User logged in - connecting SignalR");
       eventHub.connect().then((_) {
@@ -172,19 +198,43 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       navigatorKey: navigatorKey,
       title: 'Soundmates Demo',
-      theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple)),
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+      ),
       initialRoute: '/login',
       routes: {
-        '/login': (c) => LoginScreen(api: api, tokens: tokens, onLoggedIn: () => onAuthSuccess(c)),
-        '/register': (c) => RegisterScreen(api: api, tokens: tokens, onRegistered: () => onRegisterSuccess(c)),
+        '/login': (c) => LoginScreen(
+          api: api,
+          tokens: tokens,
+          onLoggedIn: () => onAuthSuccess(c),
+        ),
+        '/register': (c) => RegisterScreen(
+          api: api,
+          tokens: tokens,
+          onRegistered: () => onRegisterSuccess(c),
+        ),
         '/home': (c) => HomeScreen(api: api, tokens: tokens),
-        '/profile': (c) => profile_new.ProfileScreen(api: api, tokens: tokens, startInEditMode: false),
-        '/profile/create': (c) => profile_new.ProfileScreen(api: api, tokens: tokens, startInEditMode: true, isFromRegistration: true),
-        '/profile/edit': (c) => ProfileEditBasicInfoScreen(api: api, tokens: tokens),
-        '/profile/edit-tags': (c) => ProfileEditTagsScreen(api: api, tokens: tokens),
-        '/profile/add-media': (c) => ProfileAddMediaScreen(api: api, tokens: tokens),
-        '/profile/manage-media': (c) => ProfileManageMediaScreen(api: api, tokens: tokens),
-        '/matches': (c) => MatchesScreen(api: api, tokens: tokens, eventHubService: eventHub),
+        '/profile': (c) => profile_new.ProfileScreen(
+          api: api,
+          tokens: tokens,
+          startInEditMode: false,
+        ),
+        '/profile/create': (c) => profile_new.ProfileScreen(
+          api: api,
+          tokens: tokens,
+          startInEditMode: true,
+          isFromRegistration: true,
+        ),
+        '/profile/edit': (c) =>
+            ProfileEditBasicInfoScreen(api: api, tokens: tokens),
+        '/profile/edit-tags': (c) =>
+            ProfileEditTagsScreen(api: api, tokens: tokens),
+        '/profile/add-media': (c) =>
+            ProfileAddMediaScreen(api: api, tokens: tokens),
+        '/profile/manage-media': (c) =>
+            ProfileManageMediaScreen(api: api, tokens: tokens),
+        '/matches': (c) =>
+            MatchesScreen(api: api, tokens: tokens, eventHubService: eventHub),
         '/users': (c) => UsersScreen(api: api, tokens: tokens),
         '/filters': (c) => FiltersScreen(api: api, tokens: tokens),
         '/settings': (c) => SettingsScreen(api: api, tokens: tokens),

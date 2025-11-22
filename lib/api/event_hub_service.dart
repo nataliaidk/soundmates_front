@@ -7,7 +7,7 @@ import 'token_store.dart';
 class EventHubService {
   HubConnection? _connection;
   final TokenStore tokenStore;
-  
+
   // Callbacks for events
   Function(dynamic)? onMessageReceived;
   Function(dynamic)? onMatchReceived;
@@ -30,28 +30,37 @@ class EventHubService {
     // Add this line to debug the token
     print("EventHubService: Attempting to connect with token: $accessToken");
 
-    final baseUrl = dotenv.get('API_BASE_URL', fallback: 'http://localhost:5000');
-    final hubUrl = "${baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl}/eventHub";
+    final baseUrl = dotenv.get(
+      'API_BASE_URL',
+      fallback: 'http://localhost:5000',
+    );
+    final hubUrl =
+        "${baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl}/eventHub";
 
     _connection = HubConnectionBuilder()
         .withUrl(
-      hubUrl,
-      options: HttpConnectionOptions(
-        accessTokenFactory: () async => accessToken,
-      ),
-    )
+          hubUrl,
+          options: HttpConnectionOptions(
+            accessTokenFactory: () async => accessToken,
+          ),
+        )
         .withAutomaticReconnect()
         .build();
 
     _connection!.onclose(({error}) {
-      print("SignalR connection closed. Error: ${error?.toString() ?? 'No error info'}");
+      print(
+        "SignalR connection closed. Error: ${error?.toString() ?? 'No error info'}",
+      );
     });
 
     _setupListeners();
 
     try {
       await _connection!.start();
-      print("SignalR connected successfully. ConnectionId: ${_connection?.connectionId}");
+      print(
+        "SignalR connected successfully. ConnectionId: ${_connection?.connectionId}",
+      );
+      print("SignalR State: ${_connection?.state}");
     } catch (e) {
       print("SignalR connection failed to start: $e");
     }
@@ -59,7 +68,7 @@ class EventHubService {
 
   void _setupListeners() {
     if (_connection == null) return;
-    
+
     // When a message comes from someone
     _connection!.on("MessageReceived", (args) {
       print("📩 MessageReceived: $args");
@@ -71,24 +80,32 @@ class EventHubService {
     // When user gets matched by someone else
     _connection!.on("MatchReceived", (args) {
       print("❤️ MatchReceived: $args");
-      print("❤️ onMatchReceived callback: ${onMatchReceived != null ? 'SET' : 'NULL'}");
+      print(
+        "❤️ onMatchReceived callback: ${onMatchReceived != null ? 'SET' : 'NULL'}",
+      );
       if (onMatchReceived != null && args != null && args.isNotEmpty) {
         print("❤️ Invoking onMatchReceived callback with: ${args[0]}");
         onMatchReceived!(args[0]);
       } else {
-        print("⚠️ Cannot invoke callback - onMatchReceived is null or args empty");
+        print(
+          "⚠️ Cannot invoke callback - onMatchReceived is null or args empty",
+        );
       }
     });
 
     // When both users match each other
     _connection!.on("MatchCreated", (args) {
       print("🔥 MatchCreated: $args");
-      print("🔥 onMatchCreated callback: ${onMatchCreated != null ? 'SET' : 'NULL'}");
+      print(
+        "🔥 onMatchCreated callback: ${onMatchCreated != null ? 'SET' : 'NULL'}",
+      );
       if (onMatchCreated != null && args != null && args.isNotEmpty) {
         print("🔥 Invoking onMatchCreated callback with: ${args[0]}");
         onMatchCreated!(args[0]);
       } else {
-        print("⚠️ Cannot invoke callback - onMatchCreated is null or args empty");
+        print(
+          "⚠️ Cannot invoke callback - onMatchCreated is null or args empty",
+        );
       }
     });
   }
