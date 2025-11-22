@@ -49,7 +49,9 @@ class VisitProfileLoader {
               .map((e) => CountryDto.fromJson(e))
               .toList();
         }
-        if (responses.length > 3 && responses[3] != null && responses[3]!.statusCode == 200) {
+        if (responses.length > 3 &&
+            responses[3] != null &&
+            responses[3]!.statusCode == 200) {
           relevantCities = (jsonDecode(responses[3]!.body) as List)
               .map((e) => CityDto.fromJson(e))
               .toList();
@@ -59,27 +61,32 @@ class VisitProfileLoader {
       }
 
       // 4. Przetwarzanie
-      final locationStr = _resolveLocationString(profile, allCountries, relevantCities);
+      final locationStr = _resolveLocationString(
+        profile,
+        allCountries,
+        relevantCities,
+      );
       final groupedTags = _groupTags(profile.tags, allTags, allCategories);
 
       // Tu używamy nowych nazw klas z modelu:
       final galleryItems = _prepareGalleryItems(profile);
-      final audioTrack = _prepareMainAudioTrack(profile);
+      final audioTracks = _prepareAudioTracks(profile);
 
       String? profilePicUrl;
       if (profile.profilePictures.isNotEmpty) {
-        profilePicUrl = profile.profilePictures.first.getAbsoluteUrl(api.baseUrl);
+        profilePicUrl = profile.profilePictures.first.getAbsoluteUrl(
+          api.baseUrl,
+        );
       }
 
       return VisitProfileViewModel(
         profile: profile,
         locationString: locationStr,
-        profileImageUrl: profilePicUrl, // <--- PRZEKAZANIE URL
+        profileImageUrl: profilePicUrl,
         groupedTags: groupedTags,
         galleryItems: galleryItems,
-        mainAudioTrack: audioTrack,
+        audioTracks: audioTracks,
       );
-
     } catch (e) {
       throw Exception('Failed to load profile data: $e');
     }
@@ -88,38 +95,41 @@ class VisitProfileLoader {
   // --- Metody pomocnicze ---
 
   String _resolveLocationString(
-      OtherUserProfileDto profile,
-      List<CountryDto> countries,
-      List<CityDto> cities
-      ) {
+    OtherUserProfileDto profile,
+    List<CountryDto> countries,
+    List<CityDto> cities,
+  ) {
     String? countryName;
     String? cityName;
 
     if (profile.country != null) {
       final foundCountry = countries.firstWhere(
-            (c) => c.id == profile.country,
-        orElse: () => CountryDto(id: '', name: ''), // Bez pola 'code'
+        (c) => c.id == profile.country,
+        orElse: () => CountryDto(id: '', name: ''),
       );
       if (foundCountry.id.isNotEmpty) countryName = foundCountry.name;
     }
 
     if (profile.city != null) {
       final foundCity = cities.firstWhere(
-            (c) => c.id == profile.city,
+        (c) => c.id == profile.city,
         orElse: () => CityDto(id: '', name: ''),
       );
       if (foundCity.id.isNotEmpty) cityName = foundCity.name;
     }
 
-    final parts = [cityName, countryName].where((s) => s != null && s.isNotEmpty).toList();
+    final parts = [
+      cityName,
+      countryName,
+    ].where((s) => s != null && s.isNotEmpty).toList();
     return parts.join(', ');
   }
 
   Map<String, List<String>> _groupTags(
-      List<String> profileTagIds,
-      List<TagDto> allTags,
-      List<TagCategoryDto> allCategories
-      ) {
+    List<String> profileTagIds,
+    List<TagDto> allTags,
+    List<TagCategoryDto> allCategories,
+  ) {
     final Map<String, List<String>> grouped = {};
     final catIdToName = {for (var c in allCategories) c.id: c.name};
     final tagIdToTag = {for (var t in allTags) t.id: t};
@@ -136,16 +146,20 @@ class VisitProfileLoader {
   }
 
   // Zwraca listę VisitProfileMediaItem (zgodnie z modelem)
-  List<VisitProfileMediaItem> _prepareGalleryItems(OtherUserProfileDto profile) {
+  List<VisitProfileMediaItem> _prepareGalleryItems(
+    OtherUserProfileDto profile,
+  ) {
     final List<VisitProfileMediaItem> items = [];
 
     // Zdjęcia
     for (final pic in profile.profilePictures) {
-      items.add(VisitProfileMediaItem(
-        type: VisitProfileMediaType.image,
-        url: pic.getAbsoluteUrl(api.baseUrl),
-        fileName: pic.fileUrl.split('/').last,
-      ));
+      items.add(
+        VisitProfileMediaItem(
+          type: VisitProfileMediaType.image,
+          url: pic.getAbsoluteUrl(api.baseUrl),
+          fileName: pic.fileUrl.split('/').last,
+        ),
+      );
     }
 
     // Muzyka / Wideo w galerii
@@ -153,34 +167,53 @@ class VisitProfileLoader {
       for (final sample in profile.musicSamples!) {
         final fileName = sample.fileUrl.split('/').last;
         final lowerName = fileName.toLowerCase();
-        final isAudio = lowerName.endsWith('.mp3') || lowerName.endsWith('.wav') || lowerName.endsWith('.m4a');
+        final isAudio =
+            lowerName.endsWith('.mp3') ||
+            lowerName.endsWith('.wav') ||
+            lowerName.endsWith('.m4a');
 
-        items.add(VisitProfileMediaItem(
-          type: isAudio ? VisitProfileMediaType.audio : VisitProfileMediaType.video,
-          url: sample.getAbsoluteUrl(api.baseUrl),
-          fileName: fileName,
-        ));
+        items.add(
+          VisitProfileMediaItem(
+            type: isAudio
+                ? VisitProfileMediaType.audio
+                : VisitProfileMediaType.video,
+            url: sample.getAbsoluteUrl(api.baseUrl),
+            fileName: fileName,
+          ),
+        );
       }
     }
     return items;
   }
 
-  // Zwraca VisitProfileAudioTrack (zgodnie z modelem)
-  VisitProfileAudioTrack? _prepareMainAudioTrack(OtherUserProfileDto profile) {
-    if (profile.musicSamples != null && profile.musicSamples!.isNotEmpty) {
-      final sample = profile.musicSamples!.first;
+  // Zwraca listę VisitProfileAudioTrack (zgodnie z modelem)
+  List<VisitProfileAudioTrack> _prepareAudioTracks(
+    OtherUserProfileDto profile,
+  ) {
+    final List<VisitProfileAudioTrack> tracks = [];
 
+    if (profile.musicSamples != null && profile.musicSamples!.isNotEmpty) {
+      final userName = profile.name ?? 'Unknown Artist';
       final coverUrl = profile.profilePictures.isNotEmpty
           ? profile.profilePictures.first.getAbsoluteUrl(api.baseUrl)
           : null;
 
-      return VisitProfileAudioTrack(
-        title: sample.fileUrl.split('/').last,
-        artist: profile.name ?? 'Unknown Artist',
-        coverUrl: coverUrl,
-        fileUrl: sample.getAbsoluteUrl(api.baseUrl),
-      );
+      for (int i = 0; i < profile.musicSamples!.length; i++) {
+        final sample = profile.musicSamples![i];
+        final index = i + 1; // 1-based indexing
+
+        tracks.add(
+          VisitProfileAudioTrack(
+            index: index,
+            title: '$userName audio $index',
+            artist: userName,
+            coverUrl: coverUrl,
+            fileUrl: sample.getAbsoluteUrl(api.baseUrl),
+          ),
+        );
+      }
     }
-    return null;
+
+    return tracks;
   }
 }

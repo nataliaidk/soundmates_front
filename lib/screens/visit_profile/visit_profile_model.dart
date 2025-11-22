@@ -5,34 +5,31 @@ import '../../api/models.dart';
 class VisitProfileViewModel {
   final OtherUserProfileDto profile;
   final String locationString;
-  final String? profileImageUrl; // <--- NOWE POLE
+  final String? profileImageUrl;
   final Map<String, List<String>> groupedTags;
   final List<VisitProfileMediaItem> galleryItems;
-  final VisitProfileAudioTrack? mainAudioTrack;
+  final List<VisitProfileAudioTrack> audioTracks;
 
   VisitProfileViewModel({
     required this.profile,
     required this.locationString,
-    this.profileImageUrl, // <--- W KONSTRUKTORZE
+    this.profileImageUrl,
     required this.groupedTags,
     required this.galleryItems,
-    this.mainAudioTrack,
+    required this.audioTracks,
   });
 }
 
 /// Odpowiednik enum _MediaType z oryginalnego pliku.
-enum VisitProfileMediaType {
-  image,
-  audio,
-  video
-}
+enum VisitProfileMediaType { image, audio, video }
 
 /// Odpowiednik klasy _MediaItem z oryginalnego pliku.
 /// Używana głównie w siatce galerii.
 class VisitProfileMediaItem {
   final VisitProfileMediaType type;
-  final String url;      // Pełny URL (absolute)
-  final String fileName; // Używane do rozpoznania typu pliku lub wyświetlenia nazwy
+  final String url; // Pełny URL (absolute)
+  final String
+  fileName; // Używane do rozpoznania typu pliku lub wyświetlenia nazwy
 
   VisitProfileMediaItem({
     required this.type,
@@ -44,12 +41,14 @@ class VisitProfileMediaItem {
 /// Klasa pomocnicza dla odtwarzacza w zakładce "Details".
 /// Zbiera dane, które w oryginale były rozrzucone po metodzie _buildInformationTab.
 class VisitProfileAudioTrack {
-  final String title;    // np. nazwa pliku
-  final String artist;   // imię użytkownika
-  final String? coverUrl; // URL do zdjęcia profilowego (okładki)
-  final String fileUrl;   // URL do pliku audio
+  final int index; // Track number (1-based)
+  final String title; // Formatted as "{userName} audio {index}"
+  final String artist; // User name
+  final String? coverUrl; // URL to profile picture (cover)
+  final String fileUrl; // URL to audio file
 
   VisitProfileAudioTrack({
+    required this.index,
     required this.title,
     required this.artist,
     required this.coverUrl,

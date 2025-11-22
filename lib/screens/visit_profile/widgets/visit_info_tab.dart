@@ -38,7 +38,17 @@ class VisitInfoTab extends StatelessWidget {
             fontWeight: FontWeight.w400,
           ),
         ),
-        const SizedBox(height: 32),
+        const SizedBox(height: 16),
+
+        // Native Audio Player
+        if (data.audioTracks.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 32),
+            child: NativeAudioPlayer(
+              tracks: data.audioTracks,
+              accentColor: _accentPurple,
+            ),
+          ),
 
         // Tags Sections
         for (final category in orderedCategories)
@@ -55,16 +65,6 @@ class VisitInfoTab extends StatelessWidget {
             ),
             const SizedBox(height: 24),
           ],
-
-        // Native Audio Player
-        if (data.mainAudioTrack != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 10),
-            child: NativeAudioPlayer(
-              track: data.mainAudioTrack!,
-              accentColor: _accentPurple,
-            ),
-          ),
       ],
     );
   }
@@ -110,12 +110,12 @@ class VisitInfoTab extends StatelessWidget {
 
 /// Native Audio Player with just_audio integration
 class NativeAudioPlayer extends StatefulWidget {
-  final VisitProfileAudioTrack track;
+  final List<VisitProfileAudioTrack> tracks;
   final Color accentColor;
 
   const NativeAudioPlayer({
     super.key,
-    required this.track,
+    required this.tracks,
     required this.accentColor,
   });
 
@@ -125,6 +125,7 @@ class NativeAudioPlayer extends StatefulWidget {
 
 class _NativeAudioPlayerState extends State<NativeAudioPlayer> {
   late AudioPlayer _player;
+  int _currentTrackIndex = 0;
   bool _isInitialized = false;
   bool _hasError = false;
 
@@ -136,11 +137,19 @@ class _NativeAudioPlayerState extends State<NativeAudioPlayer> {
 
   Future<void> _initializePlayer() async {
     _player = AudioPlayer();
+    await _loadTrack(_currentTrackIndex);
+  }
+
+  Future<void> _loadTrack(int index) async {
+    if (index < 0 || index >= widget.tracks.length) return;
+
     try {
-      await _player.setUrl(widget.track.fileUrl);
+      await _player.setUrl(widget.tracks[index].fileUrl);
       if (mounted) {
         setState(() {
+          _currentTrackIndex = index;
           _isInitialized = true;
+          _hasError = false;
         });
       }
     } catch (e) {
@@ -150,6 +159,18 @@ class _NativeAudioPlayerState extends State<NativeAudioPlayer> {
           _hasError = true;
         });
       }
+    }
+  }
+
+  void _playNext() {
+    if (_currentTrackIndex < widget.tracks.length - 1) {
+      _loadTrack(_currentTrackIndex + 1);
+    }
+  }
+
+  void _playPrevious() {
+    if (_currentTrackIndex > 0) {
+      _loadTrack(_currentTrackIndex - 1);
     }
   }
 
@@ -176,93 +197,37 @@ class _NativeAudioPlayerState extends State<NativeAudioPlayer> {
       return _buildLoadingState();
     }
 
+    final currentTrack = widget.tracks[_currentTrackIndex];
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF2A2D3E), Color(0xFF1F2029)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(24),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200, width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Top Row: Cover + Title + Favorite
-          Row(
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
-                      blurRadius: 8,
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: widget.track.coverUrl != null
-                      ? Image.network(
-                    widget.track.coverUrl!,
-                    width: 56,
-                    height: 56,
-                    fit: BoxFit.cover,
-                  )
-                      : Container(
-                    width: 56,
-                    height: 56,
-                    color: Colors.white10,
-                    child: const Icon(
-                      Icons.music_note,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.track.title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      widget.track.artist,
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.6),
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.favorite_border, color: Colors.white),
-                onPressed: () {},
-              ),
-            ],
+          // Track Title
+          Text(
+            currentTrack.title,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1A1A1A),
+            ),
           ),
           const SizedBox(height: 16),
 
-          // Progress Bar with StreamBuilder
+          // Progress Bar
           StreamBuilder<Duration>(
             stream: _player.positionStream,
             builder: (context, snapshot) {
@@ -274,44 +239,30 @@ class _NativeAudioPlayerState extends State<NativeAudioPlayer> {
 
               return Column(
                 children: [
-                  Stack(
-                    children: [
-                      Container(
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: Colors.white12,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
+                  // Progress bar
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: progress.clamp(0.0, 1.0),
+                      backgroundColor: Colors.grey.shade200,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        widget.accentColor,
                       ),
-                      FractionallySizedBox(
-                        widthFactor: progress.clamp(0.0, 1.0),
-                        child: Container(
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: widget.accentColor,
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                      ),
-                    ],
+                      minHeight: 6,
+                    ),
                   ),
                   const SizedBox(height: 8),
+                  // Time labels
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
                         _formatDuration(position),
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.6),
-                          fontSize: 11,
-                        ),
+                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
                       ),
                       Text(
                         _formatDuration(duration),
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.6),
-                          fontSize: 11,
-                        ),
+                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
                       ),
                     ],
                   ),
@@ -319,7 +270,7 @@ class _NativeAudioPlayerState extends State<NativeAudioPlayer> {
               );
             },
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
 
           // Control Buttons
           StreamBuilder<PlayerState>(
@@ -330,19 +281,22 @@ class _NativeAudioPlayerState extends State<NativeAudioPlayer> {
               final processingState = playerState?.processingState;
 
               return Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.shuffle, color: Colors.white54, size: 20),
+                  // Previous Button
                   IconButton(
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.skip_previous,
-                      color: Colors.white,
-                      size: 28,
+                      color: _currentTrackIndex > 0
+                          ? const Color(0xFF1A1A1A)
+                          : Colors.grey.shade400,
+                      size: 32,
                     ),
-                    onPressed: () {
-                      _player.seek(Duration.zero);
-                    },
+                    onPressed: _currentTrackIndex > 0 ? _playPrevious : null,
                   ),
+                  const SizedBox(width: 20),
+
+                  // Play/Pause Button
                   GestureDetector(
                     onTap: () {
                       if (isPlaying) {
@@ -352,42 +306,53 @@ class _NativeAudioPlayerState extends State<NativeAudioPlayer> {
                       }
                     },
                     child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: widget.accentColor,
                         shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: widget.accentColor.withOpacity(0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
                       child:
-                      processingState == ProcessingState.loading ||
-                          processingState == ProcessingState.buffering
-                          ? const SizedBox(
-                        width: 28,
-                        height: 28,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.black,
-                          ),
-                        ),
-                      )
+                          processingState == ProcessingState.loading ||
+                              processingState == ProcessingState.buffering
+                          ? const Padding(
+                              padding: EdgeInsets.all(16.0),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
+                              ),
+                            )
                           : Icon(
-                        isPlaying ? Icons.pause : Icons.play_arrow,
-                        color: Colors.black,
-                        size: 28,
-                      ),
+                              isPlaying ? Icons.pause : Icons.play_arrow,
+                              color: Colors.white,
+                              size: 32,
+                            ),
                     ),
                   ),
+                  const SizedBox(width: 20),
+
+                  // Next Button
                   IconButton(
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.skip_next,
-                      color: Colors.white,
-                      size: 28,
+                      color: _currentTrackIndex < widget.tracks.length - 1
+                          ? const Color(0xFF1A1A1A)
+                          : Colors.grey.shade400,
+                      size: 32,
                     ),
-                    onPressed: () {
-                      // Could implement skip to next track if multiple tracks exist
-                    },
+                    onPressed: _currentTrackIndex < widget.tracks.length - 1
+                        ? _playNext
+                        : null,
                   ),
-                  const Icon(Icons.repeat, color: Colors.white54, size: 20),
                 ],
               );
             },
@@ -401,15 +366,12 @@ class _NativeAudioPlayerState extends State<NativeAudioPlayer> {
     return Container(
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF2A2D3E), Color(0xFF1F2029)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(24),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200, width: 1),
       ),
-      child: const Center(
-        child: CircularProgressIndicator(color: Colors.white),
+      child: Center(
+        child: CircularProgressIndicator(color: widget.accentColor),
       ),
     );
   }
@@ -418,12 +380,9 @@ class _NativeAudioPlayerState extends State<NativeAudioPlayer> {
     return Container(
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF2A2D3E), Color(0xFF1F2029)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(24),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200, width: 1),
       ),
       child: Column(
         children: [
@@ -431,7 +390,7 @@ class _NativeAudioPlayerState extends State<NativeAudioPlayer> {
           const SizedBox(height: 16),
           Text(
             'Failed to load audio',
-            style: TextStyle(color: Colors.white.withOpacity(0.8)),
+            style: TextStyle(color: Colors.grey[700]),
           ),
         ],
       ),
