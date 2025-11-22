@@ -41,3 +41,5 @@ flutter:
   assets:
     - .env
     - lib/assets/logo.png
+
+  #fix

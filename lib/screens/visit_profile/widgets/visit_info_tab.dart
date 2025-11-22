@@ -438,3 +438,4 @@ class _NativeAudioPlayerState extends State<NativeAudioPlayer> {
     );
   }
 }
+//fix
