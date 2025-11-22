@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:zpi_test/screens/visit_profile/visit_profile_screen_old.dart';
+import 'package:zpi_test/screens/visit_profile/visit_profile_screen.dart';
 import '../api/api_client.dart';
 import '../api/token_store.dart';
 import '../api/models.dart';
@@ -174,9 +174,7 @@ class _ChatScreenState extends State<ChatScreen> {
       if (token != null) {
         final decoded = JwtDecoder.decode(token);
 
-
         final userId = decoded['sub'] ?? decoded['userId'] ?? decoded['id'];
-
 
         setState(() {
           _currentUserId = userId;
@@ -219,7 +217,8 @@ class _ChatScreenState extends State<ChatScreen> {
         if (_hasMessagesChanged(messages)) {
           print("✅ Messages changed - updating UI (old: ${_messages.length}, new: ${messages.length})");
           // Save scroll position
-          final shouldScrollToBottom = _scrollController.hasClients &&
+          final shouldScrollToBottom =
+              _scrollController.hasClients &&
               _scrollController.position.pixels >=
                   _scrollController.position.maxScrollExtent - 100;
 
@@ -263,8 +262,6 @@ class _ChatScreenState extends State<ChatScreen> {
     return false;
   }
 
-
-
   void _scrollToBottom() {
     if (_scrollController.hasClients) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -276,8 +273,6 @@ class _ChatScreenState extends State<ChatScreen> {
       });
     }
   }
-
-
 
   Future<void> _sendMessage() async {
     final text = _messageController.text.trim();
@@ -355,9 +350,12 @@ class _ChatScreenState extends State<ChatScreen> {
                 backgroundColor: Colors.grey.shade300,
                 child: widget.userImageUrl == null
                     ? Text(
-                  widget.userName.substring(0, 1).toUpperCase(),
-                  style: const TextStyle(fontSize: 16, color: Colors.white),
-                )
+                        widget.userName.substring(0, 1).toUpperCase(),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Colors.white,
+                        ),
+                      )
                     : null,
               ),
               const SizedBox(width: 12),
@@ -456,32 +454,72 @@ class _ChatScreenState extends State<ChatScreen> {
                       verticalSpacing: 0,
                       replaceEmojiOnLimitExceed: false,
                     ),
-                    categoryViewConfig: CategoryViewConfig(
-                      initCategory: Category.RECENT,
-                      backgroundColor: Colors.white,
-                      indicatorColor: const Color(0xFF6B4CE6),
-                      iconColor: Colors.grey,
-                      iconColorSelected: const Color(0xFF6B4CE6),
-                      dividerColor: Colors.grey.shade200,
-                      categoryIcons: const CategoryIcons(),
-                      recentTabBehavior: RecentTabBehavior.RECENT,
-                    ),
-                    bottomActionBarConfig: BottomActionBarConfig(
-                      backgroundColor: Colors.white,
-                      buttonColor: Colors.grey.shade200,
-                      buttonIconColor: const Color(0xFF6B4CE6),
-                    ),
-                    searchViewConfig: SearchViewConfig(
-                      backgroundColor: Colors.white,
-                      buttonIconColor: const Color(0xFF6B4CE6),
-                      hintText: 'Search emoji',
+                  )
+                : ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _messages.length,
+                    itemBuilder: (context, index) => _MessageBubble(
+                      message: _messages[index],
+                      userImageUrl: widget.userImageUrl,
+                      currentUserId: _currentUserId,
+                      userId: widget.userId,
+                      api: widget.api,
+                      tokens: widget.tokens,
                     ),
                   ),
-
-
+          ),
+          _buildMessageInput(),
+          if (_showEmojiPicker)
+            SizedBox(
+              height: 250,
+              child: EmojiPicker(
+                onEmojiSelected: (category, emoji) {
+                  _messageController.text += emoji.emoji;
+                },
+                config: Config(
+                  emojiViewConfig: EmojiViewConfig(
+                    columns: 7,
+                    emojiSizeMax: 32.0,
+                    backgroundColor: Colors.white,
+                    buttonMode: ButtonMode.MATERIAL,
+                    recentsLimit: 28,
+                    noRecents: const Text(
+                      'No Recents',
+                      style: TextStyle(fontSize: 20),
+                    ),
+                    loadingIndicator: const CircularProgressIndicator(
+                      color: Color(0xFF6B4CE6),
+                    ),
+                    gridPadding: EdgeInsets.zero,
+                    horizontalSpacing: 0,
+                    verticalSpacing: 0,
+                    replaceEmojiOnLimitExceed: false,
+                  ),
+                  categoryViewConfig: CategoryViewConfig(
+                    initCategory: Category.RECENT,
+                    backgroundColor: Colors.white,
+                    indicatorColor: const Color(0xFF6B4CE6),
+                    iconColor: Colors.grey,
+                    iconColorSelected: const Color(0xFF6B4CE6),
+                    dividerColor: Colors.grey.shade200,
+                    categoryIcons: const CategoryIcons(),
+                    recentTabBehavior: RecentTabBehavior.RECENT,
+                  ),
+                  bottomActionBarConfig: BottomActionBarConfig(
+                    backgroundColor: Colors.white,
+                    buttonColor: Colors.grey.shade200,
+                    buttonIconColor: const Color(0xFF6B4CE6),
+                  ),
+                  searchViewConfig: SearchViewConfig(
+                    backgroundColor: Colors.white,
+                    buttonIconColor: const Color(0xFF6B4CE6),
+                    hintText: 'Search emoji',
+                  ),
                 ),
               ),
-          ],
+            ),
+        ],
       ),
     );
   }
@@ -508,7 +546,9 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             IconButton(
               icon: Icon(
-                _showEmojiPicker ? Icons.keyboard : Icons.emoji_emotions_outlined,
+                _showEmojiPicker
+                    ? Icons.keyboard
+                    : Icons.emoji_emotions_outlined,
                 color: Colors.grey,
               ),
               onPressed: () {
@@ -566,8 +606,9 @@ class _MessageBubble extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
-        mainAxisAlignment:
-        isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: isMe
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isMe) ...[
@@ -586,8 +627,9 @@ class _MessageBubble extends StatelessWidget {
               },
               child: CircleAvatar(
                 radius: 16,
-                backgroundImage:
-                userImageUrl != null ? NetworkImage(userImageUrl!) : null,
+                backgroundImage: userImageUrl != null
+                    ? NetworkImage(userImageUrl!)
+                    : null,
                 backgroundColor: Colors.grey.shade300,
               ),
             ),

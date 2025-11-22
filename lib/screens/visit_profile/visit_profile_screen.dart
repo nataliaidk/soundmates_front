@@ -1,11 +1,12 @@
 import 'dart:ui'; // Wymagane dla ImageFilter (Blur)
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:zpi_test/screens/visit_profile/widgets/visit_profile_header.dart';
 
 // Importy zależności projektu
 import '../../api/api_client.dart';
 import '../../api/token_store.dart';
 import '../../widgets/app_bottom_nav.dart';
+import '../chat_screen.dart';
 
 // Importy naszej nowej struktury
 import 'visit_profile_loader.dart';
@@ -36,6 +37,7 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
   late final VisitProfileLoader _loader;
   late Future<VisitProfileViewModel> _dataFuture;
   late final TabController _tabController;
+  bool _isMatched = false;
 
   // Kolory tła z oryginału
   final Color _softBg = const Color(0xFFF8F9FC);
@@ -52,6 +54,57 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
 
     // Rozpoczęcie pobierania danych
     _dataFuture = _loader.loadData(widget.userId);
+
+    // Check if user is in matches list
+    _checkIfMatched();
+  }
+
+  Future<void> _checkIfMatched() async {
+    try {
+      final response = await widget.api.getMatches();
+      if (response.statusCode == 200) {
+        final List<dynamic> matches = jsonDecode(response.body);
+        final isMatch = matches.any((match) => match['id'] == widget.userId);
+        if (mounted) {
+          setState(() {
+            _isMatched = isMatch;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            // Match check failed silently
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error checking match status: $e');
+      if (mounted) {
+        setState(() {
+          // Match check failed silently
+        });
+      }
+    }
+  }
+
+  Future<void> _navigateToChat(VisitProfileViewModel data) async {
+    // Get user name and image URL from data
+    final userName = data.profile.name ?? 'User';
+    final userImageUrl = data.profileImageUrl;
+    debugPrint('Navigating to chat with user: $userName ($userImageUrl)');
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChatScreen(
+          api: widget.api,
+          tokens: widget.tokens,
+          userId: widget.userId,
+          userName: userName,
+          userImageUrl: userImageUrl,
+        ),
+      ),
+    );
   }
 
   @override
@@ -69,7 +122,9 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Scaffold(
             backgroundColor: _softBg,
-            body: Center(child: CircularProgressIndicator(color: _accentPurple)),
+            body: Center(
+              child: CircularProgressIndicator(color: _accentPurple),
+            ),
           );
         }
 
@@ -78,9 +133,10 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
           return Scaffold(
             backgroundColor: _softBg,
             appBar: AppBar(
-                elevation: 0,
-                backgroundColor: Colors.transparent,
-                iconTheme: const IconThemeData(color: Colors.black)),
+              elevation: 0,
+              backgroundColor: Colors.transparent,
+              iconTheme: const IconThemeData(color: Colors.black),
+            ),
             body: Center(child: Text('Error: ${snapshot.error}')),
           );
         }
@@ -98,14 +154,26 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
                   return [
                     VisitProfileHeader(
                       data: data,
+                      isMatched: _isMatched,
                       onUnmatch: () {
-                        // Tu dodaj logikę unmatch (np. dialog potwierdzenia)
-                        debugPrint("Unmatch clicked");
+                        // Show dialog that unmatch is not available
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('Unmatch'),
+                            content: const Text(
+                              'Unmatch feature is not available yet.',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text('OK'),
+                              ),
+                            ],
+                          ),
+                        );
                       },
-                      onMessage: () {
-                        // Tu dodaj logikę nawigacji do czatu
-                        debugPrint("Message clicked");
-                      },
+                      onMessage: () => _navigateToChat(data),
                     ),
                   ];
                 },
@@ -113,7 +181,9 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
                   // Zaokrąglenie góry kontenera, aby "wjeżdżał" na zdjęcie
                   decoration: BoxDecoration(
                     color: _surfaceWhite,
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(32),
+                    ),
                   ),
                   // Lekki margines ujemny w oryginale, tu zerujemy dla czystości,
                   // efekt załatwia sliver
@@ -124,7 +194,9 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
                         padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
                         decoration: BoxDecoration(
                           color: _surfaceWhite,
-                          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(32),
+                          ),
                         ),
                         child: Column(
                           children: [
@@ -141,15 +213,18 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
                                 labelColor: Colors.black,
                                 unselectedLabelColor: Colors.grey[500],
                                 labelStyle: const TextStyle(
-                                    fontWeight: FontWeight.w700, fontSize: 13),
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 13,
+                                ),
                                 indicator: BoxDecoration(
                                   color: Colors.white,
                                   borderRadius: BorderRadius.circular(19),
                                   boxShadow: [
                                     BoxShadow(
-                                        color: Colors.black.withOpacity(0.08),
-                                        blurRadius: 4,
-                                        offset: const Offset(0, 2))
+                                      color: Colors.black.withOpacity(0.08),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
+                                    ),
                                   ],
                                 ),
                                 dividerColor: Colors.transparent,
@@ -200,7 +275,10 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
                   child: BackdropFilter(
                     filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
                       color: Colors.black.withOpacity(0.2),
                       child: const Row(
                         mainAxisSize: MainAxisSize.min,
@@ -208,12 +286,12 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
                           Icon(Icons.near_me, color: Colors.white, size: 14),
                           SizedBox(width: 6),
                           Text(
-                              "2.5 km", // Placeholder z oryginału
-                              style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600
-                              )
+                            "2.5 km", // Placeholder z oryginału
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ],
                       ),
@@ -224,10 +302,10 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
 
               // 3. Dolna nawigacja
               const Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  child: AppBottomNav(current: BottomNavItem.home)
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: AppBottomNav(current: BottomNavItem.home),
               ),
             ],
           ),
@@ -237,7 +315,10 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
   }
 
   // Widget pomocniczy: Szklany przycisk (Back Button)
-  Widget _buildGlassButton({required IconData icon, required VoidCallback onTap}) {
+  Widget _buildGlassButton({
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
     return ClipOval(
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
