@@ -4,15 +4,17 @@ import '../widgets/app_bottom_nav.dart';
 import '../api/api_client.dart';
 import '../api/token_store.dart';
 import '../api/models.dart';
+import '../api/event_hub_service.dart';
 import 'dart:convert';
-import 'visit_profile/visit_profile_screen.dart';
+import 'visit_profile_screen.dart';
 import 'chat_screen.dart';
 
 class MatchesScreen extends StatefulWidget {
   final ApiClient api;
   final TokenStore tokens;
+  final EventHubService? eventHubService;
 
-  const MatchesScreen({super.key, required this.api, required this.tokens});
+  const MatchesScreen({super.key, required this.api, required this.tokens, this.eventHubService});
 
   @override
   State<MatchesScreen> createState() => _MatchesScreenState();
@@ -109,6 +111,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
                   (msg.senderId == _currentUserId && msg.receiverId == match.id) ||
                       (msg.senderId == match.id && msg.receiverId == _currentUserId),
                   orElse: () => MessageDto(
+                    id: '',
                     content: '',
                     timestamp: DateTime.now(),
                     senderId: '',
@@ -227,6 +230,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
                   api: widget.api,
                   tokens: widget.tokens,
                   onRefresh: _loadLastMessages,
+                  eventHubService: widget.eventHubService,
                 ),
               ),
             ),
@@ -344,6 +348,7 @@ class _MatchListItem extends StatelessWidget {
   final ApiClient api;
   final TokenStore tokens;
   final VoidCallback onRefresh;
+  final EventHubService? eventHubService;
 
   const _MatchListItem({
     required this.match,
@@ -351,6 +356,7 @@ class _MatchListItem extends StatelessWidget {
     required this.api,
     required this.tokens,
     required this.onRefresh,
+    this.eventHubService,
   });
 
   @override
@@ -370,6 +376,7 @@ class _MatchListItem extends StatelessWidget {
               userId: match.id,
               userName: match.name ?? 'User',
               userImageUrl: imageUrl,
+              eventHubService: eventHubService,
             ),
           ),
         );

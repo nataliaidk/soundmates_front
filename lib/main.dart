@@ -20,32 +20,157 @@ import 'screens/settings_screen.dart';
 import 'screens/terms_of_service_screen.dart';
 
 
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load();
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
   @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  late final TokenStore tokens;
+  late final EventHubService eventHub;
+  late final ApiClient api;
+
+  @override
+  void initState() {
+    super.initState();
+    tokens = TokenStore();
+    eventHub = EventHubService(tokenStore: tokens);
+    api = ApiClient(tokenStore: tokens, eventHubService: eventHub);
+    
+    // Setup callbacks immediately - they will work once SignalR connects
+    _setupGlobalMatchNotifications();
+  }
+  
+  void _setupGlobalMatchNotifications() {
+    print("🌍 Setting up global match notifications in initState");
+    
+    eventHub.onMatchReceived = (matchData) {
+      print("🌍💜 Global MatchReceived callback triggered: $matchData");
+      if (!mounted) {
+        print("⚠️ Widget not mounted, skipping notification");
+        return;
+      }
+      _showGlobalMatchNotification(matchData, isMutual: false);
+    };
+    
+    eventHub.onMatchCreated = (matchData) {
+      print("🌍🔥 Global MatchCreated callback triggered: $matchData");
+      if (!mounted) {
+        print("⚠️ Widget not mounted, skipping notification");
+        return;
+      }
+      _showGlobalMatchNotification(matchData, isMutual: true);
+    };
+  }
+  
+  void _showGlobalMatchNotification(dynamic matchData, {required bool isMutual}) {
+    print("🎨 _showGlobalMatchNotification called (isMutual: $isMutual)");
+    
+    final context = navigatorKey.currentContext;
+    if (context == null) {
+      print("❌ No navigator context available");
+      return;
+    }
+    print("✅ Navigator context available");
+    
+    try {
+      String? userId;
+      String userName = 'Nowy użytkownik';
+      
+      if (matchData is Map) {
+        final map = Map<String, dynamic>.from(matchData);
+        print("📦 Parsing matchData: $map");
+        if (isMutual) {
+          userId = map['existingLikeUserId']?.toString();
+          userName = map['existingLikeUserName']?.toString() ?? 'Użytkownik';
+        } else {
+          userId = map['newLikeUserId']?.toString();
+          userName = map['newLikeUserName']?.toString() ?? 'Nowy użytkownik';
+        }
+        print("📝 Parsed: userId=$userId, userName=$userName");
+      }
+      
+      if (userId == null || userId.isEmpty) {
+        print("❌ No userId in notification data");
+        return;
+      }
+      
+      print("🎯 Showing SnackBar for $userName (userId: $userId)");
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(
+                isMutual ? Icons.celebration : Icons.favorite,
+                color: Colors.white,
+                size: 24,
+              ),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  isMutual 
+                      ? 'To jest match z $userName! 🔥'
+                      : '$userName cię polubił! 💜',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: isMutual ? Color(0xFFFF6B6B) : Color(0xFF6B4CE6),
+          duration: Duration(seconds: 5),
+          behavior: SnackBarBehavior.fixed,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(0)),
+          action: SnackBarAction(
+            label: 'ZOBACZ',
+            textColor: Colors.white,
+            onPressed: () {
+              Navigator.pushNamed(context, '/matches');
+            },
+          ),
+        ),
+      );
+      
+      print("📱 SnackBar shown successfully");
+    } catch (e, stackTrace) {
+      print("❌ Error showing global notification: $e");
+      print("Stack: $stackTrace");
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final tokens = TokenStore();
-    final eventHub = EventHubService(tokenStore: tokens);
-    final api = ApiClient(tokenStore: tokens, eventHubService: eventHub);
 
     void onAuthSuccess(BuildContext navContext) {
-      eventHub.connect();
+      print("🔐 User logged in - connecting SignalR");
+      eventHub.connect().then((_) {
+        print("✅ SignalR connected after login");
+        // Callbacks are already set in initState
+      });
       Navigator.pushReplacementNamed(navContext, '/users');
     }
 
     void onRegisterSuccess(BuildContext navContext) {
-      eventHub.connect();
+      print("🔐 User registered - connecting SignalR");
+      eventHub.connect().then((_) {
+        print("✅ SignalR connected after registration");
+        // Callbacks are already set in initState
+      });
       Navigator.pushReplacementNamed(navContext, '/profile/create');
     }
 
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'Soundmates Demo',
       theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple)),
       initialRoute: '/login',
@@ -59,7 +184,7 @@ class MyApp extends StatelessWidget {
         '/profile/edit-tags': (c) => ProfileEditTagsScreen(api: api, tokens: tokens),
         '/profile/add-media': (c) => ProfileAddMediaScreen(api: api, tokens: tokens),
         '/profile/manage-media': (c) => ProfileManageMediaScreen(api: api, tokens: tokens),
-        '/matches': (c) => MatchesScreen(api: api, tokens: tokens),
+        '/matches': (c) => MatchesScreen(api: api, tokens: tokens, eventHubService: eventHub),
         '/users': (c) => UsersScreen(api: api, tokens: tokens),
         '/filters': (c) => FiltersScreen(api: api, tokens: tokens),
         '/settings': (c) => SettingsScreen(api: api, tokens: tokens),

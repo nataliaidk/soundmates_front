@@ -1,11 +1,14 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:zpi_test/screens/visit_profile/visit_profile_screen.dart';
+import 'package:zpi_test/screens/visit_profile/visit_profile_screen_old.dart';
 import 'package:flutter/services.dart';
 import '../widgets/app_bottom_nav.dart';
 import '../api/api_client.dart';
 import '../api/token_store.dart';
 import '../api/models.dart';
+
+const Color _filtersBackgroundStart = Color(0xFF2D1B4E);
+const Color _filtersBackgroundEnd = Color(0xFF150A32);
 
 class UsersScreen extends StatefulWidget {
   final ApiClient api;
@@ -17,9 +20,13 @@ class UsersScreen extends StatefulWidget {
 }
 
 class _UsersScreenState extends State<UsersScreen> {
-  String _out = '';
   List<Map<String, dynamic>> _users = [];
   final Map<String, String?> _userImages = {};
+  int _totalMatches = 0;
+  String? _currentUserCountryId;
+  String? _currentUserCityId;
+  String? _currentUserCountryName;
+  String? _currentUserCityName;
   bool _showArtists = true;
   bool _showBands = true;
   bool _isLoading = false;
@@ -43,6 +50,7 @@ class _UsersScreenState extends State<UsersScreen> {
     _loadCountries();
     _loadGenders();
     _loadPreference();
+    _loadCurrentUserProfile();
     // Ensure the screen captures keyboard focus for arrow key swipes
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _focusNode.requestFocus();
@@ -151,6 +159,25 @@ class _UsersScreenState extends State<UsersScreen> {
     _list();
   }
 
+  Future<void> _loadCurrentUserProfile() async {
+    try {
+      final resp = await widget.api.getMyProfile();
+      if (resp.statusCode != 200) return;
+      var decoded = jsonDecode(resp.body);
+      if (decoded is String) decoded = jsonDecode(decoded);
+      if (decoded is Map && mounted) {
+        setState(() {
+          _currentUserCountryId = decoded['countryId']?.toString();
+          _currentUserCityId = decoded['cityId']?.toString();
+          _currentUserCountryName = decoded['countryName']?.toString() ?? decoded['country']?.toString();
+          _currentUserCityName = decoded['cityName']?.toString() ?? decoded['city']?.toString();
+        });
+      }
+    } catch (_) {
+      // ignore, header will fallback to placeholder
+    }
+  }
+
   Future<void> _list() async {
     if (_isLoading) return;
     setState(() {
@@ -191,8 +218,8 @@ class _UsersScreenState extends State<UsersScreen> {
 
     setState(() {
       _users = allUsers;
+      _totalMatches = allUsers.length;
       _isLoading = false;
-      _out = 'Loaded ${_users.length} potential matches';
     });
 
     // Preload cities for distinct countries present in the list (best-effort)
@@ -208,6 +235,9 @@ class _UsersScreenState extends State<UsersScreen> {
   Future<void> _preloadCitiesForUsers() async {
     try {
       final Set<String> countryIds = {};
+      if (_currentUserCountryId != null && _currentUserCountryId!.isNotEmpty) {
+        countryIds.add(_currentUserCountryId!);
+      }
       for (final u in _users) {
         final c = (u['countryId'] ?? u['country'])?.toString();
         if (c != null && c.isNotEmpty) countryIds.add(c);
@@ -234,6 +264,48 @@ class _UsersScreenState extends State<UsersScreen> {
       }
       if (mounted) setState(() {});
     } catch (_) {}
+  }
+
+  int get _currentMatchIndex {
+    if (_totalMatches == 0) return 0;
+    if (_users.isEmpty) return _totalMatches;
+    final processed = _totalMatches - _users.length;
+    final current = processed + 1;
+    if (current < 1) return 1;
+    if (current > _totalMatches) return _totalMatches;
+    return current;
+  }
+
+  String get _matchHeadline {
+    if (_totalMatches == 0) {
+      return _isLoading ? 'Fetching potential matches…' : 'No potential matches yet';
+    }
+    return 'Showing $_currentMatchIndex of $_totalMatches potential matches';
+  }
+
+  String get _currentLocationLabel {
+    final city = _resolveCityName(_currentUserCountryId, _currentUserCityId, _currentUserCityName);
+    final country = _resolveCountryName(_currentUserCountryId, _currentUserCountryName);
+    if (city != null && country != null) return '$city, $country';
+    return city ?? country ?? 'Location not set';
+  }
+
+  String? _resolveCountryName(String? countryId, String? fallback) {
+    if (countryId != null) {
+      final resolved = _countryIdToName[countryId];
+      if (resolved != null && resolved.isNotEmpty) return resolved;
+    }
+    if (fallback != null && fallback.isNotEmpty) return fallback;
+    return null;
+  }
+
+  String? _resolveCityName(String? countryId, String? cityId, String? fallback) {
+    if (countryId != null && cityId != null) {
+      final mapped = _citiesByCountry[countryId]?[cityId];
+      if (mapped != null && mapped.isNotEmpty) return mapped;
+    }
+    if (fallback != null && fallback.isNotEmpty) return fallback;
+    return null;
   }
 
   Future<void> _fetchUserImage(String userId, Map<String, dynamic> userData) async {
@@ -294,147 +366,273 @@ class _UsersScreenState extends State<UsersScreen> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Dislike: ${resp.statusCode}')));
   }
 
-  Future<void> _showMatches() async {
-    final resp = await widget.api.getMatches();
-    setState(() => _out = 'Matches: ${resp.statusCode}\n${resp.body}');
-  }
-
   @override
   void dispose() {
     _focusNode.dispose();
     super.dispose();
   }
 
+  Widget _buildPhoneExperience() {
+    return RawKeyboardListener(
+      focusNode: _focusNode,
+      onKey: (event) {
+        if (event is RawKeyDownEvent) {
+          final key = event.logicalKey;
+          if (key == LogicalKeyboardKey.arrowRight) {
+            _topCardKey?.currentState?.swipeRight();
+          } else if (key == LogicalKeyboardKey.arrowLeft) {
+            _topCardKey?.currentState?.swipeLeft();
+          }
+        }
+      },
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: _users.isEmpty
+                ? Center(
+                    child: _isLoading
+                        ? const CircularProgressIndicator()
+                        : const Text('No potential matches.\nTry adjusting your preferences.'),
+                  )
+                : Stack(
+                    children: List.generate(_users.length, (index) {
+                      final u = _users[index];
+                      final id = u['id']?.toString() ?? '';
+                      final name = u['name']?.toString() ?? '(no name)';
+                      final imageUrl = _userImages[id];
+                      final top = index == _users.length - 1;
+                      final rawCountryId = (u['countryId'] ?? u['country'])?.toString();
+                      final rawCityId = (u['cityId'] ?? u['city'])?.toString();
+                      final countryName = rawCountryId != null
+                          ? (_countryIdToName[rawCountryId] ?? u['countryName']?.toString())
+                          : (u['countryName']?.toString() ?? u['country']?.toString());
+                      final cityName = (rawCountryId != null && rawCityId != null)
+                          ? (_citiesByCountry[rawCountryId] != null
+                              ? (_citiesByCountry[rawCountryId]![rawCityId] ?? u['cityName']?.toString())
+                              : u['cityName']?.toString())
+                          : (u['cityName']?.toString() ?? u['city']?.toString());
+                      String? gender;
+                      final isBand = u['isBand'] is bool ? u['isBand'] as bool : false;
+                      if (!isBand) {
+                        if (u['gender'] != null) {
+                          gender = u['gender'].toString();
+                        } else if (u['genderId'] != null) {
+                          gender = _genderIdToName[u['genderId'].toString()];
+                        }
+                      }
+                      final cardKey = top ? GlobalKey<_DraggableCardState>() : null;
+                      if (top) _topCardKey = cardKey;
+                      return Positioned.fill(
+                        child: DraggableCard(
+                          key: cardKey ?? ValueKey(id),
+                          name: name,
+                          description: u['description']?.toString() ?? '',
+                          imageUrl: imageUrl,
+                          isBand: isBand,
+                          city: cityName,
+                          country: countryName,
+                          gender: gender,
+                          userData: u,
+                          tagById: _tagById,
+                          categoryNames: _categoryNames,
+                          onSwipedLeft: () async {
+                            await _dislike(id);
+                            setState(() => _users.removeAt(index));
+                          },
+                          onSwipedRight: () async {
+                            await _like(id);
+                            setState(() => _users.removeAt(index));
+                          },
+                          isDraggable: top,
+                          api: widget.api,
+                          tokens: widget.tokens,
+                          showPrimaryActions: top,
+                          onPrimaryDislike: () => _topCardKey?.currentState?.swipeLeft(),
+                          onPrimaryFilter: () => Navigator.pushNamed(context, '/filters'),
+                          onPrimaryLike: () => _topCardKey?.currentState?.swipeRight(),
+                        ),
+                      );
+                    }),
+                  ),
+          ),
+          if (_users.isEmpty)
+            Positioned(
+              top: 16,
+              right: 16,
+              child: SafeArea(
+                bottom: false,
+                child: Material(
+                  color: Colors.white.withOpacity(0.92),
+                  shape: const CircleBorder(),
+                  elevation: 6,
+                  child: IconButton(
+                    tooltip: 'Adjust filters',
+                    icon: const Icon(Icons.tune, color: Color(0xFF5B3CF0)),
+                    onPressed: () => Navigator.pushNamed(context, '/filters'),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: RawKeyboardListener(
-        focusNode: _focusNode,
-        onKey: (event) {
-          if (event is RawKeyDownEvent) {
-            final key = event.logicalKey;
-            if (key == LogicalKeyboardKey.arrowRight) {
-              _topCardKey?.currentState?.swipeRight();
-            } else if (key == LogicalKeyboardKey.arrowLeft) {
-              _topCardKey?.currentState?.swipeLeft();
-            }
-          }
-        },
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: _users.isEmpty
-                  ? Center(
-                      child: _isLoading
-                          ? const CircularProgressIndicator()
-                          : const Text('No potential matches.\nTry adjusting your preferences.'),
-                    )
-                  : Stack(
-                      children: List.generate(_users.length, (index) {
-                        final u = _users[index];
-                        final id = u['id']?.toString() ?? '';
-                        final name = u['name']?.toString() ?? '(no name)';
-                        final imageUrl = _userImages[id];
-                        final top = index == _users.length - 1;
-                        final rawCountryId = (u['countryId'] ?? u['country'])?.toString();
-                        final rawCityId = (u['cityId'] ?? u['city'])?.toString();
-                        final countryName = rawCountryId != null
-                            ? (_countryIdToName[rawCountryId] ?? u['countryName']?.toString())
-                            : (u['countryName']?.toString() ?? u['country']?.toString());
-                        final cityName = (rawCountryId != null && rawCityId != null)
-                            ? (_citiesByCountry[rawCountryId] != null
-                                ? (_citiesByCountry[rawCountryId]![rawCityId] ?? u['cityName']?.toString())
-                                : u['cityName']?.toString())
-                            : (u['cityName']?.toString() ?? u['city']?.toString());
-                        String? gender;
-                        final isBand = u['isBand'] is bool ? u['isBand'] as bool : false;
-                        if (!isBand) {
-                          if (u['gender'] != null) {
-                            gender = u['gender'].toString();
-                          } else if (u['genderId'] != null) {
-                            gender = _genderIdToName[u['genderId'].toString()];
-                          }
-                        }
-                        final cardKey = top ? GlobalKey<_DraggableCardState>() : null;
-                        if (top) _topCardKey = cardKey;
-                        return Positioned.fill(
-                          child: DraggableCard(
-                            key: cardKey ?? ValueKey(id),
-                            name: name,
-                            description: u['description']?.toString() ?? '',
-                            imageUrl: imageUrl,
-                            isBand: isBand,
-                            city: cityName,
-                            country: countryName,
-                            gender: gender,
-                            userData: u,
-                            tagById: _tagById,
-                            categoryNames: _categoryNames,
-                            onSwipedLeft: () async {
-                              await _dislike(id);
-                              setState(() => _users.removeAt(index));
-                            },
-                            onSwipedRight: () async {
-                              await _like(id);
-                              setState(() => _users.removeAt(index));
-                            },
-                            isDraggable: top,
-                            api: widget.api,
-                            tokens: widget.tokens,
-                            showPrimaryActions: top,
-                            onPrimaryDislike: () => _topCardKey?.currentState?.swipeLeft(),
-                            onPrimaryFilter: () => Navigator.pushNamed(context, '/filters'),
-                            onPrimaryLike: () => _topCardKey?.currentState?.swipeRight(),
-                          ),
-                        );
-                      }),
-                    ),
+      backgroundColor: Colors.transparent,
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final bool isWide = constraints.maxWidth >= 900;
+          final double borderRadius = isWide ? 36 : 0;
+            final EdgeInsets shellPadding = isWide
+              ? const EdgeInsets.symmetric(horizontal: 120, vertical: 20)
+              : EdgeInsets.zero;
+            final double availableWidth = (constraints.maxWidth - shellPadding.horizontal).clamp(0.0, constraints.maxWidth).toDouble();
+            final double availableHeight = (constraints.maxHeight - shellPadding.vertical).clamp(0.0, constraints.maxHeight).toDouble();
+          final double cardWidth = isWide ? availableWidth * 0.28 : availableWidth;
+          final double cardHeight = isWide ? availableHeight * 0.99 : availableHeight;
+
+          final Widget phoneExperience = _buildPhoneExperience();
+          final Widget phoneShell = Container(
+            clipBehavior: borderRadius > 0 ? Clip.antiAlias : Clip.none,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(borderRadius),
+              boxShadow: isWide
+                  ? [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 40,
+                        offset: const Offset(0, 30),
+                        spreadRadius: 4,
+                      ),
+                    ]
+                  : null,
             ),
-            if (_out.isNotEmpty)
-              Positioned(
-                top: 16,
-                left: 20,
-                right: 20,
-                child: SafeArea(
-                  bottom: false,
-                  child: Align(
-                    alignment: Alignment.topCenter,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.55),
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      child: Text(
-                        _out,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(color: Colors.white, fontSize: 12, letterSpacing: 0.3),
+            child: SizedBox.expand(child: phoneExperience),
+          );
+          final Widget framedPhone = SizedBox(width: cardWidth, height: cardHeight, child: phoneShell);
+
+          return Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [_filtersBackgroundStart, _filtersBackgroundEnd],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: Stack(
+              children: [
+                if (isWide)
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    child: SafeArea(
+                      bottom: false,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 72, vertical: 32),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Musician Match',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 28,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: -0.4,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    _matchHeadline,
+                                    style: TextStyle(
+                                      color: Colors.white.withOpacity(0.82),
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.08),
+                                borderRadius: BorderRadius.circular(36),
+                                border: Border.all(color: Colors.white.withOpacity(0.25)),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.35),
+                                    blurRadius: 24,
+                                    offset: const Offset(0, 20),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'Your location',
+                                    style: TextStyle(
+                                      color: Colors.white.withOpacity(0.7),
+                                      fontSize: 11,
+                                      letterSpacing: 1.4,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.my_location, size: 16, color: Colors.white),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        _currentLocationLabel,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
+                Align(
+                  alignment: Alignment.center,
+                  child: Padding(padding: shellPadding, child: framedPhone),
                 ),
-              ),
-            if (_users.isEmpty)
-              Positioned(
-                top: 16,
-                right: 16,
-                child: SafeArea(
-                  bottom: false,
-                  child: Material(
-                    color: Colors.white.withOpacity(0.92),
-                    shape: const CircleBorder(),
-                    elevation: 6,
-                    child: IconButton(
-                      tooltip: 'Adjust filters',
-                      icon: const Icon(Icons.tune, color: Color(0xFF5B3CF0)),
-                      onPressed: () => Navigator.pushNamed(context, '/filters'),
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 12,
+                  child: SafeArea(
+                    top: false,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 28),
+                      child: AppBottomNav(current: BottomNavItem.home),
                     ),
                   ),
                 ),
-              ),
-            const Positioned(left: 0, right: 0, bottom: 18, child: AppBottomNav(current: BottomNavItem.home)),
-          ],
-        ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -446,6 +644,8 @@ class _RoundActionButton extends StatelessWidget {
   final Color backgroundColor;
   final Color iconColor;
   final bool isElevated;
+  final double size;
+  final double iconSize;
 
   const _RoundActionButton({
     required this.icon,
@@ -453,6 +653,8 @@ class _RoundActionButton extends StatelessWidget {
     this.backgroundColor = Colors.white,
     this.iconColor = Colors.black,
     this.isElevated = false,
+    this.size = 56,
+    this.iconSize = 24,
   });
 
   @override
@@ -460,8 +662,8 @@ class _RoundActionButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 62,
-        width: 62,
+        height: size,
+        width: size,
         decoration: BoxDecoration(
           color: backgroundColor,
           shape: BoxShape.circle,
@@ -473,7 +675,7 @@ class _RoundActionButton extends StatelessWidget {
             ),
           ],
         ),
-        child: Icon(icon, color: iconColor, size: 26),
+        child: Icon(icon, color: iconColor, size: iconSize),
       ),
     );
   }
@@ -717,6 +919,7 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
                     Positioned.fill(
                       child: SingleChildScrollView(
                         controller: _scrollController,
+                        padding: const EdgeInsets.only(bottom: 190),
                         child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -725,7 +928,7 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
                         children: [
                           // Image
                           Container(
-                            height: h * 0.5,
+                            height: h * 0.45,
                             width: double.infinity,
                             child: images.isNotEmpty
                                 ? Image.network(
@@ -813,7 +1016,7 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
                                   child: Text(
                                     '${widget.name}${age != null ? ', $age' : ''}',
                                     style: const TextStyle(
-                                      fontSize: 32,
+                                      fontSize: 26,
                                       fontWeight: FontWeight.w700,
                                       color: Colors.white,
                                       letterSpacing: 0.5,
@@ -831,8 +1034,8 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
                                           .toUpperCase(),
                                       style: const TextStyle(
                                         color: Colors.white70,
-                                        fontSize: 12,
-                                        letterSpacing: 1.2,
+                                        fontSize: 11,
+                                        letterSpacing: 1.1,
                                       ),
                                     ),
                                   ),
@@ -851,39 +1054,45 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
                                         widget.isBand ? 'BAND' : 'ARTIST',
                                         style: const TextStyle(
                                           color: Colors.white,
-                                          fontSize: 12,
+                                          fontSize: 11,
                                           fontWeight: FontWeight.w600,
-                                          letterSpacing: 0.6,
+                                          letterSpacing: 0.5,
                                         ),
                                       ),
                                     ),
                                   ],
                                 ),
                                 if (widget.showPrimaryActions) ...[
-                                  const SizedBox(height: 20),
+                                  const SizedBox(height: 18),
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
                                       _RoundActionButton(
                                         icon: Icons.close,
-                                        backgroundColor: const Color(0xFFB388FF),
-                                        iconColor: Colors.white,
+                                        backgroundColor: Colors.white.withOpacity(0.92),
+                                        iconColor: const Color(0xFF9245D5),
                                         onTap: widget.onPrimaryDislike ?? () {},
+                                        size: 50,
+                                        iconSize: 22,
                                       ),
-                                      const SizedBox(width: 18),
+                                      const SizedBox(width: 16),
                                       _RoundActionButton(
                                         icon: Icons.tune,
-                                        backgroundColor: Colors.white,
-                                        iconColor: const Color(0xFF5B3CF0),
+                                        backgroundColor: Colors.white.withOpacity(0.92),
+                                        iconColor: const Color(0xFF4C3F8F),
                                         onTap: widget.onPrimaryFilter ?? () {},
+                                        size: 50,
+                                        iconSize: 22,
                                         isElevated: true,
                                       ),
-                                      const SizedBox(width: 18),
+                                      const SizedBox(width: 16),
                                       _RoundActionButton(
                                         icon: Icons.favorite,
-                                        backgroundColor: Colors.white,
-                                        iconColor: Colors.pinkAccent,
+                                        backgroundColor: Colors.white.withOpacity(0.92),
+                                        iconColor: const Color(0xFFE65080),
                                         onTap: widget.onPrimaryLike ?? () {},
+                                        size: 50,
+                                        iconSize: 22,
                                       ),
                                     ],
                                   ),
@@ -903,8 +1112,8 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
                               const Text(
                                 'ABOUT',
                                 style: TextStyle(
-                                  fontSize: 14,
-                                  letterSpacing: 1.1,
+                                  fontSize: 13,
+                                  letterSpacing: 1.0,
                                   fontWeight: FontWeight.w700,
                                   color: Color(0xFF5B3CF0),
                                 ),
@@ -913,7 +1122,7 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
                               Text(
                                 widget.description,
                                 style: const TextStyle(
-                                  fontSize: 15,
+                                  fontSize: 14,
                                   height: 1.5,
                                   color: Color(0xFF1F1F1F),
                                 ),
@@ -936,7 +1145,7 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
                                     Text(
                                       entry.key.toUpperCase(),
                                       style: const TextStyle(
-                                        fontSize: 13,
+                                        fontSize: 12,
                                         fontWeight: FontWeight.w600,
                                         letterSpacing: 0.9,
                                         color: Color(0xFF6A4DBE),
@@ -955,7 +1164,7 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
                                         child: Text(
                                           tagName,
                                           style: const TextStyle(
-                                            fontSize: 13,
+                                            fontSize: 12,
                                             fontWeight: FontWeight.w600,
                                             color: Color(0xFF5B3CF0),
                                           ),
@@ -1036,7 +1245,7 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
                             ],
                           ),
                         ),
-                      const SizedBox(height: 24), // Small padding; allow card to reach bottom behind nav
+                      const SizedBox(height: 24),
                     ],
                   ),
                       ),
