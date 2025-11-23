@@ -196,37 +196,74 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
                         ),
                         child: Column(
                           children: [
-                            // Custom Styled TabBar
-                            Container(
-                              height: 46,
-                              decoration: BoxDecoration(
-                                color: AppColors.backgroundLight,
-                                borderRadius: BorderRadius.circular(23),
-                              ),
-                              child: TabBar(
-                                controller: _tabController,
-                                padding: const EdgeInsets.all(4),
-                                labelColor: Colors.black,
-                                unselectedLabelColor: Colors.grey[500],
-                                labelStyle: const TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 13,
-                                ),
-                                indicator: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(19),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.08),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 2),
+                            // Custom Styled Tabs (button style)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 16),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: InkWell(
+                                      onTap: () => setState(
+                                        () => _tabController.index = 0,
+                                      ),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 12,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: _tabController.index == 0
+                                              ? AppColors.accentPurple
+                                              : AppColors.backgroundLight,
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            'Details',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: _tabController.index == 0
+                                                  ? AppColors.surfaceWhite
+                                                  : AppColors.textPrimaryAlt,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
                                     ),
-                                  ],
-                                ),
-                                dividerColor: Colors.transparent,
-                                tabs: const [
-                                  Tab(text: 'Details'),
-                                  Tab(text: 'Gallery'),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: InkWell(
+                                      onTap: () => setState(
+                                        () => _tabController.index = 1,
+                                      ),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 12,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: _tabController.index == 1
+                                              ? AppColors.accentPurple
+                                              : AppColors.backgroundLight,
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            'Gallery',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: _tabController.index == 1
+                                                  ? AppColors.surfaceWhite
+                                                  : AppColors.textPrimaryAlt,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),

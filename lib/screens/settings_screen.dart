@@ -3,6 +3,7 @@ import '../api/api_client.dart';
 import '../api/token_store.dart';
 import '../api/models.dart';
 import 'change_password_screen.dart';
+import '../theme/app_design_system.dart';
 
 class SettingsScreen extends StatelessWidget {
   final ApiClient api;
@@ -11,17 +12,24 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final divider = Divider(height: 1, color: Colors.grey.shade300);
+    final divider = Divider(height: 1, color: AppColors.borderLight);
     return Scaffold(
-      backgroundColor: const Color(0xFFF9F4FF),
+      backgroundColor: AppColors.backgroundLightPurple,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimaryAlt),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Settings', style: TextStyle(color: Colors.black, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
+        title: const Text(
+          'Settings',
+          style: TextStyle(
+            color: AppColors.textPrimaryAlt,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.5,
+          ),
+        ),
         centerTitle: true,
       ),
       body: ListView(
@@ -36,16 +44,31 @@ class SettingsScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Dark Mode', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+                    Text(
+                      'Dark Mode',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                    ),
                     SizedBox(height: 4),
-                    Text('COMING SOON', style: TextStyle(color: Colors.grey, fontSize: 12, letterSpacing: 0.3)),
+                    Text(
+                      'COMING SOON',
+                      style: TextStyle(
+                        color: AppColors.textGrey,
+                        fontSize: 12,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
                   ],
                 ),
               ),
               Switch(
                 value: false,
                 onChanged: (_) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Dark mode coming soon')));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Dark mode coming soon')),
+                  );
                 },
               ),
             ],
@@ -83,7 +106,8 @@ class SettingsScreen extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => ChangePasswordScreen(api: api, tokens: tokens),
+                  builder: (_) =>
+                      ChangePasswordScreen(api: api, tokens: tokens),
                 ),
               );
             },
@@ -96,17 +120,27 @@ class SettingsScreen extends StatelessWidget {
             icon: Icons.logout,
             text: 'Log out',
             onTap: () async {
-              final confirmed = await _confirm(context, title: 'Log out', message: 'Do you really want to log out?');
+              final confirmed = await _confirm(
+                context,
+                title: 'Log out',
+                message: 'Do you really want to log out?',
+              );
               if (confirmed != true) return;
               final resp = await api.logout();
               if (resp.statusCode >= 200 && resp.statusCode < 300) {
                 // Clear tokens and go to login
                 await tokens.clear();
                 if (context.mounted) {
-                  Navigator.pushNamedAndRemoveUntil(context, '/login', (r) => false);
+                  Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    '/login',
+                    (r) => false,
+                  );
                 }
               } else {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Logout failed: ${resp.statusCode}')));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Logout failed: ${resp.statusCode}')),
+                );
               }
             },
           ),
@@ -116,9 +150,14 @@ class SettingsScreen extends StatelessWidget {
           _SettingsItem(
             icon: Icons.delete_forever_outlined,
             text: 'Delete account',
-            color: Colors.red,
+            color: AppColors.accentRed,
             onTap: () async {
-              final confirmed = await _confirm(context, title: 'Delete account', message: 'This will permanently remove your profile, media and matches. Continue?');
+              final confirmed = await _confirm(
+                context,
+                title: 'Delete account',
+                message:
+                    'This will permanently remove your profile, media and matches. Continue?',
+              );
               if (confirmed != true) return;
               final pwd = await _askPassword(context);
               if (pwd == null || pwd.isEmpty) return;
@@ -126,10 +165,16 @@ class SettingsScreen extends StatelessWidget {
               if (resp.statusCode >= 200 && resp.statusCode < 300) {
                 await tokens.clear();
                 if (context.mounted) {
-                  Navigator.pushNamedAndRemoveUntil(context, '/login', (r) => false);
+                  Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    '/login',
+                    (r) => false,
+                  );
                 }
               } else {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Delete failed: ${resp.statusCode}')));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Delete failed: ${resp.statusCode}')),
+                );
               }
             },
           ),
@@ -157,8 +202,14 @@ class _SettingsItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: Icon(icon, color: color ?? Colors.black87),
-      title: Text(text, style: TextStyle(fontWeight: FontWeight.w500, color: color ?? Colors.black87)),
+      leading: Icon(icon, color: color ?? AppColors.textPrimaryAlt),
+      title: Text(
+        text,
+        style: TextStyle(
+          fontWeight: FontWeight.w500,
+          color: color ?? AppColors.textPrimaryAlt,
+        ),
+      ),
       trailing: trailing,
       onTap: onTap,
       contentPadding: const EdgeInsets.symmetric(horizontal: 4),
@@ -168,15 +219,25 @@ class _SettingsItem extends StatelessWidget {
   }
 }
 
-Future<bool?> _confirm(BuildContext context, {required String title, required String message}) async {
+Future<bool?> _confirm(
+  BuildContext context, {
+  required String title,
+  required String message,
+}) async {
   return showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
       title: Text(title),
       content: Text(message),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-        ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Confirm')),
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () => Navigator.pop(ctx, true),
+          child: const Text('Confirm'),
+        ),
       ],
     ),
   );
@@ -196,13 +257,22 @@ Future<String?> _askPassword(BuildContext context) async {
           TextField(
             controller: ctrl,
             obscureText: true,
-            decoration: const InputDecoration(labelText: 'Password', border: OutlineInputBorder()),
+            decoration: const InputDecoration(
+              labelText: 'Password',
+              border: OutlineInputBorder(),
+            ),
           ),
         ],
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-        ElevatedButton(onPressed: () => Navigator.pop(ctx, ctrl.text.trim()), child: const Text('Delete')),
+        TextButton(
+          onPressed: () => Navigator.pop(ctx),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+          child: const Text('Delete'),
+        ),
       ],
     ),
   );

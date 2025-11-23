@@ -18,6 +18,7 @@ class AppColors {
   static const Color backgroundDarkAlt = Color(0xFF1A1525);
   static const Color backgroundLight = Color(0xFFF8F9FC);
   static const Color backgroundLightAlt = Color(0xFFF5F6FB);
+  static const Color backgroundLightPurple = Color(0xFFF9F4FF);
   static const Color surfaceWhite = Colors.white;
 
   // ============ Accent Colors ============
@@ -39,7 +40,9 @@ class AppColors {
   static const Color textSecondary = Color(0xFF4C4F72);
   static const Color textPlaceholder = Color(0xFF9EA3B5);
   static const Color textWhite = Colors.white;
+  static const Color textWhite70 = Colors.white70;
   static const Color textBlack87 = Colors.black87;
+  static const Color textGrey = Colors.grey;
 
   // ============ Status Colors ============
   static const Color statusOnline = Color(0xFF40C057);
@@ -79,6 +82,13 @@ class AppGradients {
     colors: [Color(0xFFFFFFFF), Color(0xFFEEF1FB)],
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
+  );
+
+  /// Dark purple gradient for terms of service card
+  static const LinearGradient darkPurpleGradient = LinearGradient(
+    colors: [Color(0xFF463A63), Color(0xFF5B4B78)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
   );
 
   /// Profile header gradient overlay (dark to darker)
