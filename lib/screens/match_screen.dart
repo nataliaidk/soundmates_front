@@ -4,6 +4,7 @@ import 'package:zpi_test/api/token_store.dart';
 import 'package:zpi_test/screens/chat_screen.dart';
 import 'package:zpi_test/screens/visit_profile/visit_profile_loader.dart';
 import 'package:zpi_test/screens/visit_profile/visit_profile_model.dart';
+import 'package:zpi_test/theme/app_design_system.dart';
 
 class MatchScreen extends StatefulWidget {
   final ApiClient api;
@@ -26,12 +27,6 @@ class MatchScreen extends StatefulWidget {
 class _MatchScreenState extends State<MatchScreen> {
   late final VisitProfileLoader _loader;
   late Future<VisitProfileViewModel> _dataFuture;
-
-  // Colors from mockup
-  final Color _bgDark = const Color(0xFF4A4A6A);
-  final Color _accentPurple = const Color(0xFF7B51D3);
-  final Color _textWhite = Colors.white;
-  final Color _textPurple = const Color(0xFF9D7CE6);
 
   @override
   void initState() {
@@ -58,13 +53,13 @@ class _MatchScreenState extends State<MatchScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bgDark,
+      backgroundColor: AppColors.surfaceDarkGrey,
       body: FutureBuilder<VisitProfileViewModel>(
         future: _dataFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(
-              child: CircularProgressIndicator(color: _accentPurple),
+              child: CircularProgressIndicator(color: AppColors.accentPurple),
             );
           }
 
@@ -72,7 +67,7 @@ class _MatchScreenState extends State<MatchScreen> {
             return Center(
               child: Text(
                 'Error loading match data',
-                style: TextStyle(color: _textWhite),
+                style: const TextStyle(color: AppColors.textWhite),
               ),
             );
           }
@@ -126,12 +121,7 @@ class _MatchScreenState extends State<MatchScreen> {
                     // "You connected with"
                     Text(
                       'You connected with',
-                      style: TextStyle(
-                        color: _textWhite,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.2,
-                      ),
+                      style: AppTextStyles.headingSmall,
                     ),
 
                     const SizedBox(height: 8),
@@ -139,23 +129,15 @@ class _MatchScreenState extends State<MatchScreen> {
                     // Name
                     Text(
                       name,
-                      style: TextStyle(
-                        color: _textPurple,
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
+                      style: AppTextStyles.headingMedium.copyWith(
+                        color: AppColors.accentPurpleSoft,
                       ),
                     ),
 
                     const SizedBox(height: 12),
 
                     // Time (Hardcoded for now as requested)
-                    Text(
-                      '11 mins ago',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.6),
-                        fontSize: 14,
-                      ),
-                    ),
+                    Text('11 mins ago', style: AppTextStyles.timeText),
 
                     const SizedBox(height: 40),
 
@@ -166,16 +148,10 @@ class _MatchScreenState extends State<MatchScreen> {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: _accentPurple.withOpacity(0.5),
+                          color: AppColors.accentPurple.withOpacity(0.5),
                           width: 4,
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: _accentPurple.withOpacity(0.3),
-                            blurRadius: 20,
-                            spreadRadius: 5,
-                          ),
-                        ],
+                        boxShadow: AppShadows.purpleGlowShadow,
                       ),
                       child: Padding(
                         padding: const EdgeInsets.all(4.0),
@@ -187,10 +163,7 @@ class _MatchScreenState extends State<MatchScreen> {
                           child: imageUrl == null
                               ? Text(
                                   name.substring(0, 1).toUpperCase(),
-                                  style: const TextStyle(
-                                    fontSize: 48,
-                                    color: Colors.white,
-                                  ),
+                                  style: AppTextStyles.avatarInitialLarge,
                                 )
                               : null,
                         ),
@@ -213,13 +186,15 @@ class _MatchScreenState extends State<MatchScreen> {
                                   vertical: 8,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(20),
+                                  color: AppColors.surfaceWhite,
+                                  borderRadius: BorderRadius.circular(
+                                    AppBorderRadius.radiusMediumAlt,
+                                  ),
                                 ),
                                 child: Text(
                                   tag,
                                   style: const TextStyle(
-                                    color: Colors.black87,
+                                    color: AppColors.textBlack87,
                                     fontWeight: FontWeight.w600,
                                     fontSize: 14,
                                   ),
@@ -238,11 +213,11 @@ class _MatchScreenState extends State<MatchScreen> {
                         width: 80,
                         height: 80,
                         decoration: BoxDecoration(
-                          color: _accentPurple,
+                          color: AppColors.accentPurple,
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: _accentPurple.withOpacity(0.4),
+                              color: AppColors.accentPurple.withOpacity(0.4),
                               blurRadius: 16,
                               offset: const Offset(0, 8),
                             ),
@@ -250,7 +225,7 @@ class _MatchScreenState extends State<MatchScreen> {
                         ),
                         child: const Icon(
                           Icons.chat_bubble_outline,
-                          color: Colors.white,
+                          color: AppColors.textWhite,
                           size: 36,
                         ),
                       ),

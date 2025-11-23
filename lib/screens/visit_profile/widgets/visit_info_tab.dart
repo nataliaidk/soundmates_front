@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import '../visit_profile_model.dart';
+import '../../../theme/app_design_system.dart';
 
 class VisitInfoTab extends StatelessWidget {
   final VisitProfileViewModel data;
 
   const VisitInfoTab({super.key, required this.data});
-
-  static const Color _primaryDark = Color(0xFF1A1A1A);
-  static const Color _accentPurple = Color(0xFF7B51D3);
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +44,7 @@ class VisitInfoTab extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 32),
             child: NativeAudioPlayer(
               tracks: data.audioTracks,
-              accentColor: _accentPurple,
+              accentColor: AppColors.accentPurple,
             ),
           ),
 
@@ -99,7 +97,7 @@ class VisitInfoTab extends StatelessWidget {
       child: Text(
         label,
         style: const TextStyle(
-          color: _primaryDark,
+          color: AppColors.textPrimaryAlt,
           fontWeight: FontWeight.w600,
           fontSize: 13,
         ),

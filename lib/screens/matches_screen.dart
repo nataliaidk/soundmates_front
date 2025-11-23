@@ -8,13 +8,19 @@ import '../api/event_hub_service.dart';
 import 'dart:convert';
 import 'visit_profile/visit_profile_screen.dart';
 import 'chat_screen.dart';
+import '../theme/app_design_system.dart';
 
 class MatchesScreen extends StatefulWidget {
   final ApiClient api;
   final TokenStore tokens;
   final EventHubService? eventHubService;
 
-  const MatchesScreen({super.key, required this.api, required this.tokens, this.eventHubService});
+  const MatchesScreen({
+    super.key,
+    required this.api,
+    required this.tokens,
+    this.eventHubService,
+  });
 
   @override
   State<MatchesScreen> createState() => _MatchesScreenState();
@@ -25,7 +31,6 @@ class _MatchesScreenState extends State<MatchesScreen> {
   bool _loading = true;
   Map<String, MessageDto> _lastMessages = {};
   String? _currentUserId;
-
 
   @override
   void initState() {
@@ -78,9 +83,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
       if (token != null) {
         final decoded = JwtDecoder.decode(token);
 
-
         final userId = decoded['sub'] ?? decoded['userId'] ?? decoded['id'];
-
 
         setState(() {
           _currentUserId = userId;
@@ -107,9 +110,11 @@ class _MatchesScreenState extends State<MatchesScreen> {
 
               for (final match in _matches) {
                 final matchMessage = messages.firstWhere(
-                      (msg) =>
-                  (msg.senderId == _currentUserId && msg.receiverId == match.id) ||
-                      (msg.senderId == match.id && msg.receiverId == _currentUserId),
+                  (msg) =>
+                      (msg.senderId == _currentUserId &&
+                          msg.receiverId == match.id) ||
+                      (msg.senderId == match.id &&
+                          msg.receiverId == _currentUserId),
                   orElse: () => MessageDto(
                     id: '',
                     content: '',
@@ -144,27 +149,21 @@ class _MatchesScreenState extends State<MatchesScreen> {
     }
   }
 
-
-
   @override
   Widget build(BuildContext context) {
-  return Scaffold(
-      backgroundColor: const Color(0xFF1A1525),
+    return Scaffold(
+      backgroundColor: AppColors.backgroundDarkAlt,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF2A2D3E),
+        backgroundColor: AppColors.surfaceDark,
         elevation: 0,
         automaticallyImplyLeading: false, // No back arrow on navbar screen
-        title: const Text(
-          'Messages',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        title: Text('Messages', style: AppTextStyles.appBarTitle),
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings_outlined, color: Colors.white),
+            icon: const Icon(
+              Icons.settings_outlined,
+              color: AppColors.textWhite,
+            ),
             onPressed: () => Navigator.pushNamed(context, '/settings'),
           ),
         ],
@@ -172,72 +171,80 @@ class _MatchesScreenState extends State<MatchesScreen> {
       body: Stack(
         children: [
           _loading
-              ? const Center(child: CircularProgressIndicator(color: Colors.white))
+              ? const Center(
+                  child: CircularProgressIndicator(color: AppColors.textWhite),
+                )
               : Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Padding(
-            padding: EdgeInsets.all(16),
-            child: Text(
-              'Recent Matches',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          SizedBox(
-            height: 110,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: _matches.length,
-              itemBuilder: (context, index) => _RecentMatchCard(
-                match: _matches[index],
-                api: widget.api,
-                tokens: widget.tokens,
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          Expanded(
-            child: Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-              ),
-              child: _matches.isEmpty
-                  ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.people_outline, size: 64, color: Colors.grey.shade400),
-                    const SizedBox(height: 16),
-                    Text(
-                      'No matches yet',
-                      style: TextStyle(fontSize: 18, color: Colors.grey.shade600),
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(
+                        'Recent Matches',
+                        style: AppTextStyles.sectionTitle,
+                      ),
+                    ),
+                    SizedBox(
+                      height: 110,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: _matches.length,
+                        itemBuilder: (context, index) => _RecentMatchCard(
+                          match: _matches[index],
+                          api: widget.api,
+                          tokens: widget.tokens,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceWhite,
+                          borderRadius: AppBorderRadius.topLarge,
+                        ),
+                        child: _matches.isEmpty
+                            ? Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.people_outline,
+                                      size: 64,
+                                      color: Colors.grey.shade400,
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      'No matches yet',
+                                      style: AppTextStyles.emptyStateTitle,
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : ListView.builder(
+                                padding: const EdgeInsets.all(16),
+                                itemCount: _matches.length,
+                                itemBuilder: (context, index) => _MatchListItem(
+                                  match: _matches[index],
+                                  lastMessage:
+                                      _lastMessages[_matches[index].id],
+                                  api: widget.api,
+                                  tokens: widget.tokens,
+                                  onRefresh: _loadLastMessages,
+                                  eventHubService: widget.eventHubService,
+                                ),
+                              ),
+                      ),
                     ),
                   ],
                 ),
-              )
-                  : ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: _matches.length,
-                itemBuilder: (context, index) => _MatchListItem(
-                  match: _matches[index],
-                  lastMessage: _lastMessages[_matches[index].id],
-                  api: widget.api,
-                  tokens: widget.tokens,
-                  onRefresh: _loadLastMessages,
-                  eventHubService: widget.eventHubService,
-                ),
-              ),
-            ),
+          const Positioned(
+            left: 0,
+            right: 0,
+            bottom: 18,
+            child: AppBottomNav(current: BottomNavItem.messages),
           ),
-        ],
-      ),
-          const Positioned(left: 0, right: 0, bottom: 18, child: AppBottomNav(current: BottomNavItem.messages)),
         ],
       ),
     );
@@ -266,11 +273,8 @@ class _RecentMatchCard extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => VisitProfileScreen(
-              api: api,
-              tokens: tokens,
-              userId: match.id,
-            ),
+            builder: (context) =>
+                VisitProfileScreen(api: api, tokens: tokens, userId: match.id),
           ),
         );
       },
@@ -286,22 +290,20 @@ class _RecentMatchCard extends StatelessWidget {
                   height: 70,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      colors: [Colors.purple.shade300, Colors.blue.shade300],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
+                    gradient: AppGradients.profilePictureBorderGradient,
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(3),
                     child: CircleAvatar(
-                      backgroundImage: imageUrl != null ? NetworkImage(imageUrl) : null,
+                      backgroundImage: imageUrl != null
+                          ? NetworkImage(imageUrl)
+                          : null,
                       backgroundColor: Colors.grey.shade800,
                       child: imageUrl == null
                           ? Text(
-                        (match.name ?? 'U').substring(0, 1).toUpperCase(),
-                        style: const TextStyle(fontSize: 24, color: Colors.white),
-                      )
+                              (match.name ?? 'U').substring(0, 1).toUpperCase(),
+                              style: AppTextStyles.avatarInitialMedium,
+                            )
                           : null,
                     ),
                   ),
@@ -312,13 +314,16 @@ class _RecentMatchCard extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF2A2438),
+                      color: AppColors.surfaceDarkAlt,
                       shape: BoxShape.circle,
-                      border: Border.all(color: const Color(0xFF2A2438), width: 2),
+                      border: Border.all(
+                        color: AppColors.surfaceDarkAlt,
+                        width: 2,
+                      ),
                     ),
                     child: const Icon(
                       Icons.favorite,
-                      color: Colors.white,
+                      color: AppColors.textWhite,
                       size: 16,
                     ),
                   ),
@@ -330,10 +335,7 @@ class _RecentMatchCard extends StatelessWidget {
               match.name ?? 'User',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 12,
-                color: Colors.white70,
-              ),
+              style: AppTextStyles.recentMatchName,
             ),
           ],
         ),
@@ -392,9 +394,9 @@ class _MatchListItem extends StatelessWidget {
               backgroundColor: Colors.grey.shade300,
               child: imageUrl == null
                   ? Text(
-                (match.name ?? 'U').substring(0, 1).toUpperCase(),
-                style: const TextStyle(fontSize: 24, color: Colors.white),
-              )
+                      (match.name ?? 'U').substring(0, 1).toUpperCase(),
+                      style: AppTextStyles.avatarInitialMedium,
+                    )
                   : null,
             ),
             const SizedBox(width: 16),
@@ -402,24 +404,16 @@ class _MatchListItem extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    match.name ?? 'User',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
-                    ),
-                  ),
+                  Text(match.name ?? 'User', style: AppTextStyles.bodyMedium),
                   const SizedBox(height: 4),
                   Text(
                     lastMessage?.content ??
-                        (match.description.isNotEmpty ? match.description : 'New match'),
+                        (match.description.isNotEmpty
+                            ? match.description
+                            : 'New match'),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey.shade600,
-                    ),
+                    style: AppTextStyles.bodyRegular,
                   ),
                 ],
               ),
@@ -430,4 +424,3 @@ class _MatchListItem extends StatelessWidget {
     );
   }
 }
-

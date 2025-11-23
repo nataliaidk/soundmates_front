@@ -14,6 +14,7 @@ import 'visit_profile_model.dart';
 import 'widgets/visit_profile_header.dart';
 import 'widgets/visit_info_tab.dart';
 import 'widgets/visit_media_tab.dart';
+import '../../theme/app_design_system.dart';
 
 class VisitProfileScreen extends StatefulWidget {
   final ApiClient api;
@@ -38,11 +39,6 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
   late Future<VisitProfileViewModel> _dataFuture;
   late final TabController _tabController;
   bool _isMatched = false;
-
-  // Kolory tła z oryginału
-  final Color _softBg = const Color(0xFFF8F9FC);
-  final Color _surfaceWhite = Colors.white;
-  final Color _accentPurple = const Color(0xFF7B51D3);
 
   @override
   void initState() {
@@ -121,9 +117,9 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
         // 1. Stan Ładowania
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Scaffold(
-            backgroundColor: _softBg,
+            backgroundColor: AppColors.backgroundLight,
             body: Center(
-              child: CircularProgressIndicator(color: _accentPurple),
+              child: CircularProgressIndicator(color: AppColors.accentPurple),
             ),
           );
         }
@@ -131,7 +127,7 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
         // 2. Stan Błędu
         if (snapshot.hasError) {
           return Scaffold(
-            backgroundColor: _softBg,
+            backgroundColor: AppColors.backgroundLight,
             appBar: AppBar(
               elevation: 0,
               backgroundColor: Colors.transparent,
@@ -145,7 +141,7 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
         final data = snapshot.data!;
 
         return Scaffold(
-          backgroundColor: _surfaceWhite,
+          backgroundColor: AppColors.surfaceWhite,
           body: Stack(
             children: [
               // Główny widok przewijany z Sticky Headerem
@@ -180,7 +176,7 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
                 body: Container(
                   // Zaokrąglenie góry kontenera, aby "wjeżdżał" na zdjęcie
                   decoration: BoxDecoration(
-                    color: _surfaceWhite,
+                    color: AppColors.surfaceWhite,
                     borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(32),
                     ),
@@ -193,7 +189,7 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
                       Container(
                         padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
                         decoration: BoxDecoration(
-                          color: _surfaceWhite,
+                          color: AppColors.surfaceWhite,
                           borderRadius: const BorderRadius.vertical(
                             top: Radius.circular(32),
                           ),
@@ -204,7 +200,7 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
                             Container(
                               height: 46,
                               decoration: BoxDecoration(
-                                color: _softBg,
+                                color: AppColors.backgroundLight,
                                 borderRadius: BorderRadius.circular(23),
                               ),
                               child: TabBar(

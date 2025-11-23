@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import '../../../api/models.dart';
 import '../visit_profile_model.dart';
+import '../../../theme/app_design_system.dart';
 
 class VisitProfileHeader extends StatelessWidget {
   final VisitProfileViewModel data;
@@ -41,9 +42,6 @@ class _VisitProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
   static const double _maxExtent = 500.0;
   static const double _minExtent =
       kToolbarHeight + 20; // Extra space for status bar
-  static const Color _primaryDark = Color(0xFF1A1A1A);
-  static const Color _accentPurple = Color(0xFF7B51D3);
-  static const Color _accentRed = Color(0xFFD32F2F);
 
   _VisitProfileHeaderDelegate({
     required this.data,
@@ -54,10 +52,10 @@ class _VisitProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   Widget build(
-      BuildContext context,
-      double shrinkOffset,
-      bool overlapsContent,
-      ) {
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
     final profilePicUrl = data.profileImageUrl;
     final progress = shrinkOffset / _maxExtent;
     final fadeOpacity = (1.0 - (progress * 1.5)).clamp(0.0, 1.0);
@@ -97,7 +95,7 @@ class _VisitProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
         // 3. Collapsed Background (fades in)
         if (isCollapsed)
           Container(
-            color: _primaryDark,
+            color: AppColors.backgroundDark,
             alignment: Alignment.center,
             padding: const EdgeInsets.only(top: 20),
             child: Text(
@@ -131,7 +129,7 @@ class _VisitProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
                         _GlassmorphicBadge(
                           icon: Icons.auto_awesome,
                           text: "Matched",
-                          color: _accentPurple,
+                          color: AppColors.accentPurple,
                         ),
                       if (isMatched) const SizedBox(height: 12),
 
@@ -223,7 +221,7 @@ class _VisitProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
                         _ActionButton(
                           text: "Unmatch",
                           icon: Icons.close,
-                          color: _accentRed,
+                          color: AppColors.accentRed,
                           isPrimary: false,
                           onTap: onUnmatch,
                         ),
@@ -231,7 +229,7 @@ class _VisitProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
                         _ActionButton(
                           text: "Message",
                           icon: Icons.chat_bubble_outline,
-                          color: _accentPurple,
+                          color: AppColors.accentPurple,
                           isPrimary: true,
                           onTap: onMessage,
                         ),

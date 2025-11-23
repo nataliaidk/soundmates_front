@@ -3,6 +3,7 @@ import 'package:video_player/video_player.dart';
 import '../visit_profile_model.dart';
 import '../../shared/media_models.dart';
 import '../../shared/instagram_post_viewer.dart';
+import '../../../theme/app_design_system.dart';
 
 class VisitMediaTab extends StatelessWidget {
   final List<VisitProfileMediaItem> items;
