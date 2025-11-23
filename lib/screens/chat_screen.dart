@@ -8,6 +8,8 @@ import 'dart:convert';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'dart:async';
+import 'package:intl/intl.dart';
+import '../utils/audio_notifier.dart';
 
 class ChatScreen extends StatefulWidget {
   final ApiClient api;
@@ -34,15 +36,23 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final AudioNotifier _audioNotifier = AudioNotifier.instance;
   List<MessageDto> _messages = [];
   bool _loading = true;
   String? _currentUserId;
   bool _showEmojiPicker = false;
   Timer? _statusCheckTimer;
+  bool _isOnlineRecently = false;
+  DateTime? _lastSeenAckTime;
+  DateTime? _lastIncomingMessageTime;
+  DateTime? _lastActiveAt;
+  String? _lastSeenMessageId;
+  void Function(dynamic)? _hubMessageListener;
 
   @override
   void initState() {
     super.initState();
+    _updateActiveConversation(isActive: true);
     _initialize();
   }
   
@@ -119,7 +129,7 @@ class _ChatScreenState extends State<ChatScreen> {
     print("🔧 Current user ID: $_currentUserId");
     
     // Set callback for MessageReceived
-    eventHub.onMessageReceived = (messageData) {
+    _hubMessageListener = (messageData) {
       try {
         print("📩 MessageReceived callback in chat: $messageData");
         
@@ -140,6 +150,7 @@ class _ChatScreenState extends State<ChatScreen> {
               // If message is from the other user, mark as viewed
               if (senderId == widget.userId) {
                 _markConversationAsViewed();
+                _audioNotifier.playMessage();
               }
             }
           } else {
@@ -150,6 +161,8 @@ class _ChatScreenState extends State<ChatScreen> {
         print('❌ Error processing MessageReceived: $e');
       }
     };
+
+    eventHub.addMessageListener(_hubMessageListener!);
     
     print("✅ SignalR callback setup complete");
   }
@@ -159,13 +172,22 @@ class _ChatScreenState extends State<ChatScreen> {
     _messageController.dispose();
     _scrollController.dispose();
     _statusCheckTimer?.cancel();
-    
-    // Clear callback to avoid memory leaks
-    if (widget.eventHubService != null) {
-      widget.eventHubService!.onMessageReceived = null;
+    _updateActiveConversation(isActive: false);
+    if (widget.eventHubService != null && _hubMessageListener != null) {
+      widget.eventHubService!.removeMessageListener(_hubMessageListener!);
     }
     
     super.dispose();
+  }
+
+  void _updateActiveConversation({required bool isActive}) {
+    final eventHub = widget.eventHubService;
+    if (eventHub == null) return;
+    if (isActive) {
+      eventHub.setActiveConversationUser(widget.userId);
+    } else if (eventHub.activeConversationUserId == widget.userId) {
+      eventHub.setActiveConversationUser(null);
+    }
   }
 
   Future<void> _loadCurrentUserId() async {
@@ -217,6 +239,12 @@ class _ChatScreenState extends State<ChatScreen> {
 
         // Only update if messages have changed
         if (_hasMessagesChanged(messages)) {
+          final seenAckUpdate = _captureSeenAcknowledgement(messages);
+          final latestIncoming = _latestTimestamp(messages, (msg) => msg.senderId == widget.userId);
+          final seenReference = seenAckUpdate ?? _lastSeenAckTime;
+          final isOnline = _computeOnlineStatus(seenReference, latestIncoming);
+          final lastActive = _computeLastActive(seenReference, latestIncoming);
+
           print("✅ Messages changed - updating UI (old: ${_messages.length}, new: ${messages.length})");
           // Save scroll position
           final shouldScrollToBottom = _scrollController.hasClients &&
@@ -226,6 +254,12 @@ class _ChatScreenState extends State<ChatScreen> {
           setState(() {
             _messages = messages;
             _loading = false;
+            if (seenAckUpdate != null) {
+              _lastSeenAckTime = seenAckUpdate;
+            }
+            _lastIncomingMessageTime = latestIncoming;
+            _isOnlineRecently = isOnline;
+            _lastActiveAt = lastActive;
           });
 
           // Only auto-scroll if user was already at bottom
@@ -277,6 +311,66 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  DateTime? _latestTimestamp(List<MessageDto> source, bool Function(MessageDto) predicate) {
+    DateTime? latest;
+    for (final msg in source) {
+      if (predicate(msg)) {
+        if (latest == null || msg.timestamp.isAfter(latest)) {
+          latest = msg.timestamp;
+        }
+      }
+    }
+    return latest;
+  }
+
+  MessageDto? _latestMessage(List<MessageDto> source, bool Function(MessageDto) predicate) {
+    MessageDto? latest;
+    for (final msg in source) {
+      if (predicate(msg)) {
+        if (latest == null || msg.timestamp.isAfter(latest.timestamp)) {
+          latest = msg;
+        }
+      }
+    }
+    return latest;
+  }
+
+  DateTime? _captureSeenAcknowledgement(List<MessageDto> newMessages) {
+    if (_currentUserId == null) return null;
+    final latestSeen = _latestMessage(
+      newMessages,
+      (msg) => msg.senderId == _currentUserId && msg.isSeen,
+    );
+    if (latestSeen != null && latestSeen.id != _lastSeenMessageId) {
+      _lastSeenMessageId = latestSeen.id;
+      return DateTime.now();
+    }
+    return null;
+  }
+
+  bool _computeOnlineStatus(DateTime? seenAck, DateTime? lastIncoming) {
+    final threshold = DateTime.now().subtract(const Duration(minutes: 10));
+    if (seenAck != null && seenAck.isAfter(threshold)) return true;
+    if (lastIncoming != null && lastIncoming.isAfter(threshold)) return true;
+    return false;
+  }
+
+  DateTime? _computeLastActive(DateTime? seenAck, DateTime? lastIncoming) {
+    if (seenAck == null) return lastIncoming;
+    if (lastIncoming == null) return seenAck;
+    return seenAck.isAfter(lastIncoming) ? seenAck : lastIncoming;
+  }
+
+  String _formatLastActive() {
+    final reference = _lastActiveAt ?? _lastIncomingMessageTime;
+    if (reference == null) return 'Offline';
+    final diff = DateTime.now().difference(reference);
+    if (diff.inMinutes < 1) return 'Active just now';
+    if (diff.inMinutes < 60) return 'Active ${diff.inMinutes} min ago';
+    if (diff.inHours < 24) return 'Active ${diff.inHours} h ago';
+    return 'Active on ${DateFormat('MMM d, h:mm a').format(reference)}';
+  }
+
 
 
   Future<void> _sendMessage() async {
@@ -324,12 +418,16 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: const Color(0xFFF5F6FB),
       appBar: AppBar(
         backgroundColor: Colors.white,
-        elevation: 1,
+        elevation: 0,
+        centerTitle: false,
+        titleSpacing: 0,
+        toolbarHeight: 72,
+        shadowColor: Colors.black.withOpacity(0.05),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black87),
           onPressed: () => Navigator.pop(context),
         ),
         title: GestureDetector(
@@ -348,90 +446,122 @@ class _ChatScreenState extends State<ChatScreen> {
           child: Row(
             children: [
               CircleAvatar(
-                radius: 18,
+                radius: 24,
                 backgroundImage: widget.userImageUrl != null
                     ? NetworkImage(widget.userImageUrl!)
                     : null,
-                backgroundColor: Colors.grey.shade300,
+                backgroundColor: const Color(0xFFE0E7FF),
                 child: widget.userImageUrl == null
                     ? Text(
-                  widget.userName.substring(0, 1).toUpperCase(),
-                  style: const TextStyle(fontSize: 16, color: Colors.white),
-                )
+                        widget.userName.substring(0, 1).toUpperCase(),
+                        style: const TextStyle(fontSize: 18, color: Color(0xFF4C4F72)),
+                      )
                     : null,
               ),
               const SizedBox(width: 12),
-              Text(
-                widget.userName,
-                style: const TextStyle(
-                  color: Colors.black,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      widget.userName,
+                      style: const TextStyle(
+                        color: Color(0xFF1F2430),
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: _isOnlineRecently ? const Color(0xFF40C057) : Colors.grey.shade400,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          _isOnlineRecently ? 'Online now' : _formatLastActive(),
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.attach_file, color: Colors.black),
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: const Icon(Icons.more_vert, color: Colors.black),
-            onPressed: () {},
-          ),
-        ],
       ),
-      body: Column(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFFFFFFFF), Color(0xFFEEF1FB)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: Column(
           children: [
-      Expanded(
-      child: _loading
-      ? const Center(
-          child: CircularProgressIndicator(
-          color: Color(0xFF6B4CE6),
-    ),
-    )
-        : _messages.isEmpty
-    ? Center(
-    child: Column(
-    mainAxisAlignment: MainAxisAlignment.center,
-    children: [
-    Icon(Icons.chat_bubble_outline,
-    size: 64, color: Colors.grey.shade400),
-    const SizedBox(height: 16),
-    Text(
-    'No messages yet',
-    style: TextStyle(
-    fontSize: 18,
-    color: Colors.grey.shade600,
-    ),
-    ),
-    ],
-    ),
-      ): ListView.builder(
-        controller: _scrollController,
-        padding: const EdgeInsets.all(16),
-        itemCount: _messages.length,
-        itemBuilder: (context, index) {
-          // Find the last message sent by current user
-          final lastMyMessageIndex = _messages.lastIndexWhere(
-            (msg) => msg.senderId == _currentUserId
-          );
-          final isLastMyMessage = index == lastMyMessageIndex;
-          
-          return _MessageBubble(
-            message: _messages[index],
-            userImageUrl: widget.userImageUrl,
-            currentUserId: _currentUserId,
-            userId: widget.userId,
-            api: widget.api,
-            tokens: widget.tokens,
-            showStatus: isLastMyMessage,
-          );
-        },
-      ),
-      ),
+            Expanded(
+              child: _loading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        color: Color(0xFF7C4DFF),
+                      ),
+                    )
+                  : _messages.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.chat_bubble_outline,
+                                size: 64,
+                                color: Colors.grey.shade300,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'No messages yet',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  color: Colors.grey.shade500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                        : ListView.builder(
+                          controller: _scrollController,
+                          padding: const EdgeInsets.all(16),
+                          physics: const BouncingScrollPhysics(),
+                          itemCount: _messages.length,
+                          itemBuilder: (context, index) {
+                            final lastMyMessageIndex = _messages.lastIndexWhere(
+                                (msg) => msg.senderId == _currentUserId);
+                            final isLastMyMessage = index == lastMyMessageIndex;
+                              final showTimestamp = index == _messages.length - 1;
+
+                            return _MessageBubble(
+                              message: _messages[index],
+                              userImageUrl: widget.userImageUrl,
+                              currentUserId: _currentUserId,
+                              userId: widget.userId,
+                              api: widget.api,
+                              tokens: widget.tokens,
+                              showStatus: isLastMyMessage,
+                                showTimestamp: showTimestamp,
+                            );
+                          },
+                        ),
+            ),
             _buildMessageInput(),
             if (_showEmojiPicker)
               SizedBox(
@@ -482,6 +612,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
               ),
           ],
+        ),
       ),
     );
   }
@@ -493,7 +624,7 @@ class _ChatScreenState extends State<ChatScreen> {
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
+            blurRadius: 12,
             offset: const Offset(0, -2),
           ),
         ],
@@ -509,7 +640,7 @@ class _ChatScreenState extends State<ChatScreen> {
             IconButton(
               icon: Icon(
                 _showEmojiPicker ? Icons.keyboard : Icons.emoji_emotions_outlined,
-                color: Colors.grey,
+                color: Colors.grey.shade600,
               ),
               onPressed: () {
                 setState(() {
@@ -518,20 +649,43 @@ class _ChatScreenState extends State<ChatScreen> {
               },
             ),
             Expanded(
-              child: TextField(
-                controller: _messageController,
-                decoration: InputDecoration(
-                  hintText: 'Type a message...',
-                  border: InputBorder.none,
-                  hintStyle: TextStyle(color: Colors.grey.shade400),
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5F6FB),
+                  borderRadius: BorderRadius.circular(28),
+                  border: Border.all(color: const Color(0xFFE0E4F0)),
                 ),
-                textCapitalization: TextCapitalization.sentences,
-                onSubmitted: (_) => _sendMessage(),
+                child: TextField(
+                  controller: _messageController,
+                  decoration: const InputDecoration(
+                    hintText: 'Type a message...',
+                    hintStyle: TextStyle(color: Color(0xFF9EA3B5)),
+                    border: InputBorder.none,
+                    isCollapsed: true,
+                  ),
+                  style: const TextStyle(color: Color(0xFF1F2430)),
+                  textCapitalization: TextCapitalization.sentences,
+                  minLines: 1,
+                  maxLines: 4,
+                  onSubmitted: (_) => _sendMessage(),
+                ),
               ),
             ),
-            IconButton(
-              icon: const Icon(Icons.send, color: Color(0xFF6B4CE6)),
-              onPressed: _sendMessage,
+            GestureDetector(
+              onTap: _sendMessage,
+              child: Container(
+                width: 44,
+                height: 44,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF7C4DFF), Color(0xFF9C6BFF)],
+                  ),
+                ),
+                child: const Icon(Icons.send_rounded, color: Colors.white),
+              ),
             ),
           ],
         ),
@@ -548,6 +702,7 @@ class _MessageBubble extends StatelessWidget {
   final ApiClient api;
   final TokenStore tokens;
   final bool showStatus;
+  final bool showTimestamp;
 
   const _MessageBubble({
     required this.message,
@@ -557,14 +712,22 @@ class _MessageBubble extends StatelessWidget {
     required this.api,
     required this.tokens,
     this.showStatus = false,
+    this.showTimestamp = true,
   });
 
   @override
   Widget build(BuildContext context) {
     final isMe = currentUserId != null && message.senderId == currentUserId;
+    final timestamp = message.timestamp.toLocal();
+    final timeLabel = DateFormat('h:mm a').format(timestamp);
+    final bubbleGradient = const LinearGradient(
+      colors: [Color(0xFF7C4DFF), Color(0xFF9C6BFF)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: 16),
       child: Row(
         mainAxisAlignment:
         isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
@@ -598,43 +761,68 @@ class _MessageBubble extends StatelessWidget {
               crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
                   decoration: BoxDecoration(
-                    color: isMe ? const Color(0xFF6B4CE6) : Colors.white,
+                    gradient: isMe ? bubbleGradient : null,
+                    color: isMe ? null : Colors.white,
                     borderRadius: BorderRadius.only(
-                      topLeft: const Radius.circular(20),
-                      topRight: const Radius.circular(20),
-                      bottomLeft: Radius.circular(isMe ? 20 : 4),
-                      bottomRight: Radius.circular(isMe ? 4 : 20),
+                      topLeft: const Radius.circular(24),
+                      topRight: const Radius.circular(24),
+                      bottomLeft: Radius.circular(isMe ? 24 : 8),
+                      bottomRight: Radius.circular(isMe ? 8 : 24),
                     ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.06),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
                   child: Text(
                     message.content,
                     style: TextStyle(
-                      color: isMe ? Colors.white : Colors.black87,
+                      color: isMe ? Colors.white : const Color(0xFF1F2430),
                       fontSize: 15,
+                      height: 1.4,
                     ),
                   ),
                 ),
-                if (isMe && showStatus) ...[
-                  const SizedBox(height: 4),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        message.isSeen ? Icons.done_all : Icons.done,
-                        size: 16,
-                        color: message.isSeen ? const Color(0xFF6B4CE6) : Colors.grey,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        message.isSeen ? 'Zobaczone' : 'Wysłane',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                    ],
+                if (showTimestamp || (isMe && showStatus)) ...[
+                  const SizedBox(height: 6),
+                  Align(
+                    alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (showTimestamp)
+                          Text(
+                            timeLabel,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey.shade600,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                        if (isMe && showStatus) ...[
+                          if (showTimestamp) const SizedBox(width: 8),
+                          Icon(
+                            message.isSeen ? Icons.done_all : Icons.done,
+                            size: 16,
+                            color:
+                                message.isSeen ? const Color(0xFF7C4DFF) : Colors.grey,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            message.isSeen ? 'Seen' : 'Sent',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
                 ],
               ],

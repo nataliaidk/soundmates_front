@@ -1,10 +1,12 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:latlong2/latlong.dart';
 import '../../api/api_client.dart';
 import '../../api/token_store.dart';
 import '../../api/models.dart';
 import 'profile_edit_step1.dart';
+import '../../widgets/city_map_preview.dart';
 
 /// Screen for editing basic profile information (Step 1 fields) from Settings
 class ProfileEditBasicInfoScreen extends StatefulWidget {
@@ -41,6 +43,8 @@ class _ProfileEditBasicInfoScreenState extends State<ProfileEditBasicInfoScreen>
   bool _citiesLoading = false;
   String _status = '';
   bool _loading = true;
+  final Map<String, LatLng> _cityCoords = {};
+  final Map<String, LatLng> _geocodeCache = {};
 
   @override
   void initState() {
@@ -124,6 +128,9 @@ class _ProfileEditBasicInfoScreenState extends State<ProfileEditBasicInfoScreen>
               );
               _city.text = _selectedCity?.name ?? '';
             });
+            if (_selectedCity != null) {
+              _geocodeCity(_selectedCity!);
+            }
           }
         });
       }
@@ -156,20 +163,70 @@ class _ProfileEditBasicInfoScreenState extends State<ProfileEditBasicInfoScreen>
       _citiesLoading = true;
       _cities = [];
       _selectedCity = null;
+      _cityCoords.clear();
     });
 
     final resp = await widget.api.getCities(countryId);
     if (resp.statusCode == 200) {
       final decoded = jsonDecode(resp.body);
       if (decoded is List) {
+        final List<CityDto> parsed = [];
+        for (final entry in decoded) {
+          if (entry is Map) {
+            final map = Map<String, dynamic>.from(entry);
+            final city = CityDto.fromJson(map);
+            parsed.add(city);
+            final lat = _toDouble(map['latitude'] ?? map['lat'] ?? map['Latitude']);
+            final lon = _toDouble(map['longitude'] ?? map['lng'] ?? map['Longitude']);
+            if (lat != null && lon != null) {
+              _cityCoords[city.id] = LatLng(lat, lon);
+            }
+          }
+        }
         setState(() {
-          _cities = decoded.map((c) => CityDto.fromJson(c)).toList();
+          _cities = parsed;
           _citiesLoading = false;
         });
       }
     } else {
       setState(() => _citiesLoading = false);
     }
+  }
+
+  double? _toDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString());
+  }
+
+  Future<LatLng?> _geocodeCity(CityDto city) async {
+    if (_cityCoords.containsKey(city.id)) return _cityCoords[city.id];
+    if (_geocodeCache.containsKey(city.id)) return _geocodeCache[city.id];
+    final countryName = _selectedCountry?.name ?? '';
+    final query = [city.name, if (countryName.isNotEmpty) countryName].join(', ');
+    final uri = Uri.parse('https://nominatim.openstreetmap.org/search?q=${Uri.encodeComponent(query)}&format=json&limit=1');
+    try {
+      final resp = await http.get(uri, headers: const {
+        'User-Agent': 'soundmates_front/1.0 (profile settings map preview)',
+        'Accept': 'application/json',
+      });
+      if (resp.statusCode == 200) {
+        final decoded = jsonDecode(resp.body);
+        if (decoded is List && decoded.isNotEmpty) {
+          final first = decoded.first;
+          final lat = double.tryParse(first['lat']?.toString() ?? '');
+          final lon = double.tryParse(first['lon']?.toString() ?? first['lng']?.toString() ?? '');
+          if (lat != null && lon != null) {
+            final coords = LatLng(lat, lon);
+            _geocodeCache[city.id] = coords;
+            return coords;
+          }
+        }
+      }
+    } catch (_) {
+      // ignore errors; preview will remain placeholder
+    }
+    return null;
   }
 
   void _showCountryPicker() {
@@ -211,7 +268,7 @@ class _ProfileEditBasicInfoScreenState extends State<ProfileEditBasicInfoScreen>
       );
       return;
     }
-    
+
     if (_cities.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('No cities available for this country')),
@@ -219,32 +276,168 @@ class _ProfileEditBasicInfoScreenState extends State<ProfileEditBasicInfoScreen>
       return;
     }
 
-    showDialog(
+    showDialog<CityDto>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Select City'),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: ListView.builder(
-            shrinkWrap: true,
-            itemCount: _cities.length,
-            itemBuilder: (context, index) {
-              final city = _cities[index];
-              return ListTile(
+      builder: (ctx) {
+        String query = '';
+        CityDto? hoveredCity = _selectedCity;
+        LatLng? hoveredLatLng = hoveredCity != null
+            ? (_cityCoords[hoveredCity.id] ?? _geocodeCache[hoveredCity.id])
+            : null;
+        bool geocoding = false;
+
+        Future<void> updateHover(CityDto city, StateSetter setDialogState) async {
+          setDialogState(() {
+            hoveredCity = city;
+            hoveredLatLng = _cityCoords[city.id] ?? _geocodeCache[city.id];
+          });
+          if (hoveredLatLng == null) {
+            setDialogState(() => geocoding = true);
+            final coords = await _geocodeCity(city);
+            if (!mounted) return;
+            setDialogState(() {
+              if (hoveredCity?.id == city.id && coords != null) {
+                hoveredLatLng = coords;
+              }
+              geocoding = false;
+            });
+          }
+        }
+
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            final filtered = _cities
+                .where((c) => c.name.toLowerCase().contains(query.toLowerCase()))
+                .toList();
+
+            Widget buildListTile(CityDto city) {
+              final coords = _cityCoords[city.id] ?? _geocodeCache[city.id];
+              final subtitle = coords != null
+                  ? Text(
+                      'lat ${coords.latitude.toStringAsFixed(3)}, lon ${coords.longitude.toStringAsFixed(3)}',
+                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                    )
+                  : null;
+              final tile = ListTile(
                 title: Text(city.name),
+                subtitle: subtitle,
+                trailing: coords == null && geocoding && hoveredCity?.id == city.id
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : (coords != null
+                        ? Icon(Icons.map, size: 18, color: Colors.purple.shade300)
+                        : null),
                 onTap: () {
                   setState(() {
                     _selectedCity = city;
                     _city.text = city.name;
                   });
-                  Navigator.pop(context);
+                  Navigator.pop(ctx, city);
                 },
+                onLongPress: () => updateHover(city, setStateDialog),
               );
-            },
-          ),
-        ),
-      ),
-    );
+
+              return MouseRegion(
+                onEnter: (_) => updateHover(city, setStateDialog),
+                child: tile,
+              );
+            }
+
+            final listPane = Expanded(
+              child: Column(
+                children: [
+                  TextField(
+                    decoration: const InputDecoration(
+                      prefixIcon: Icon(Icons.search),
+                      hintText: 'Search city...',
+                    ),
+                    onChanged: (value) => setStateDialog(() => query = value),
+                  ),
+                  const SizedBox(height: 12),
+                  Expanded(
+                    child: filtered.isEmpty
+                        ? const Center(child: Text('No results'))
+                        : ListView.builder(
+                            itemCount: filtered.length,
+                            itemBuilder: (context, index) => buildListTile(filtered[index]),
+                          ),
+                  ),
+                ],
+              ),
+            );
+
+            final preview = SizedBox(
+              width: 320,
+              child: Stack(
+                children: [
+                  CityMapPreview(
+                    center: hoveredLatLng,
+                    cityName: hoveredCity?.name,
+                    placeholderMessage: 'Hover a city to preview',
+                  ),
+                  if (geocoding)
+                    const Positioned.fill(
+                      child: Align(
+                        alignment: Alignment.center,
+                        child: SizedBox(
+                          width: 32,
+                          height: 32,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            );
+
+            return AlertDialog(
+              title: Text('Select City (${_selectedCountry!.name})'),
+              content: SizedBox(
+                width: 720,
+                height: 520,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final showSidePreview = constraints.maxWidth >= 560;
+                    if (showSidePreview) {
+                      return Row(
+                        children: [
+                          listPane,
+                          const SizedBox(width: 16),
+                          preview,
+                        ],
+                      );
+                    }
+                    return Column(
+                      children: [
+                        listPane,
+                        const SizedBox(height: 12),
+                        SizedBox(height: 180, child: preview),
+                      ],
+                    );
+                  },
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Cancel'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    ).then((picked) {
+      if (picked != null) {
+        setState(() {
+          _selectedCity = picked;
+          _city.text = picked.name;
+        });
+      }
+    });
   }
 
   Future<void> _pickBirthDate() async {

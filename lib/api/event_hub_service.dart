@@ -12,6 +12,8 @@ class EventHubService {
   Function(dynamic)? onMessageReceived;
   Function(dynamic)? onMatchReceived;
   Function(dynamic)? onMatchCreated;
+  final List<Function(dynamic)> _messageListeners = [];
+  String? _activeConversationUserId;
 
   EventHubService({required this.tokenStore});
 
@@ -72,8 +74,19 @@ class EventHubService {
     // When a message comes from someone
     _connection!.on("MessageReceived", (args) {
       print("📩 MessageReceived: $args");
-      if (onMessageReceived != null && args != null && args.isNotEmpty) {
-        onMessageReceived!(args[0]);
+      if (args == null || args.isEmpty) return;
+      final payload = args[0];
+
+      if (onMessageReceived != null) {
+        onMessageReceived!(payload);
+      }
+
+      for (final listener in List<Function(dynamic)>.from(_messageListeners)) {
+        try {
+          listener(payload);
+        } catch (e) {
+          print('⚠️ Message listener threw an error: $e');
+        }
       }
     });
 
@@ -118,5 +131,21 @@ class EventHubService {
       }
       _connection = null;
     }
+  }
+
+  void addMessageListener(Function(dynamic) listener) {
+    if (!_messageListeners.contains(listener)) {
+      _messageListeners.add(listener);
+    }
+  }
+
+  void removeMessageListener(Function(dynamic) listener) {
+    _messageListeners.remove(listener);
+  }
+
+  String? get activeConversationUserId => _activeConversationUserId;
+
+  void setActiveConversationUser(String? userId) {
+    _activeConversationUserId = userId;
   }
 }

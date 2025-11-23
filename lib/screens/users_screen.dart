@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:math';
+import 'dart:ui' show lerpDouble;
 import 'package:flutter/material.dart';
 import 'package:zpi_test/screens/visit_profile/visit_profile_screen.dart';
 import 'package:flutter/services.dart';
@@ -19,7 +21,8 @@ class UsersScreen extends StatefulWidget {
   State<UsersScreen> createState() => _UsersScreenState();
 }
 
-class _UsersScreenState extends State<UsersScreen> {
+class _UsersScreenState extends State<UsersScreen>
+  with SingleTickerProviderStateMixin {
   List<Map<String, dynamic>> _users = [];
   final Map<String, String?> _userImages = {};
   int _totalMatches = 0;
@@ -42,6 +45,8 @@ class _UsersScreenState extends State<UsersScreen> {
   final Map<String, Map<String, String>> _citiesByCountry = {}; // countryId -> {cityId: cityName}
   // Gender dictionary for resolving genderId to name
   final Map<String, String> _genderIdToName = {}; // genderId -> genderName
+  late final AnimationController _ambientController;
+  late final Animation<double> _ambientDrift;
 
   @override
   void initState() {
@@ -51,6 +56,14 @@ class _UsersScreenState extends State<UsersScreen> {
     _loadGenders();
     _loadPreference();
     _loadCurrentUserProfile();
+    _ambientController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 22),
+    )..repeat(reverse: true);
+    _ambientDrift = CurvedAnimation(
+      parent: _ambientController,
+      curve: Curves.easeInOut,
+    );
     // Ensure the screen captures keyboard focus for arrow key swipes
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _focusNode.requestFocus();
@@ -369,10 +382,11 @@ class _UsersScreenState extends State<UsersScreen> {
   @override
   void dispose() {
     _focusNode.dispose();
+    _ambientController.dispose();
     super.dispose();
   }
 
-  Widget _buildPhoneExperience() {
+  Widget _buildPhoneExperience(bool isWideLayout) {
     return RawKeyboardListener(
       focusNode: _focusNode,
       onKey: (event) {
@@ -447,6 +461,7 @@ class _UsersScreenState extends State<UsersScreen> {
                           api: widget.api,
                           tokens: widget.tokens,
                           showPrimaryActions: top,
+                          isWideLayout: isWideLayout,
                           onPrimaryDislike: () => _topCardKey?.currentState?.swipeLeft(),
                           onPrimaryFilter: () => Navigator.pushNamed(context, '/filters'),
                           onPrimaryLike: () => _topCardKey?.currentState?.swipeRight(),
@@ -484,17 +499,18 @@ class _UsersScreenState extends State<UsersScreen> {
       backgroundColor: Colors.transparent,
       body: LayoutBuilder(
         builder: (context, constraints) {
-          final bool isWide = constraints.maxWidth >= 900;
+          final bool isWide = constraints.maxWidth >= 800;
+          final bool showWideHeader = constraints.maxWidth > 1100;
           final double borderRadius = isWide ? 36 : 0;
             final EdgeInsets shellPadding = isWide
               ? const EdgeInsets.symmetric(horizontal: 120, vertical: 20)
               : EdgeInsets.zero;
             final double availableWidth = (constraints.maxWidth - shellPadding.horizontal).clamp(0.0, constraints.maxWidth).toDouble();
             final double availableHeight = (constraints.maxHeight - shellPadding.vertical).clamp(0.0, constraints.maxHeight).toDouble();
-          final double cardWidth = isWide ? availableWidth * 0.28 : availableWidth;
+          final double cardWidth = isWide ? max(284, availableWidth * 0.278) : availableWidth;
           final double cardHeight = isWide ? availableHeight * 0.99 : availableHeight;
 
-          final Widget phoneExperience = _buildPhoneExperience();
+          final Widget phoneExperience = _buildPhoneExperience(isWide);
           final Widget phoneShell = Container(
             clipBehavior: borderRadius > 0 ? Clip.antiAlias : Clip.none,
             decoration: BoxDecoration(
@@ -525,6 +541,47 @@ class _UsersScreenState extends State<UsersScreen> {
             ),
             child: Stack(
               children: [
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: AnimatedBuilder(
+                      animation: _ambientDrift,
+                      builder: (context, _) {
+                        final Alignment centerOne = Alignment(
+                          lerpDouble(-0.4, 0.3, _ambientDrift.value)!,
+                          lerpDouble(-0.8, -0.2, _ambientDrift.value)!,
+                        );
+                        final Alignment centerTwo = Alignment(
+                          lerpDouble(0.8, -0.2, _ambientDrift.value)!,
+                          lerpDouble(0.6, 0.2, _ambientDrift.value)!,
+                        );
+                        return Container(
+                          decoration: BoxDecoration(
+                            gradient: RadialGradient(
+                              center: centerOne,
+                              radius: 1.2,
+                              colors: [
+                                const Color(0xFF9C6BFF).withOpacity(0.25),
+                                Colors.transparent,
+                              ],
+                            ),
+                          ),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              gradient: RadialGradient(
+                                center: centerTwo,
+                                radius: 1.0,
+                                colors: [
+                                  const Color(0xFF40C9FF).withOpacity(0.18),
+                                  Colors.transparent,
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
                 if (isWide)
                   Positioned(
                     top: 0,
@@ -532,83 +589,18 @@ class _UsersScreenState extends State<UsersScreen> {
                     right: 0,
                     child: SafeArea(
                       bottom: false,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 72, vertical: 32),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Musician Match',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 28,
-                                      fontWeight: FontWeight.w700,
-                                      letterSpacing: -0.4,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    _matchHeadline,
-                                    style: TextStyle(
-                                      color: Colors.white.withOpacity(0.82),
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                      child: AnimatedOpacity(
+                        duration: const Duration(milliseconds: 350),
+                        opacity: showWideHeader ? 1 : 0,
+                        child: Visibility(
+                          visible: showWideHeader,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 72, vertical: 32),
+                            child: _WideHeader(
+                              headline: _matchHeadline,
+                              locationLabel: _currentLocationLabel,
                             ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.08),
-                                borderRadius: BorderRadius.circular(36),
-                                border: Border.all(color: Colors.white.withOpacity(0.25)),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.35),
-                                    blurRadius: 24,
-                                    offset: const Offset(0, 20),
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    'Your location',
-                                    style: TextStyle(
-                                      color: Colors.white.withOpacity(0.7),
-                                      fontSize: 11,
-                                      letterSpacing: 1.4,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(Icons.my_location, size: 16, color: Colors.white),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        _currentLocationLabel,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
                       ),
                     ),
@@ -681,6 +673,102 @@ class _RoundActionButton extends StatelessWidget {
   }
 }
 
+class _WideHeader extends StatelessWidget {
+  final String headline;
+  final String locationLabel;
+
+  const _WideHeader({
+    required this.headline,
+    required this.locationLabel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Discover',
+                style: theme.textTheme.headlineMedium?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.2,
+                    ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                headline,
+                style: theme.textTheme.titleMedium?.copyWith(
+                      color: Colors.white.withOpacity(0.85),
+                      fontWeight: FontWeight.w500,
+                    ),
+              ),
+            ],
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: Colors.white.withOpacity(0.15)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.25),
+                blurRadius: 30,
+                offset: const Offset(0, 22),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF7C4DFF), Color(0xFF40C9FF)],
+                  ),
+                ),
+                child: const Icon(Icons.my_location, color: Colors.white, size: 18),
+              ),
+              const SizedBox(width: 14),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Your location',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.6),
+                      fontSize: 12,
+                      letterSpacing: 0.4,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    locationLabel,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class DraggableCard extends StatefulWidget {
   final String name;
   final String description;
@@ -701,6 +789,7 @@ class DraggableCard extends StatefulWidget {
   final VoidCallback? onPrimaryLike;
   final VoidCallback? onPrimaryDislike;
   final VoidCallback? onPrimaryFilter;
+  final bool isWideLayout;
 
   const DraggableCard({
     super.key,
@@ -723,6 +812,7 @@ class DraggableCard extends StatefulWidget {
     this.onPrimaryLike,
     this.onPrimaryDislike,
     this.onPrimaryFilter,
+    this.isWideLayout = false,
   });
 
   @override
@@ -827,6 +917,14 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
     final w = MediaQuery.of(context).size.width;
     final h = MediaQuery.of(context).size.height;
     final images = _allImages;
+    final bool isWide = widget.isWideLayout;
+    final double heroHeight = isWide ? h * 0.48 : h * 0.45;
+    final double actionButtonSize = isWide ? 44 : 50;
+    final double actionIconSize = isWide ? 20 : 22;
+    final double actionSpacing = isWide ? 12 : 16;
+    final double contentBottomPadding = widget.showPrimaryActions
+      ? (isWide ? 150 : 190)
+      : (isWide ? 110 : 140);
     final threshold = w * 0.25;
     final dragLike = (_pos.dx / threshold).clamp(0.0, 1.0);
     final dragNope = (-_pos.dx / threshold).clamp(0.0, 1.0);
@@ -909,9 +1007,21 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
                 }
               : null,
           child: ClipRRect(
-            borderRadius: BorderRadius.zero,
+            borderRadius: BorderRadius.circular(isWide ? 32 : 0),
             child: Container(
-              color: Colors.white,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(isWide ? 32 : 0),
+                boxShadow: isWide
+                    ? [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.08),
+                          blurRadius: 30,
+                          offset: const Offset(0, 20),
+                        ),
+                      ]
+                    : null,
+              ),
               child: SizedBox.expand(
                 child: Stack(
                   children: [
@@ -919,7 +1029,7 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
                     Positioned.fill(
                       child: SingleChildScrollView(
                         controller: _scrollController,
-                        padding: const EdgeInsets.only(bottom: 190),
+                        padding: EdgeInsets.only(bottom: contentBottomPadding),
                         child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -928,7 +1038,7 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
                         children: [
                           // Image
                           Container(
-                            height: h * 0.45,
+                            height: heroHeight,
                             width: double.infinity,
                             child: images.isNotEmpty
                                 ? Image.network(
@@ -969,31 +1079,56 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
                                 ),
                               ),
                             ),
+                          // Artist/Band Tag (Top Right)
+                          Positioned(
+                            top: 24,
+                            right: 20,
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: isWide ? 12 : 16,
+                                vertical: isWide ? 6 : 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                border: Border.all(color: Colors.white.withOpacity(0.4), width: 1),
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                              child: Text(
+                                widget.isBand ? 'BAND' : 'ARTIST',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: isWide ? 11 : 12,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 1.0,
+                                ),
+                              ),
+                            ),
+                          ),
                           // Gradient overlay at bottom
                           Positioned(
                             bottom: 0,
                             left: 0,
                             right: 0,
                             child: Container(
-                              height: 320,
-                              decoration: const BoxDecoration(
+                              height: heroHeight * 0.8,
+                              decoration: BoxDecoration(
                                 gradient: LinearGradient(
                                   begin: Alignment.topCenter,
                                   end: Alignment.bottomCenter,
                                   colors: [
-                                    Color(0x005B3CF0),
-                                    Color(0x55240B62),
-                                    Color(0xCC130843),
-                                    Color(0xF207021F),
+                                    Colors.transparent,
+                                    const Color(0xFF150A32).withOpacity(0.2),
+                                    const Color(0xFF150A32).withOpacity(0.8),
+                                    const Color(0xFF150A32),
                                   ],
-                                  stops: [0.0, 0.42, 0.74, 1.0],
+                                  stops: const [0.0, 0.3, 0.75, 1.0],
                                 ),
                               ),
                             ),
                           ),
                           // Name and location overlay
                           Positioned(
-                            bottom: 18,
+                            bottom: 12,
                             left: 20,
                             right: 20,
                             child: Column(
@@ -1015,53 +1150,44 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
                                   },
                                   child: Text(
                                     '${widget.name}${age != null ? ', $age' : ''}',
-                                    style: const TextStyle(
-                                      fontSize: 26,
+                                    style: TextStyle(
+                                      fontSize: isWide ? 22 : 24,
                                       fontWeight: FontWeight.w700,
                                       color: Colors.white,
-                                      letterSpacing: 0.5,
-                                      shadows: [Shadow(color: Colors.black45, blurRadius: 10)],
+                                      letterSpacing: 0.3,
+                                      shadows: [
+                                        Shadow(
+                                          color: Colors.black.withOpacity(0.5),
+                                          blurRadius: 12,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ),
                                 if ((widget.city ?? '').isNotEmpty || (widget.country ?? '').isNotEmpty)
                                   Padding(
-                                    padding: const EdgeInsets.only(top: 6),
+                                    padding: const EdgeInsets.only(top: 4),
                                     child: Text(
                                       [widget.city, widget.country]
                                           .where((e) => e != null && e.isNotEmpty)
                                           .join(', ')
                                           .toUpperCase(),
-                                      style: const TextStyle(
-                                        color: Colors.white70,
-                                        fontSize: 11,
-                                        letterSpacing: 1.1,
+                                      style: TextStyle(
+                                        color: Colors.white.withOpacity(0.95),
+                                        fontSize: isWide ? 11 : 12,
+                                        fontWeight: FontWeight.w600,
+                                        letterSpacing: 1.0,
+                                        shadows: [
+                                          Shadow(
+                                            color: Colors.black.withOpacity(0.5),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 1),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ),
-                                const SizedBox(height: 10),
-                                Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: widget.isBand
-                                            ? const Color(0xFF5B3CF0)
-                                            : const Color(0xFF8C6BF7),
-                                        borderRadius: BorderRadius.circular(16),
-                                      ),
-                                      child: Text(
-                                        widget.isBand ? 'BAND' : 'ARTIST',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w600,
-                                          letterSpacing: 0.5,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
                                 if (widget.showPrimaryActions) ...[
                                   const SizedBox(height: 18),
                                   Row(
@@ -1072,27 +1198,27 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
                                         backgroundColor: Colors.white.withOpacity(0.92),
                                         iconColor: const Color(0xFF9245D5),
                                         onTap: widget.onPrimaryDislike ?? () {},
-                                        size: 50,
-                                        iconSize: 22,
+                                        size: actionButtonSize,
+                                        iconSize: actionIconSize,
                                       ),
-                                      const SizedBox(width: 16),
+                                      SizedBox(width: actionSpacing),
                                       _RoundActionButton(
                                         icon: Icons.tune,
                                         backgroundColor: Colors.white.withOpacity(0.92),
                                         iconColor: const Color(0xFF4C3F8F),
                                         onTap: widget.onPrimaryFilter ?? () {},
-                                        size: 50,
-                                        iconSize: 22,
+                                        size: actionButtonSize,
+                                        iconSize: actionIconSize,
                                         isElevated: true,
                                       ),
-                                      const SizedBox(width: 16),
+                                      SizedBox(width: actionSpacing),
                                       _RoundActionButton(
                                         icon: Icons.favorite,
                                         backgroundColor: Colors.white.withOpacity(0.92),
                                         iconColor: const Color(0xFFE65080),
                                         onTap: widget.onPrimaryLike ?? () {},
-                                        size: 50,
-                                        iconSize: 22,
+                                        size: actionButtonSize,
+                                        iconSize: actionIconSize,
                                       ),
                                     ],
                                   ),
@@ -1105,26 +1231,29 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
                       // About section
                       if (widget.description.isNotEmpty)
                         Padding(
-                          padding: const EdgeInsets.all(20),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: isWide ? 18 : 20,
+                            vertical: isWide ? 16 : 20,
+                          ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                              Text(
                                 'ABOUT',
                                 style: TextStyle(
-                                  fontSize: 13,
+                                  fontSize: isWide ? 12 : 13,
                                   letterSpacing: 1.0,
                                   fontWeight: FontWeight.w700,
-                                  color: Color(0xFF5B3CF0),
+                                  color: const Color(0xFF6A4DBE),
                                 ),
                               ),
-                              const SizedBox(height: 10),
+                              SizedBox(height: isWide ? 8 : 10),
                               Text(
                                 widget.description,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  height: 1.5,
-                                  color: Color(0xFF1F1F1F),
+                                style: TextStyle(
+                                  fontSize: isWide ? 13 : 14,
+                                  height: 1.45,
+                                  color: const Color(0xFF1F1F1F),
                                 ),
                               ),
                             ],
@@ -1133,7 +1262,10 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
                       // Tag sections styled per mock
                       if (groupedTags.isNotEmpty)
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: isWide ? 18 : 20,
+                            vertical: 8,
+                          ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: groupedTags.entries.map((entry) {
@@ -1144,32 +1276,40 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
                                   children: [
                                     Text(
                                       entry.key.toUpperCase(),
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                        letterSpacing: 0.9,
-                                        color: Color(0xFF6A4DBE),
+                                      style: TextStyle(
+                                        fontSize: isWide ? 12 : 13,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 1.0,
+                                        color: const Color(0xFF6A4DBE),
                                       ),
                                     ),
                                     const SizedBox(height: 8),
                                     Wrap(
-                                      spacing: 8,
-                                      runSpacing: 10,
-                                      children: entry.value.map((tagName) => Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFFF5EEFF),
-                                          borderRadius: BorderRadius.circular(18),
-                                        ),
-                                        child: Text(
-                                          tagName,
-                                          style: const TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w600,
-                                            color: Color(0xFF5B3CF0),
-                                          ),
-                                        ),
-                                      )).toList(),
+                                      spacing: isWide ? 6 : 8,
+                                      runSpacing: isWide ? 8 : 10,
+                                      children: entry.value
+                                          .map(
+                                            (tagName) => Container(
+                                              padding: EdgeInsets.symmetric(
+                                                horizontal: isWide ? 12 : 16,
+                                                vertical: isWide ? 8 : 10,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: Colors.deepPurple.shade50,
+                                                borderRadius: BorderRadius.circular(20),
+                                                border: Border.all(color: Colors.deepPurple.shade200),
+                                              ),
+                                              child: Text(
+                                                tagName,
+                                                style: TextStyle(
+                                                  fontSize: isWide ? 11 : 12,
+                                                  fontWeight: FontWeight.w500,
+                                                  color: Colors.deepPurple.shade700,
+                                                ),
+                                              ),
+                                            ),
+                                          )
+                                          .toList(),
                                     ),
                                   ],
                                 ),
@@ -1180,18 +1320,29 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
                       // Gender section (under tags)
                       if (widget.gender != null && widget.gender!.isNotEmpty)
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: isWide ? 18 : 16,
+                            vertical: 8,
+                          ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                'Gender',
-                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                              Text(
+                                'GENDER',
+                                style: TextStyle(
+                                  fontSize: isWide ? 12 : 13,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 1.0,
+                                  color: const Color(0xFF6A4DBE),
+                                ),
                               ),
                               const SizedBox(height: 8),
                               Text(
                                 widget.gender!,
-                                style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                                style: TextStyle(
+                                  fontSize: isWide ? 13 : 14,
+                                  color: Colors.grey[700],
+                                ),
                               ),
                             ],
                           ),
@@ -1199,13 +1350,21 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
                       // Band members section
                       if (bandMembers.isNotEmpty)
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: isWide ? 18 : 16,
+                            vertical: 8,
+                          ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                'Band Members',
-                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                              Text(
+                                'BAND MEMBERS',
+                                style: TextStyle(
+                                  fontSize: isWide ? 12 : 13,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 1.0,
+                                  color: const Color(0xFF6A4DBE),
+                                ),
                               ),
                               const SizedBox(height: 8),
                               ...bandMembers.map((member) {
@@ -1228,12 +1387,18 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
                                           children: [
                                             Text(
                                               '$name${age.isNotEmpty ? ', $age' : ''}',
-                                              style: const TextStyle(fontWeight: FontWeight.w600),
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: isWide ? 13 : 14,
+                                              ),
                                             ),
                                             if (role.isNotEmpty)
                                               Text(
                                                 role,
-                                                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                                                style: TextStyle(
+                                                  fontSize: isWide ? 11 : 12,
+                                                  color: Colors.grey[600],
+                                                ),
                                               ),
                                           ],
                                         ),
@@ -1256,9 +1421,9 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
                         child: Container(
                           decoration: BoxDecoration(
                             color: likeOpacity > 0
-                                ? Colors.green.withOpacity(0.10 * likeOpacity + 0.05)
+                                ? Colors.green.withOpacity((isWide ? 0.06 : 0.10) * likeOpacity + 0.04)
                                 : nopeOpacity > 0
-                                    ? Colors.redAccent.withOpacity(0.10 * nopeOpacity + 0.05)
+                                    ? Colors.redAccent.withOpacity((isWide ? 0.06 : 0.10) * nopeOpacity + 0.04)
                                     : Colors.transparent,
                           ),
                         ),
@@ -1266,54 +1431,64 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
                     ),
                     // Large LIKE stamp
                     Positioned(
-                      top: 28,
-                      right: 24,
+                      top: isWide ? 20 : 28,
+                      right: isWide ? 18 : 24,
                       child: Opacity(
                         opacity: likeOpacity,
                         child: Transform.rotate(
                           angle: 0.18,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: isWide ? 14 : 18,
+                              vertical: isWide ? 8 : 10,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.white.withOpacity(0.85),
                               border: Border.all(color: Colors.green, width: 4),
                               borderRadius: BorderRadius.circular(12),
                               boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0,4))],
                             ),
-                            child: const Text('LIKE',
-                                style: TextStyle(
-                                  color: Colors.green,
-                                  fontSize: 38,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 3,
-                                )),
+                            child: Text(
+                              'LIKE',
+                              style: TextStyle(
+                                color: Colors.green,
+                                fontSize: isWide ? 30 : 38,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 3,
+                              ),
+                            ),
                           ),
                         ),
                       ),
                     ),
                     // Large NOPE stamp
                     Positioned(
-                      top: 28,
-                      left: 24,
+                      top: isWide ? 20 : 28,
+                      left: isWide ? 18 : 24,
                       child: Opacity(
                         opacity: nopeOpacity,
                         child: Transform.rotate(
                           angle: -0.18,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: isWide ? 14 : 18,
+                              vertical: isWide ? 8 : 10,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.white.withOpacity(0.85),
                               border: Border.all(color: Colors.redAccent, width: 4),
                               borderRadius: BorderRadius.circular(12),
                               boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0,4))],
                             ),
-                            child: const Text('NOPE',
-                                style: TextStyle(
-                                  color: Colors.redAccent,
-                                  fontSize: 38,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 3,
-                                )),
+                            child: Text(
+                              'NOPE',
+                              style: TextStyle(
+                                color: Colors.redAccent,
+                                fontSize: isWide ? 30 : 38,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 3,
+                              ),
+                            ),
                           ),
                         ),
                       ),

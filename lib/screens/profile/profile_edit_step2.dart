@@ -57,6 +57,19 @@ class ProfileEditStep2 extends StatelessWidget {
     return bandRoleId;
   }
 
+  IconData _categoryIcon(String categoryKey) {
+    switch (categoryKey.toLowerCase()) {
+      case 'activity':
+        return Icons.star;
+      case 'instruments':
+        return Icons.music_note;
+      case 'band status':
+        return Icons.info_outline;
+      default:
+        return Icons.label_outline;
+    }
+  }
+
   Widget _buildTags() {
     if (tagOptions.isEmpty) {
       return Column(
@@ -84,6 +97,10 @@ class ProfileEditStep2 extends StatelessWidget {
     }
 
     final categories = tagOptions.keys.toList();
+    final accentColor = Colors.deepPurple.shade400;
+    final containerColor = Colors.deepPurple.shade50;
+    final borderColor = Colors.deepPurple.shade100;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -95,66 +112,78 @@ class ProfileEditStep2 extends StatelessWidget {
         const SizedBox(height: 12),
         ...categories.map((cat) {
           final selectedSet = selectedTags[cat] ?? {};
+          final options = tagOptions[cat] ?? [];
+          final selectedOptions = options.where((o) => selectedSet.contains(o['value'])).toList();
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Padding(
-                padding: const EdgeInsets.only(left: 8, bottom: 8),
-                child: Text(
-                  _humanize(cat),
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey.shade700,
+              Row(
+                children: [
+                  Icon(_categoryIcon(cat), color: accentColor, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    _humanize(cat),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey.shade800,
+                    ),
                   ),
-                ),
+                ],
               ),
+              const SizedBox(height: 8),
               InkWell(
                 onTap: () => onShowTagPicker(cat),
+                borderRadius: BorderRadius.circular(16),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.deepPurple.shade50,
-                    borderRadius: BorderRadius.circular(30),
+                    color: containerColor,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: borderColor),
                   ),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: selectedOptions.isEmpty
+                        ? CrossAxisAlignment.center
+                        : CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        selectedSet.isEmpty
-                            ? 'Tap to select'
-                            : '${selectedSet.length} selected',
-                        style: TextStyle(
-                          color: selectedSet.isEmpty ? Colors.grey.shade500 : Colors.black,
-                          fontSize: 16,
-                        ),
+                      Expanded(
+                        child: selectedOptions.isEmpty
+                            ? Text(
+                                'Tap to select',
+                                style: TextStyle(
+                                  color: Colors.deepPurple.shade200,
+                                  fontSize: 15,
+                                ),
+                              )
+                            : Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: selectedOptions.map((option) {
+                                  final label = option['label']?.toString() ?? option['value'].toString();
+                                  final value = option['value'];
+                                  return Chip(
+                                    label: Text(label),
+                                    backgroundColor: Colors.white,
+                                    labelStyle: TextStyle(
+                                      color: accentColor,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    deleteIcon: const Icon(Icons.close, size: 18),
+                                    deleteIconColor: accentColor,
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    onDeleted: () => onRemoveTag(cat, value),
+                                  );
+                                }).toList(),
+                              ),
                       ),
-                      Icon(Icons.arrow_drop_down, color: Colors.grey.shade600),
+                      const SizedBox(width: 12),
+                      Icon(Icons.keyboard_arrow_down, color: accentColor),
                     ],
                   ),
                 ),
               ),
-              if (selectedSet.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: selectedSet.map((val) {
-                    final found = tagOptions[cat]!.firstWhere(
-                      (o) => o['value'] == val,
-                      orElse: () => {'label': val.toString()},
-                    );
-                    final label = found['label']?.toString() ?? val.toString();
-                    return Chip(
-                      label: Text(label),
-                      backgroundColor: Colors.deepPurple.shade100,
-                      deleteIconColor: Colors.deepPurple.shade700,
-                      onDeleted: () => onRemoveTag(cat, val),
-                    );
-                  }).toList(),
-                ),
-              ],
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
             ],
           );
         }),

@@ -1,9 +1,13 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:latlong2/latlong.dart';
 import 'package:zpi_test/api/api_client.dart';
 
 import '../api/models.dart';
 import '../api/token_store.dart';
-import 'dart:convert';
+import '../widgets/city_map_preview.dart';
 
 class FiltersScreen extends StatefulWidget {
   final ApiClient api;
@@ -39,6 +43,8 @@ class _FiltersScreenState extends State<FiltersScreen> {
   List<CountryDto> _countries = [];
   List<CityDto> _cities = [];
   List<GenderDto> _genders = [];
+  final Map<String, LatLng> _cityCoords = {};
+  final Map<String, LatLng> _geocodeCache = {};
 
   @override
   void initState() {
@@ -114,10 +120,8 @@ class _FiltersScreenState extends State<FiltersScreen> {
         try {
           final citiesRes = await widget.api.getCities(prefs!.countryId!);
           if (mounted && citiesRes.statusCode == 200) {
-            final cities = (_decodeBody(citiesRes.body) as List)
-                .map((data) => CityDto.fromJson(data))
-                .toList();
-            _cities = cities;
+            final decodedCities = _decodeBody(citiesRes.body);
+            _cities = _parseCities(decodedCities);
           }
         } catch (e) {
           print('Error loading cities: $e');
@@ -151,6 +155,10 @@ class _FiltersScreenState extends State<FiltersScreen> {
       }
 
       setState(() => _isLoading = false);
+
+      if (_selectedCityId != null) {
+        _ensureSelectedCityPreview();
+      }
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -159,12 +167,6 @@ class _FiltersScreenState extends State<FiltersScreen> {
         );
       }
     }
-  }
-
-  dynamic _decodeBody(String body) {
-    var decoded = jsonDecode(body);
-    if (decoded is String) return jsonDecode(decoded);
-    return decoded;
   }
 
   Future<void> _savePreferences() async {
@@ -226,7 +228,8 @@ class _FiltersScreenState extends State<FiltersScreen> {
       final res = await widget.api.getCities(countryId);
       if (!mounted) return;
 
-      final cities = (jsonDecode(res.body) as List).map((data) => CityDto.fromJson(data)).toList();
+      final decoded = _decodeBody(res.body);
+      final cities = _parseCities(decoded);
       setState(() {
         _cities = cities;
       });
@@ -693,13 +696,17 @@ class _FiltersScreenState extends State<FiltersScreen> {
                                 setState(() {
                                   _selectedCityId = value;
                                 });
+                                if (value != null) {
+                                  _ensureSelectedCityPreview();
+                                }
                               },
                               hint: 'Select City',
                               icon: Icons.location_city,
+                              enableCityPreview: true,
                             ),
                             const SizedBox(height: 24),
 
-                            // Age Range (if showing artists)
+                            // Age Range (if showirng artists)
                             if (_showArtists) ...[
                               Row(
                                 children: [
@@ -934,6 +941,7 @@ class _FiltersScreenState extends State<FiltersScreen> {
     required ValueChanged<String?> onChanged,
     required String hint,
     required IconData icon,
+    bool enableCityPreview = false,
   }) {
     final itemsMap = {
       for (var item in items) item.value!: (item.child as Text).data!
@@ -949,6 +957,7 @@ class _FiltersScreenState extends State<FiltersScreen> {
         hint: hint,
         icon: icon,
         onChanged: onChanged,
+        enableCityPreview: enableCityPreview,
       ),
       borderRadius: BorderRadius.circular(12),
       child: Container(
@@ -986,19 +995,164 @@ class _FiltersScreenState extends State<FiltersScreen> {
     required String hint,
     required IconData icon,
     required ValueChanged<String?> onChanged,
+    bool enableCityPreview = false,
   }) async {
     String searchQuery = '';
     String? selectedValue = currentValue;
+    CityDto? hoveredCity = enableCityPreview ? _cityById(currentValue) : null;
+    LatLng? hoveredLatLng = enableCityPreview ? _selectedCityLatLng : null;
+    bool previewLoading = false;
 
     final result = await showDialog<String?>(
       context: context,
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
-            // Filter items based on search query
             final filteredItems = items.entries.where((entry) {
               return entry.value.toLowerCase().contains(searchQuery.toLowerCase());
             }).toList();
+
+            Future<void> updateHover(String? id) async {
+              if (!enableCityPreview || id == null) return;
+              final city = _cityById(id);
+              if (city == null) return;
+              setDialogState(() {
+                hoveredCity = city;
+                hoveredLatLng = _cityCoords[city.id] ?? _geocodeCache[city.id];
+              });
+              if (hoveredLatLng == null) {
+                setDialogState(() => previewLoading = true);
+                final coords = await _geocodeCity(city);
+                if (!mounted) return;
+                setDialogState(() {
+                  previewLoading = false;
+                  if (hoveredCity?.id == city.id && coords != null) {
+                    hoveredLatLng = coords;
+                    _geocodeCache[city.id] = coords;
+                  }
+                });
+              }
+            }
+
+            Widget buildListTile(MapEntry<String, String> entry) {
+              final isSelected = entry.key == selectedValue;
+              final city = enableCityPreview ? _cityById(entry.key) : null;
+              final coords = city != null ? (_cityCoords[city.id] ?? _geocodeCache[city.id]) : null;
+
+              final tile = ListTile(
+                title: Text(
+                  entry.value,
+                  style: TextStyle(
+                    color: isSelected ? const Color(0xFF6A4C9C) : Colors.white,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  ),
+                ),
+                subtitle: enableCityPreview && coords != null
+                    ? Text(
+                        'lat ${coords.latitude.toStringAsFixed(3)}, lon ${coords.longitude.toStringAsFixed(3)}',
+                        style: const TextStyle(color: Colors.white70, fontSize: 12),
+                      )
+                    : null,
+                trailing: isSelected
+                    ? const Icon(Icons.check, color: Color(0xFF6A4C9C))
+                    : null,
+                onTap: () {
+                  Navigator.of(ctx).pop(entry.key);
+                },
+              );
+
+              if (!enableCityPreview) return tile;
+
+              return MouseRegion(
+                onEnter: (_) => updateHover(entry.key),
+                onHover: (_) => updateHover(entry.key),
+                child: tile,
+              );
+            }
+
+            Widget buildSearchField() {
+              return TextField(
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'Search...',
+                  hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
+                  prefixIcon: const Icon(Icons.search, color: Colors.white),
+                  filled: true,
+                  fillColor: Colors.white.withOpacity(0.1),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                ),
+                onChanged: (value) {
+                  setDialogState(() {
+                    searchQuery = value;
+                  });
+                },
+              );
+            }
+
+            Widget buildListSection() {
+              return Column(
+                children: [
+                  buildSearchField(),
+                  const SizedBox(height: 16),
+                  if (currentValue != null)
+                    ListTile(
+                      leading: const Icon(Icons.clear, color: Colors.white70),
+                      title: const Text(
+                        'Clear selection',
+                        style: TextStyle(color: Colors.white70, fontStyle: FontStyle.italic),
+                      ),
+                      onTap: () {
+                        Navigator.of(ctx).pop('__CLEAR__');
+                      },
+                    ),
+                  const Divider(color: Colors.white24),
+                  Expanded(
+                    child: filteredItems.isEmpty
+                        ? Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Text(
+                              'No results found',
+                              style: TextStyle(color: Colors.white.withOpacity(0.5)),
+                            ),
+                          )
+                        : ListView.builder(
+                            itemCount: filteredItems.length,
+                            itemBuilder: (context, index) => buildListTile(filteredItems[index]),
+                          ),
+                  ),
+                ],
+              );
+            }
+
+            Widget buildPreviewSection(double height) {
+              if (!enableCityPreview) return const SizedBox.shrink();
+              final displayName = hoveredCity?.name ?? _cityById(selectedValue)?.name;
+              final displayCenter = hoveredLatLng ?? _selectedCityLatLng;
+              return Stack(
+                children: [
+                  CityMapPreview(
+                    center: displayCenter,
+                    cityName: displayName,
+                    height: height,
+                    placeholderMessage: 'Hover a city to preview',
+                  ),
+                  if (previewLoading)
+                    const Positioned.fill(
+                      child: Center(
+                        child: SizedBox(
+                          width: 36,
+                          height: 36,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            }
 
             return AlertDialog(
               backgroundColor: const Color(0xFF3D2C5E),
@@ -1013,82 +1167,37 @@ class _FiltersScreenState extends State<FiltersScreen> {
                 ],
               ),
               content: SizedBox(
-                width: double.maxFinite,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Search field
-                    TextField(
-                      style: const TextStyle(color: Colors.white),
-                      decoration: InputDecoration(
-                        hintText: 'Search...',
-                        hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
-                        prefixIcon: const Icon(Icons.search, color: Colors.white),
-                        filled: true,
-                        fillColor: Colors.white.withOpacity(0.1),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      ),
-                      onChanged: (value) {
-                        setDialogState(() {
-                          searchQuery = value;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    // Clear selection option
-                    if (currentValue != null)
-                      ListTile(
-                        leading: const Icon(Icons.clear, color: Colors.white70),
-                        title: const Text(
-                          'Clear selection',
-                          style: TextStyle(color: Colors.white70, fontStyle: FontStyle.italic),
-                        ),
-                        onTap: () {
-                          Navigator.of(ctx).pop('__CLEAR__');
-                        },
-                      ),
-                    const Divider(color: Colors.white24),
-                    // List of filtered items
-                    Flexible(
-                      child: filteredItems.isEmpty
-                          ? Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Text(
-                          'No results found',
-                          style: TextStyle(color: Colors.white.withOpacity(0.5)),
-                        ),
-                      )
-                          : ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: filteredItems.length,
-                        itemBuilder: (context, index) {
-                          final entry = filteredItems[index];
-                          final isSelected = entry.key == selectedValue;
-
-                          return ListTile(
-                            title: Text(
-                              entry.value,
-                              style: TextStyle(
-                                color: isSelected ? const Color(0xFF6A4C9C) : Colors.white,
-                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                width: enableCityPreview ? 780 : double.maxFinite,
+                height: enableCityPreview ? 520 : null,
+                child: enableCityPreview
+                    ? LayoutBuilder(
+                        builder: (context, constraints) {
+                          final wide = constraints.maxWidth >= 600;
+                          if (wide) {
+                            return Row(
+                              children: [
+                                Expanded(child: buildListSection()),
+                                const SizedBox(width: 16),
+                                SizedBox(
+                                  width: 320,
+                                  child: buildPreviewSection(constraints.maxHeight),
+                                ),
+                              ],
+                            );
+                          }
+                          return Column(
+                            children: [
+                              Expanded(child: buildListSection()),
+                              const SizedBox(height: 12),
+                              SizedBox(
+                                height: 200,
+                                child: buildPreviewSection(200),
                               ),
-                            ),
-                            trailing: isSelected
-                                ? const Icon(Icons.check, color: Color(0xFF6A4C9C))
-                                : null,
-                            onTap: () {
-                              Navigator.of(ctx).pop(entry.key);
-                            },
+                            ],
                           );
                         },
-                      ),
-                    ),
-                  ],
-                ),
+                      )
+                    : buildListSection(),
               ),
               actions: [
                 TextButton(
@@ -1102,12 +1211,10 @@ class _FiltersScreenState extends State<FiltersScreen> {
       },
     );
 
-    if (result != null) {
-      if (result == '__CLEAR__') {
-        onChanged(null);
-      } else {
-        onChanged(result);
-      }
+    if (result == '__CLEAR__') {
+      onChanged(null);
+    } else if (result != null) {
+      onChanged(result);
     }
   }
 
@@ -1241,6 +1348,105 @@ class _FiltersScreenState extends State<FiltersScreen> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  dynamic _decodeBody(String body) {
+    var decoded = jsonDecode(body);
+    if (decoded is String) return jsonDecode(decoded);
+    return decoded;
+  }
+
+  double? _toDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString());
+  }
+
+  List<CityDto> _parseCities(dynamic payload) {
+    final List<CityDto> parsed = [];
+    _cityCoords.clear();
+    if (payload is List) {
+      for (final entry in payload) {
+        if (entry is Map) {
+          final map = Map<String, dynamic>.from(entry);
+          final city = CityDto.fromJson(map);
+          parsed.add(city);
+          final lat = _toDouble(map['latitude'] ?? map['lat'] ?? map['Latitude']);
+          final lon = _toDouble(map['longitude'] ?? map['lng'] ?? map['Longitude']);
+          if (lat != null && lon != null) {
+            _cityCoords[city.id] = LatLng(lat, lon);
+          }
+        }
+      }
+    }
+    return parsed;
+  }
+
+  CityDto? _cityById(String? id) {
+    if (id == null) return null;
+    for (final city in _cities) {
+      if (city.id == id) return city;
+    }
+    return null;
+  }
+
+  String? _countryName(String? id) {
+    if (id == null) return null;
+    for (final country in _countries) {
+      if (country.id == id) return country.name;
+    }
+    return null;
+  }
+
+  LatLng? get _selectedCityLatLng {
+    final cityId = _selectedCityId;
+    if (cityId == null) return null;
+    return _cityCoords[cityId] ?? _geocodeCache[cityId];
+  }
+
+  Future<void> _ensureSelectedCityPreview() async {
+    final city = _cityById(_selectedCityId);
+    if (city == null) return;
+    if (_cityCoords.containsKey(city.id) || _geocodeCache.containsKey(city.id)) return;
+    final coords = await _geocodeCity(city);
+    if (coords != null && mounted) {
+      setState(() {
+        _geocodeCache[city.id] = coords;
+      });
+    }
+  }
+
+  Future<LatLng?> _geocodeCity(CityDto city) async {
+    if (_cityCoords.containsKey(city.id)) return _cityCoords[city.id];
+    if (_geocodeCache.containsKey(city.id)) return _geocodeCache[city.id];
+    final countryName = _countryName(city.countryId ?? _selectedCountryId) ?? '';
+    final query = [city.name, if (countryName.isNotEmpty) countryName].join(', ');
+    final uri = Uri.parse(
+      'https://nominatim.openstreetmap.org/search?q=${Uri.encodeComponent(query)}&format=json&limit=1',
+    );
+    try {
+      final resp = await http.get(
+        uri,
+        headers: const {
+          'User-Agent': 'soundmates_front/1.0 (filters map preview)',
+          'Accept': 'application/json',
+        },
+      );
+      if (resp.statusCode == 200) {
+        final decoded = jsonDecode(resp.body);
+        if (decoded is List && decoded.isNotEmpty) {
+          final first = decoded.first;
+          final lat = double.tryParse(first['lat']?.toString() ?? '');
+          final lon = double.tryParse(first['lon']?.toString() ?? first['lng']?.toString() ?? '');
+          if (lat != null && lon != null) {
+            return LatLng(lat, lon);
+          }
+        }
+      }
+    } catch (_) {
+      // ignore errors; UI will keep placeholder
+    }
+    return null;
   }
 
 }

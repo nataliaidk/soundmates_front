@@ -400,6 +400,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _selectedCity = selCity;
               _city.text = selCity.name; // Update city name for display
             });
+            _prefetchSelectedCityCoords(selCity);
           }
         }
         
@@ -490,6 +491,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
       // silent failure
     }
     return null;
+  }
+
+  LatLng? get _selectedCityLatLng {
+    final city = _selectedCity;
+    if (city == null) return null;
+    return _cityCoords[city.id] ?? _geocodeCache[city.id];
+  }
+
+  Future<void> _prefetchSelectedCityCoords(CityDto city) async {
+    if (_cityCoords.containsKey(city.id) || _geocodeCache.containsKey(city.id)) {
+      return;
+    }
+    final coords = await _geocodeCity(city);
+    if (coords != null && mounted) {
+      setState(() {});
+    }
   }
 
   Future<void> _pick() async {
@@ -852,6 +869,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _selectedCity = result;
         _city.text = result.name;
       });
+      _prefetchSelectedCityCoords(result);
     }
   }
 
@@ -1950,7 +1968,7 @@ Widget _buildBandMembersSection() {
                   ),
                 ),
               ),
-              // (Removed inline city preview by request; no map after selection.)
+              _buildSelectedCityPreview(),
               // Artist-only fields: birthDate and gender
               if (_isBand != true) ...[
                 const SizedBox(height: 8),
@@ -2144,6 +2162,25 @@ Widget _buildBandMembersSection() {
           ],
         )
       ),
+    );
+  }
+
+  Widget _buildSelectedCityPreview() {
+    final hasLocationSelection = _selectedCountry != null || _selectedCity != null;
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 250),
+      child: !hasLocationSelection
+          ? const SizedBox.shrink()
+          : Padding(
+              key: ValueKey(_selectedCity?.id ?? 'city-preview-placeholder'),
+              padding: const EdgeInsets.only(top: 12.0),
+              child: CityMapPreview(
+                center: _selectedCityLatLng,
+                cityName: _selectedCity?.name,
+                height: 200,
+                placeholderMessage: 'Select a city to preview',
+              ),
+            ),
     );
   }
 }

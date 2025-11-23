@@ -8,6 +8,7 @@ class CityMapPreview extends StatefulWidget {
   final double zoom;
   final double height;
   final double borderRadius;
+  final String? placeholderMessage;
 
   const CityMapPreview({
     super.key,
@@ -16,6 +17,7 @@ class CityMapPreview extends StatefulWidget {
     this.zoom = 11.0,
     this.height = 220,
     this.borderRadius = 12,
+    this.placeholderMessage,
   });
 
   @override
@@ -71,8 +73,11 @@ class _CityMapPreviewState extends State<CityMapPreview> {
         border: Border.all(color: Colors.grey.shade200),
       ),
       clipBehavior: Clip.antiAlias,
-      child: widget.center == null
-          ? _Placeholder(cityName: widget.cityName)
+        child: widget.center == null
+          ? _Placeholder(
+            cityName: widget.cityName,
+            message: widget.placeholderMessage,
+          )
           : Stack(
               children: [
                 FlutterMap(
@@ -153,7 +158,8 @@ class _CityMapPreviewState extends State<CityMapPreview> {
 
 class _Placeholder extends StatelessWidget {
   final String? cityName;
-  const _Placeholder({this.cityName});
+  final String? message;
+  const _Placeholder({this.cityName, this.message});
 
   @override
   Widget build(BuildContext context) {
@@ -165,8 +171,8 @@ class _Placeholder extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             cityName == null || cityName!.isEmpty
-                ? 'Hover a city to preview'
-                : 'Preview for "$cityName"',
+                ? (message ?? 'Hover a city to preview')
+                : 'Preview for "${cityName!}"',
             style: TextStyle(color: Colors.grey.shade600),
           ),
         ],

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:jwt_decoder/jwt_decoder.dart';
 
 import 'api/api_client.dart';
 import 'api/event_hub_service.dart';
 import 'api/token_store.dart';
+import 'utils/audio_notifier.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/home_screen.dart';
@@ -39,6 +41,9 @@ class _MyAppState extends State<MyApp> {
   late final TokenStore tokens;
   late final EventHubService eventHub;
   late final ApiClient api;
+  late final AudioNotifier audioNotifier;
+  void Function(dynamic)? _globalMessageListener;
+  String? _currentUserId;
 
   @override
   void initState() {
@@ -46,12 +51,24 @@ class _MyAppState extends State<MyApp> {
     tokens = TokenStore();
     eventHub = EventHubService(tokenStore: tokens);
     api = ApiClient(tokenStore: tokens, eventHubService: eventHub);
+    audioNotifier = AudioNotifier.instance;
+    audioNotifier.preloadAll();
+    _hydrateCurrentUserId();
 
     // Setup callbacks immediately - they will work once SignalR connects
-    _setupGlobalMatchNotifications();
+    _setupGlobalRealtimeNotifications();
   }
 
-  void _setupGlobalMatchNotifications() {
+  @override
+  void dispose() {
+    if (_globalMessageListener != null) {
+      eventHub.removeMessageListener(_globalMessageListener!);
+    }
+    audioNotifier.dispose();
+    super.dispose();
+  }
+
+  void _setupGlobalRealtimeNotifications() {
     print("🌍 Setting up global match notifications in initState");
 
     eventHub.onMatchReceived = (matchData) {
@@ -60,12 +77,14 @@ class _MyAppState extends State<MyApp> {
         print("⚠️ Widget not mounted, skipping notification");
         return;
       }
+      audioNotifier.playMatchReceived();
       _showGlobalMatchNotification(matchData, isMutual: false);
     };
 
     eventHub.onMatchCreated = (matchData) {
       print("🌍🔥 Global MatchCreated callback triggered: $matchData");
       if (!mounted) return;
+      audioNotifier.playMatchMutual();
 
       // Extract userId from matchData
       String? userId;
@@ -89,6 +108,42 @@ class _MyAppState extends State<MyApp> {
         _showGlobalMatchNotification(matchData, isMutual: true);
       }
     };
+    _globalMessageListener = (messageData) {
+      _handleIncomingMessage(messageData);
+    };
+
+    eventHub.addMessageListener(_globalMessageListener!);
+  }
+
+  Future<void> _handleIncomingMessage(dynamic messageData) async {
+    if (messageData is! Map) return;
+
+    final senderId = messageData['senderId']?.toString();
+    if (senderId == null || senderId.isEmpty) return;
+
+    await _hydrateCurrentUserId();
+    if (_currentUserId != null && senderId == _currentUserId) {
+      return; // Do not play sound for own messages
+    }
+
+    final activeChatUserId = eventHub.activeConversationUserId;
+    if (activeChatUserId != null && senderId == activeChatUserId) {
+      return; // Suppress if user is already viewing this chat
+    }
+
+    await audioNotifier.playMessage();
+  }
+
+  Future<void> _hydrateCurrentUserId() async {
+    if (_currentUserId != null) return;
+    try {
+      final token = await tokens.readAccessToken();
+      if (token == null || token.isEmpty) return;
+      final decoded = JwtDecoder.decode(token);
+      _currentUserId = (decoded['sub'] ?? decoded['userId'] ?? decoded['id'])?.toString();
+    } catch (e) {
+      debugPrint('Failed to decode user id from token: $e');
+    }
   }
 
   void _showGlobalMatchNotification(
@@ -183,6 +238,7 @@ class _MyAppState extends State<MyApp> {
         print("✅ SignalR connected after login");
         // Callbacks are already set in initState
       });
+      _hydrateCurrentUserId();
       Navigator.pushReplacementNamed(navContext, '/users');
     }
 
@@ -192,6 +248,7 @@ class _MyAppState extends State<MyApp> {
         print("✅ SignalR connected after registration");
         // Callbacks are already set in initState
       });
+      _hydrateCurrentUserId();
       Navigator.pushReplacementNamed(navContext, '/profile/create');
     }
 
