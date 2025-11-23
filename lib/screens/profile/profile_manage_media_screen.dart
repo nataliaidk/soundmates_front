@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import '../../api/api_client.dart';
 import '../../api/token_store.dart';
 import '../../api/models.dart';
-import 'package:url_launcher/url_launcher.dart';
+import '../shared/media_models.dart';
+import '../shared/instagram_post_viewer.dart';
 
 /// Screen for managing existing photos and media files
 class ProfileManageMediaScreen extends StatefulWidget {
@@ -17,7 +18,8 @@ class ProfileManageMediaScreen extends StatefulWidget {
   });
 
   @override
-  State<ProfileManageMediaScreen> createState() => _ProfileManageMediaScreenState();
+  State<ProfileManageMediaScreen> createState() =>
+      _ProfileManageMediaScreenState();
 }
 
 class _ProfileManageMediaScreenState extends State<ProfileManageMediaScreen> {
@@ -43,19 +45,27 @@ class _ProfileManageMediaScreenState extends State<ProfileManageMediaScreen> {
       final profileResp = await widget.api.getMyProfile();
       if (profileResp.statusCode == 200 && profileResp.body.isNotEmpty) {
         final decoded = jsonDecode(profileResp.body);
-        final profile = decoded is Map ? Map<String, dynamic>.from(decoded) : <String, dynamic>{};
-        
+        final profile = decoded is Map
+            ? Map<String, dynamic>.from(decoded)
+            : <String, dynamic>{};
+
         // Load profile pictures from profile
         if (profile['profilePictures'] is List) {
           _profilePictures = (profile['profilePictures'] as List)
-              .map((pic) => ProfilePictureDto.fromJson(Map<String, dynamic>.from(pic)))
+              .map(
+                (pic) =>
+                    ProfilePictureDto.fromJson(Map<String, dynamic>.from(pic)),
+              )
               .toList();
         }
-        
+
         // Load music samples from profile
         if (profile['musicSamples'] is List) {
           _musicSamples = (profile['musicSamples'] as List)
-              .map((sample) => MusicSampleDto.fromJson(Map<String, dynamic>.from(sample)))
+              .map(
+                (sample) =>
+                    MusicSampleDto.fromJson(Map<String, dynamic>.from(sample)),
+              )
               .toList();
         }
       }
@@ -208,8 +218,10 @@ class _ProfileManageMediaScreenState extends State<ProfileManageMediaScreen> {
       }
 
       final decoded = jsonDecode(profileResp.body);
-      final profile = decoded is Map ? Map<String, dynamic>.from(decoded) : <String, dynamic>{};
-      
+      final profile = decoded is Map
+          ? Map<String, dynamic>.from(decoded)
+          : <String, dynamic>{};
+
       final picturesOrder = _profilePictures.map((p) => p.id).toList();
       final samplesOrder = _musicSamples.map((s) => s.id).toList();
 
@@ -220,8 +232,10 @@ class _ProfileManageMediaScreenState extends State<ProfileManageMediaScreen> {
         // Band profile
         final bandMembers = profile['bandMembers'] is List
             ? (profile['bandMembers'] as List)
-                .map((m) => BandMemberDto.fromJson(Map<String, dynamic>.from(m)))
-                .toList()
+                  .map(
+                    (m) => BandMemberDto.fromJson(Map<String, dynamic>.from(m)),
+                  )
+                  .toList()
             : <BandMemberDto>[];
 
         final dto = UpdateBandProfile(
@@ -241,7 +255,9 @@ class _ProfileManageMediaScreenState extends State<ProfileManageMediaScreen> {
         if (resp.statusCode == 200) {
           setState(() => _status = 'Order updated');
         } else {
-          setState(() => _status = 'Failed to update order: ${resp.statusCode}');
+          setState(
+            () => _status = 'Failed to update order: ${resp.statusCode}',
+          );
         }
       } else {
         // Artist profile
@@ -265,7 +281,9 @@ class _ProfileManageMediaScreenState extends State<ProfileManageMediaScreen> {
         if (resp.statusCode == 200) {
           setState(() => _status = 'Order updated');
         } else {
-          setState(() => _status = 'Failed to update order: ${resp.statusCode}');
+          setState(
+            () => _status = 'Failed to update order: ${resp.statusCode}',
+          );
         }
       }
     } catch (e) {
@@ -273,102 +291,50 @@ class _ProfileManageMediaScreenState extends State<ProfileManageMediaScreen> {
     }
   }
 
-  void _openMedia(String url, String fileName) {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.black,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Header
-            Container(
-              color: Colors.black87,
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      fileName,
-                      style: const TextStyle(color: Colors.white, fontSize: 14),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-            ),
-            // Content
-            if (fileName.toLowerCase().endsWith('.jpg') || 
-                fileName.toLowerCase().endsWith('.jpeg'))
-              InteractiveViewer(
-                child: Image.network(
-                  url,
-                  fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) {
-                    return const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(32.0),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.error, color: Colors.white, size: 48),
-                            SizedBox(height: 12),
-                            Text('Failed to load image', style: TextStyle(color: Colors.white)),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              )
-            else
-              Container(
-                padding: const EdgeInsets.all(48),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      fileName.toLowerCase().endsWith('.mp3') ? Icons.audiotrack : Icons.videocam,
-                      size: 80,
-                      color: fileName.toLowerCase().endsWith('.mp3') 
-                          ? Colors.purple[300] 
-                          : Colors.blue[300],
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton.icon(
-                      onPressed: () async {
-                        try {
-                          final uri = Uri.parse(url);
-                          await launchUrl(uri, mode: LaunchMode.externalApplication);
-                        } catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Error opening file: $e'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          }
-                        }
-                      },
-                      icon: const Icon(Icons.play_arrow),
-                      label: const Text('Play / Download'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.purple,
-                        foregroundColor: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-          ],
+  void _openMedia(int index) {
+    // Convert all media items to MediaItem format
+    final List<MediaItem> mediaItems = [];
+
+    // Add profile pictures
+    for (final pic in _profilePictures) {
+      mediaItems.add(
+        MediaItem(
+          type: MediaType.image,
+          url: pic.getAbsoluteUrl(widget.api.baseUrl),
+          fileName: pic.fileUrl.split('/').last,
         ),
+      );
+    }
+
+    // Add music samples
+    for (final sample in _musicSamples) {
+      final fileName = sample.fileUrl.split('/').last;
+      final isAudio = fileName.toLowerCase().endsWith('.mp3');
+      mediaItems.add(
+        MediaItem(
+          type: isAudio ? MediaType.audio : MediaType.video,
+          url: sample.getAbsoluteUrl(widget.api.baseUrl),
+          fileName: fileName,
+        ),
+      );
+    }
+
+    // Navigate to Instagram-style viewer
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        opaque: true,
+        barrierColor: Colors.black,
+        pageBuilder: (context, animation, secondaryAnimation) {
+          return FadeTransition(
+            opacity: animation,
+            child: InstagramPostViewer(
+              items: mediaItems,
+              initialIndex: index,
+              accentColor: Theme.of(context).primaryColor,
+            ),
+          );
+        },
       ),
     );
   }
@@ -377,27 +343,31 @@ class _ProfileManageMediaScreenState extends State<ProfileManageMediaScreen> {
   Widget build(BuildContext context) {
     // Combine all media into one list for grid display
     final List<_MediaItem> allMedia = [];
-    
+
     // Add photos
     for (final pic in _profilePictures) {
-      allMedia.add(_MediaItem(
-        type: _MediaType.image,
-        url: pic.getAbsoluteUrl(widget.api.baseUrl),
-        fileName: pic.fileUrl.split('/').last,
-        id: pic.id,
-      ));
+      allMedia.add(
+        _MediaItem(
+          type: _MediaType.image,
+          url: pic.getAbsoluteUrl(widget.api.baseUrl),
+          fileName: pic.fileUrl.split('/').last,
+          id: pic.id,
+        ),
+      );
     }
-    
+
     // Add music samples (audio/video)
     for (final sample in _musicSamples) {
       final fileName = sample.fileUrl.split('/').last;
       final isAudio = fileName.toLowerCase().endsWith('.mp3');
-      allMedia.add(_MediaItem(
-        type: isAudio ? _MediaType.audio : _MediaType.video,
-        url: sample.getAbsoluteUrl(widget.api.baseUrl),
-        fileName: fileName,
-        id: sample.id,
-      ));
+      allMedia.add(
+        _MediaItem(
+          type: isAudio ? _MediaType.audio : _MediaType.video,
+          url: sample.getAbsoluteUrl(widget.api.baseUrl),
+          fileName: fileName,
+          id: sample.id,
+        ),
+      );
     }
 
     return Scaffold(
@@ -430,8 +400,11 @@ class _ProfileManageMediaScreenState extends State<ProfileManageMediaScreen> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            'Tap arrows to reorder, tap delete to remove media',
-                            style: TextStyle(color: Colors.blue.shade900, fontSize: 14),
+                            'Tap media to view, arrows to reorder, delete button to remove',
+                            style: TextStyle(
+                              color: Colors.blue.shade900,
+                              fontSize: 14,
+                            ),
                           ),
                         ),
                       ],
@@ -445,18 +418,25 @@ class _ProfileManageMediaScreenState extends State<ProfileManageMediaScreen> {
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 12),
-                  
+
                   if (allMedia.isEmpty)
                     Center(
                       child: Padding(
                         padding: const EdgeInsets.all(48.0),
                         child: Column(
                           children: [
-                            Icon(Icons.photo_library, size: 64, color: Colors.grey[400]),
+                            Icon(
+                              Icons.photo_library,
+                              size: 64,
+                              color: Colors.grey[400],
+                            ),
                             const SizedBox(height: 12),
                             Text(
                               'No media added yet',
-                              style: TextStyle(color: Colors.grey[600], fontSize: 16),
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 16,
+                              ),
                             ),
                           ],
                         ),
@@ -466,22 +446,23 @@ class _ProfileManageMediaScreenState extends State<ProfileManageMediaScreen> {
                     GridView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 3,
-                        crossAxisSpacing: 8,
-                        mainAxisSpacing: 8,
-                        childAspectRatio: 1,
-                      ),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                            crossAxisSpacing: 8,
+                            mainAxisSpacing: 8,
+                            childAspectRatio: 1,
+                          ),
                       itemCount: allMedia.length,
                       itemBuilder: (context, index) {
                         final media = allMedia[index];
                         final isImage = media.type == _MediaType.image;
-                        
+
                         return Stack(
                           children: [
                             // Media preview
                             GestureDetector(
-                              onTap: () => _openMedia(media.url, media.fileName),
+                              onTap: () => _openMedia(index),
                               child: Container(
                                 decoration: BoxDecoration(
                                   color: Colors.white,
@@ -498,28 +479,33 @@ class _ProfileManageMediaScreenState extends State<ProfileManageMediaScreen> {
                                         Image.network(
                                           media.url,
                                           fit: BoxFit.cover,
-                                          errorBuilder: (context, error, stackTrace) {
-                                            return Center(
-                                              child: Icon(Icons.error, color: Colors.grey[400]),
-                                            );
-                                          },
+                                          errorBuilder:
+                                              (context, error, stackTrace) {
+                                                return Center(
+                                                  child: Icon(
+                                                    Icons.error,
+                                                    color: Colors.grey[400],
+                                                  ),
+                                                );
+                                              },
                                         )
                                       else if (media.type == _MediaType.video)
                                         Image.network(
                                           media.url,
                                           fit: BoxFit.cover,
-                                          errorBuilder: (context, error, stackTrace) {
-                                            return Container(
-                                              color: Colors.blue[50],
-                                              child: const Center(
-                                                child: Icon(
-                                                  Icons.videocam,
-                                                  size: 48,
-                                                  color: Colors.blue,
-                                                ),
-                                              ),
-                                            );
-                                          },
+                                          errorBuilder:
+                                              (context, error, stackTrace) {
+                                                return Container(
+                                                  color: Colors.blue[50],
+                                                  child: const Center(
+                                                    child: Icon(
+                                                      Icons.videocam,
+                                                      size: 48,
+                                                      color: Colors.blue,
+                                                    ),
+                                                  ),
+                                                );
+                                              },
                                         )
                                       else
                                         Container(
@@ -532,7 +518,7 @@ class _ProfileManageMediaScreenState extends State<ProfileManageMediaScreen> {
                                             ),
                                           ),
                                         ),
-                                      
+
                                       // Play button overlay for audio/video
                                       if (!isImage)
                                         Container(
@@ -560,7 +546,7 @@ class _ProfileManageMediaScreenState extends State<ProfileManageMediaScreen> {
                                 ),
                               ),
                             ),
-                            
+
                             // Control buttons overlay
                             Positioned(
                               top: 4,
@@ -581,7 +567,11 @@ class _ProfileManageMediaScreenState extends State<ProfileManageMediaScreen> {
                                       ],
                                     ),
                                     child: IconButton(
-                                      icon: const Icon(Icons.close, color: Colors.white, size: 16),
+                                      icon: const Icon(
+                                        Icons.close,
+                                        color: Colors.white,
+                                        size: 16,
+                                      ),
                                       onPressed: () {
                                         if (isImage) {
                                           _deleteProfilePicture(media.id);
@@ -597,7 +587,7 @@ class _ProfileManageMediaScreenState extends State<ProfileManageMediaScreen> {
                                 ],
                               ),
                             ),
-                            
+
                             // Move buttons overlay
                             Positioned(
                               bottom: 4,
@@ -614,13 +604,18 @@ class _ProfileManageMediaScreenState extends State<ProfileManageMediaScreen> {
                                         shape: BoxShape.circle,
                                         boxShadow: [
                                           BoxShadow(
-                                            color: Colors.black.withOpacity(0.2),
+                                            color: Colors.black.withOpacity(
+                                              0.2,
+                                            ),
                                             blurRadius: 4,
                                           ),
                                         ],
                                       ),
                                       child: IconButton(
-                                        icon: const Icon(Icons.arrow_back, size: 16),
+                                        icon: const Icon(
+                                          Icons.arrow_back,
+                                          size: 16,
+                                        ),
                                         onPressed: () {
                                           if (isImage) {
                                             _moveProfilePictureUp(media.id);
@@ -641,13 +636,18 @@ class _ProfileManageMediaScreenState extends State<ProfileManageMediaScreen> {
                                         shape: BoxShape.circle,
                                         boxShadow: [
                                           BoxShadow(
-                                            color: Colors.black.withOpacity(0.2),
+                                            color: Colors.black.withOpacity(
+                                              0.2,
+                                            ),
                                             blurRadius: 4,
                                           ),
                                         ],
                                       ),
                                       child: IconButton(
-                                        icon: const Icon(Icons.arrow_forward, size: 16),
+                                        icon: const Icon(
+                                          Icons.arrow_forward,
+                                          size: 16,
+                                        ),
                                         onPressed: () {
                                           if (isImage) {
                                             _moveProfilePictureDown(media.id);
@@ -663,13 +663,16 @@ class _ProfileManageMediaScreenState extends State<ProfileManageMediaScreen> {
                                 ],
                               ),
                             ),
-                            
+
                             // Position indicator
                             Positioned(
                               top: 4,
                               left: 4,
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
                                 decoration: BoxDecoration(
                                   color: Colors.black.withOpacity(0.6),
                                   borderRadius: BorderRadius.circular(8),
@@ -696,7 +699,9 @@ class _ProfileManageMediaScreenState extends State<ProfileManageMediaScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: _status.contains('deleted') || _status.contains('Order updated')
+                        color:
+                            _status.contains('deleted') ||
+                                _status.contains('Order updated')
                             ? Colors.green.shade50
                             : Colors.red.shade50,
                         borderRadius: BorderRadius.circular(8),
@@ -704,7 +709,9 @@ class _ProfileManageMediaScreenState extends State<ProfileManageMediaScreen> {
                       child: Text(
                         _status,
                         style: TextStyle(
-                          color: _status.contains('deleted') || _status.contains('Order updated')
+                          color:
+                              _status.contains('deleted') ||
+                                  _status.contains('Order updated')
                               ? Colors.green.shade900
                               : Colors.red.shade900,
                         ),
