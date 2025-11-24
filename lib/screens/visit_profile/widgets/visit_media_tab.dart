@@ -17,11 +17,15 @@ class VisitMediaTab extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.photo_library_outlined, size: 64, color: Colors.grey),
+            Icon(
+              Icons.photo_library_outlined,
+              size: 64,
+              color: AppColors.textGrey,
+            ),
             SizedBox(height: 16),
             Text(
               'No media shared yet',
-              style: TextStyle(color: Colors.grey, fontSize: 16),
+              style: TextStyle(color: AppColors.textGrey, fontSize: 16),
             ),
           ],
         ),
