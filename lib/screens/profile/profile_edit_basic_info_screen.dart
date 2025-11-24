@@ -7,6 +7,7 @@ import '../../api/token_store.dart';
 import '../../api/models.dart';
 import 'profile_edit_step1.dart';
 import '../../widgets/city_map_preview.dart';
+import '../../theme/app_design_system.dart';
 
 /// Screen for editing basic profile information (Step 1 fields) from Settings
 class ProfileEditBasicInfoScreen extends StatefulWidget {
@@ -20,26 +21,28 @@ class ProfileEditBasicInfoScreen extends StatefulWidget {
   });
 
   @override
-  State<ProfileEditBasicInfoScreen> createState() => _ProfileEditBasicInfoScreenState();
+  State<ProfileEditBasicInfoScreen> createState() =>
+      _ProfileEditBasicInfoScreenState();
 }
 
-class _ProfileEditBasicInfoScreenState extends State<ProfileEditBasicInfoScreen> {
+class _ProfileEditBasicInfoScreenState
+    extends State<ProfileEditBasicInfoScreen> {
   final _name = TextEditingController();
   final _city = TextEditingController();
   final _country = TextEditingController();
-  
+
   bool? _isBand;
   CountryDto? _selectedCountry;
   CityDto? _selectedCity;
   DateTime? _birthDate;
   GenderDto? _selectedGender;
-  
+
   List<CountryDto> _countries = [];
   List<CityDto> _cities = [];
   List<GenderDto> _genders = [];
   List<ProfilePictureDto> _profilePictures = [];
   List<MusicSampleDto> _musicSamples = [];
-  
+
   bool _citiesLoading = false;
   String _status = '';
   bool _loading = true;
@@ -54,28 +57,28 @@ class _ProfileEditBasicInfoScreenState extends State<ProfileEditBasicInfoScreen>
 
   Future<void> _initialize() async {
     setState(() => _loading = true);
-    
+
     // Load countries and genders
     final countriesResp = await widget.api.getCountries();
     final gendersResp = await widget.api.getGenders();
-    
+
     if (countriesResp.statusCode == 200) {
       final decoded = jsonDecode(countriesResp.body);
       if (decoded is List) {
         _countries = decoded.map((c) => CountryDto.fromJson(c)).toList();
       }
     }
-    
+
     if (gendersResp.statusCode == 200) {
       final decoded = jsonDecode(gendersResp.body);
       if (decoded is List) {
         _genders = decoded.map((g) => GenderDto.fromJson(g)).toList();
       }
     }
-    
+
     // Load profile
     await _loadProfile();
-    
+
     setState(() => _loading = false);
   }
 
@@ -87,19 +90,19 @@ class _ProfileEditBasicInfoScreenState extends State<ProfileEditBasicInfoScreen>
     }
 
     final profile = jsonDecode(resp.body);
-    
+
     setState(() {
       // Load basic info
       _name.text = profile['name']?.toString() ?? '';
       _isBand = profile['isBand'] as bool?;
-      
+
       // Load birth date for artists
       if (profile['birthDate'] != null) {
         try {
           _birthDate = DateTime.parse(profile['birthDate'].toString());
         } catch (_) {}
       }
-      
+
       // Set country
       final countryId = profile['countryId']?.toString();
       if (countryId != null && countryId.isNotEmpty) {
@@ -108,13 +111,13 @@ class _ProfileEditBasicInfoScreenState extends State<ProfileEditBasicInfoScreen>
           orElse: () => CountryDto(id: countryId, name: ''),
         );
         _country.text = _selectedCountry?.name ?? '';
-        
+
         // Load cities for this country
         if (_selectedCountry != null) {
           _loadCitiesForCountry(_selectedCountry!.id);
         }
       }
-      
+
       // Set city - will be set after cities are loaded
       final cityId = profile['cityId']?.toString();
       if (cityId != null && cityId.isNotEmpty) {
@@ -124,7 +127,8 @@ class _ProfileEditBasicInfoScreenState extends State<ProfileEditBasicInfoScreen>
             setState(() {
               _selectedCity = _cities.firstWhere(
                 (c) => c.id == cityId,
-                orElse: () => CityDto(id: cityId, name: '', countryId: countryId),
+                orElse: () =>
+                    CityDto(id: cityId, name: '', countryId: countryId),
               );
               _city.text = _selectedCity?.name ?? '';
             });
@@ -134,7 +138,7 @@ class _ProfileEditBasicInfoScreenState extends State<ProfileEditBasicInfoScreen>
           }
         });
       }
-      
+
       // Set gender for artists
       final genderId = profile['genderId']?.toString();
       if (genderId != null && genderId.isNotEmpty && _genders.isNotEmpty) {
@@ -143,7 +147,7 @@ class _ProfileEditBasicInfoScreenState extends State<ProfileEditBasicInfoScreen>
           orElse: () => _genders.first,
         );
       }
-      
+
       // Load pictures and samples for order
       if (profile['profilePictures'] is List) {
         _profilePictures = (profile['profilePictures'] as List)
@@ -176,8 +180,12 @@ class _ProfileEditBasicInfoScreenState extends State<ProfileEditBasicInfoScreen>
             final map = Map<String, dynamic>.from(entry);
             final city = CityDto.fromJson(map);
             parsed.add(city);
-            final lat = _toDouble(map['latitude'] ?? map['lat'] ?? map['Latitude']);
-            final lon = _toDouble(map['longitude'] ?? map['lng'] ?? map['Longitude']);
+            final lat = _toDouble(
+              map['latitude'] ?? map['lat'] ?? map['Latitude'],
+            );
+            final lon = _toDouble(
+              map['longitude'] ?? map['lng'] ?? map['Longitude'],
+            );
             if (lat != null && lon != null) {
               _cityCoords[city.id] = LatLng(lat, lon);
             }
@@ -203,19 +211,29 @@ class _ProfileEditBasicInfoScreenState extends State<ProfileEditBasicInfoScreen>
     if (_cityCoords.containsKey(city.id)) return _cityCoords[city.id];
     if (_geocodeCache.containsKey(city.id)) return _geocodeCache[city.id];
     final countryName = _selectedCountry?.name ?? '';
-    final query = [city.name, if (countryName.isNotEmpty) countryName].join(', ');
-    final uri = Uri.parse('https://nominatim.openstreetmap.org/search?q=${Uri.encodeComponent(query)}&format=json&limit=1');
+    final query = [
+      city.name,
+      if (countryName.isNotEmpty) countryName,
+    ].join(', ');
+    final uri = Uri.parse(
+      'https://nominatim.openstreetmap.org/search?q=${Uri.encodeComponent(query)}&format=json&limit=1',
+    );
     try {
-      final resp = await http.get(uri, headers: const {
-        'User-Agent': 'soundmates_front/1.0 (profile settings map preview)',
-        'Accept': 'application/json',
-      });
+      final resp = await http.get(
+        uri,
+        headers: const {
+          'User-Agent': 'soundmates_front/1.0 (profile settings map preview)',
+          'Accept': 'application/json',
+        },
+      );
       if (resp.statusCode == 200) {
         final decoded = jsonDecode(resp.body);
         if (decoded is List && decoded.isNotEmpty) {
           final first = decoded.first;
           final lat = double.tryParse(first['lat']?.toString() ?? '');
-          final lon = double.tryParse(first['lon']?.toString() ?? first['lng']?.toString() ?? '');
+          final lon = double.tryParse(
+            first['lon']?.toString() ?? first['lng']?.toString() ?? '',
+          );
           if (lat != null && lon != null) {
             final coords = LatLng(lat, lon);
             _geocodeCache[city.id] = coords;
@@ -286,7 +304,10 @@ class _ProfileEditBasicInfoScreenState extends State<ProfileEditBasicInfoScreen>
             : null;
         bool geocoding = false;
 
-        Future<void> updateHover(CityDto city, StateSetter setDialogState) async {
+        Future<void> updateHover(
+          CityDto city,
+          StateSetter setDialogState,
+        ) async {
           setDialogState(() {
             hoveredCity = city;
             hoveredLatLng = _cityCoords[city.id] ?? _geocodeCache[city.id];
@@ -307,7 +328,9 @@ class _ProfileEditBasicInfoScreenState extends State<ProfileEditBasicInfoScreen>
         return StatefulBuilder(
           builder: (context, setStateDialog) {
             final filtered = _cities
-                .where((c) => c.name.toLowerCase().contains(query.toLowerCase()))
+                .where(
+                  (c) => c.name.toLowerCase().contains(query.toLowerCase()),
+                )
                 .toList();
 
             Widget buildListTile(CityDto city) {
@@ -315,21 +338,29 @@ class _ProfileEditBasicInfoScreenState extends State<ProfileEditBasicInfoScreen>
               final subtitle = coords != null
                   ? Text(
                       'lat ${coords.latitude.toStringAsFixed(3)}, lon ${coords.longitude.toStringAsFixed(3)}',
-                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
                     )
                   : null;
               final tile = ListTile(
                 title: Text(city.name),
                 subtitle: subtitle,
-                trailing: coords == null && geocoding && hoveredCity?.id == city.id
+                trailing:
+                    coords == null && geocoding && hoveredCity?.id == city.id
                     ? const SizedBox(
                         width: 16,
                         height: 16,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : (coords != null
-                        ? Icon(Icons.map, size: 18, color: Colors.purple.shade300)
-                        : null),
+                          ? Icon(
+                              Icons.map,
+                              size: 18,
+                              color: AppColors.accentPurpleSoft,
+                            )
+                          : null),
                 onTap: () {
                   setState(() {
                     _selectedCity = city;
@@ -362,7 +393,8 @@ class _ProfileEditBasicInfoScreenState extends State<ProfileEditBasicInfoScreen>
                         ? const Center(child: Text('No results'))
                         : ListView.builder(
                             itemCount: filtered.length,
-                            itemBuilder: (context, index) => buildListTile(filtered[index]),
+                            itemBuilder: (context, index) =>
+                                buildListTile(filtered[index]),
                           ),
                   ),
                 ],
@@ -466,16 +498,18 @@ class _ProfileEditBasicInfoScreenState extends State<ProfileEditBasicInfoScreen>
         setState(() => _status = 'Failed to load profile data');
         return;
       }
-      
+
       final profile = jsonDecode(profileResp.body);
-      final bandMembers = (profile['bandMembers'] as List?)
-          ?.map((m) => BandMemberDto.fromJson(m))
-          .toList() ?? [];
-      final tagsIds = (profile['tagsIds'] as List?)
-          ?.map((t) => t.toString())
-          .toList() ?? [];
+      final bandMembers =
+          (profile['bandMembers'] as List?)
+              ?.map((m) => BandMemberDto.fromJson(m))
+              .toList() ??
+          [];
+      final tagsIds =
+          (profile['tagsIds'] as List?)?.map((t) => t.toString()).toList() ??
+          [];
       final description = profile['description']?.toString() ?? '';
-      
+
       final dto = UpdateBandProfile(
         isBand: true,
         name: _name.text.trim(),
@@ -495,13 +529,13 @@ class _ProfileEditBasicInfoScreenState extends State<ProfileEditBasicInfoScreen>
         setState(() => _status = 'Failed to load profile data');
         return;
       }
-      
+
       final profile = jsonDecode(profileResp.body);
-      final tagsIds = (profile['tagsIds'] as List?)
-          ?.map((t) => t.toString())
-          .toList() ?? [];
+      final tagsIds =
+          (profile['tagsIds'] as List?)?.map((t) => t.toString()).toList() ??
+          [];
       final description = profile['description']?.toString() ?? '';
-      
+
       final dto = UpdateArtistProfile(
         isBand: false,
         name: _name.text.trim(),
@@ -532,19 +566,19 @@ class _ProfileEditBasicInfoScreenState extends State<ProfileEditBasicInfoScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surfaceWhite,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.surfaceWhite,
         title: const Text(
           'Edit Basic Information',
           style: TextStyle(
-            color: Colors.black,
+            color: AppColors.textPrimaryAlt,
             fontWeight: FontWeight.w600,
           ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimaryAlt),
           onPressed: () => Navigator.pop(context),
         ),
       ),

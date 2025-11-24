@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../api/api_client.dart';
 import '../../api/token_store.dart';
+import '../../theme/app_design_system.dart';
 
 /// Simple screen for adding photos/videos/audio to profile
 class ProfileAddMediaScreen extends StatefulWidget {
@@ -30,7 +31,7 @@ class _ProfileAddMediaScreenState extends State<ProfileAddMediaScreen> {
       withData: true,
       allowMultiple: true,
     );
-    
+
     if (result != null && result.files.isNotEmpty) {
       setState(() {
         _pickedFiles.addAll(result.files);
@@ -61,11 +62,13 @@ class _ProfileAddMediaScreenState extends State<ProfileAddMediaScreen> {
 
     for (final file in _pickedFiles) {
       String uploadName = file.name;
-      
+
       // Validate and fix extension
-      final extMatch = RegExp(r'^(.+?)\.(jpg|jpeg|mp3|mp4)$', caseSensitive: false)
-          .firstMatch(uploadName);
-      
+      final extMatch = RegExp(
+        r'^(.+?)\.(jpg|jpeg|mp3|mp4)$',
+        caseSensitive: false,
+      ).firstMatch(uploadName);
+
       if (extMatch != null) {
         uploadName = extMatch.group(0)!;
       } else {
@@ -86,14 +89,15 @@ class _ProfileAddMediaScreenState extends State<ProfileAddMediaScreen> {
       try {
         // Determine file type and use appropriate upload method
         final lowerName = uploadName.toLowerCase();
-        final isAudio = lowerName.endsWith('.mp3') || lowerName.endsWith('.mp4');
-        
+        final isAudio =
+            lowerName.endsWith('.mp3') || lowerName.endsWith('.mp4');
+
         final streamed = isAudio
             ? await widget.api.uploadMusicSample(file.bytes!, uploadName)
             : await widget.api.uploadProfilePicture(file.bytes!, uploadName);
-            
+
         await streamed.stream.bytesToString();
-        
+
         if (streamed.statusCode == 200) {
           successCount++;
         } else {
@@ -111,7 +115,7 @@ class _ProfileAddMediaScreenState extends State<ProfileAddMediaScreen> {
       if (failCount == 0) {
         _status = 'Successfully uploaded $successCount file(s)!';
         _pickedFiles.clear();
-        
+
         // Auto-navigate back after 1 second
         Future.delayed(const Duration(seconds: 1), () {
           if (mounted) {
@@ -135,7 +139,7 @@ class _ProfileAddMediaScreenState extends State<ProfileAddMediaScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: AppColors.backgroundLight,
       appBar: AppBar(
         title: const Text('Add Media'),
         leading: IconButton(
@@ -154,7 +158,7 @@ class _ProfileAddMediaScreenState extends State<ProfileAddMediaScreen> {
               decoration: BoxDecoration(
                 color: Colors.blue.shade50,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.blue.shade200),
+                border: Border.all(color: AppColors.borderLightAlt),
               ),
               child: Row(
                 children: [
@@ -163,7 +167,10 @@ class _ProfileAddMediaScreenState extends State<ProfileAddMediaScreen> {
                   Expanded(
                     child: Text(
                       'Select photos, videos, or audio files to add to your profile',
-                      style: TextStyle(color: Colors.blue.shade900, fontSize: 14),
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 14,
+                      ),
                     ),
                   ),
                 ],
@@ -179,10 +186,13 @@ class _ProfileAddMediaScreenState extends State<ProfileAddMediaScreen> {
                 icon: const Icon(Icons.add_photo_alternate),
                 label: const Text('Select Files'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.purple,
-                  foregroundColor: Colors.white,
+                  backgroundColor: AppColors.accentPurple,
+                  foregroundColor: AppColors.textWhite,
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  textStyle: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
@@ -190,7 +200,7 @@ class _ProfileAddMediaScreenState extends State<ProfileAddMediaScreen> {
             Center(
               child: Text(
                 'Supported: JPG, JPEG, MP3, MP4',
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
               ),
             ),
             const SizedBox(height: 24),
@@ -199,7 +209,10 @@ class _ProfileAddMediaScreenState extends State<ProfileAddMediaScreen> {
             if (_pickedFiles.isNotEmpty) ...[
               Text(
                 'Selected Files (${_pickedFiles.length})',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 12),
               ListView.builder(
@@ -211,9 +224,10 @@ class _ProfileAddMediaScreenState extends State<ProfileAddMediaScreen> {
                   return Card(
                     margin: const EdgeInsets.only(bottom: 8),
                     child: ListTile(
-                      leading: file.bytes != null && 
-                             (file.name.toLowerCase().endsWith('.jpg') || 
-                              file.name.toLowerCase().endsWith('.jpeg'))
+                      leading:
+                          file.bytes != null &&
+                              (file.name.toLowerCase().endsWith('.jpg') ||
+                                  file.name.toLowerCase().endsWith('.jpeg'))
                           ? ClipRRect(
                               borderRadius: BorderRadius.circular(8),
                               child: Image.memory(
@@ -227,7 +241,7 @@ class _ProfileAddMediaScreenState extends State<ProfileAddMediaScreen> {
                               width: 50,
                               height: 50,
                               decoration: BoxDecoration(
-                                color: Colors.grey[200],
+                                color: AppColors.backgroundLight,
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Center(
@@ -244,7 +258,10 @@ class _ProfileAddMediaScreenState extends State<ProfileAddMediaScreen> {
                       ),
                       subtitle: Text(
                         '${(file.size / 1024).toStringAsFixed(1)} KB',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                       trailing: _uploading
                           ? const SizedBox(
@@ -271,7 +288,10 @@ class _ProfileAddMediaScreenState extends State<ProfileAddMediaScreen> {
                     backgroundColor: Colors.green,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    textStyle: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   child: _uploading
                       ? const Row(
@@ -301,28 +321,37 @@ class _ProfileAddMediaScreenState extends State<ProfileAddMediaScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: _status.contains('Success') || _status.contains('uploaded')
+                  color:
+                      _status.contains('Success') ||
+                          _status.contains('uploaded')
                       ? Colors.green.shade50
-                      : _status.contains('Failed') || _status.contains('Invalid')
-                          ? Colors.red.shade50
-                          : Colors.grey.shade100,
+                      : _status.contains('Failed') ||
+                            _status.contains('Invalid')
+                      ? Colors.red.shade50
+                      : Colors.grey.shade100,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: _status.contains('Success') || _status.contains('uploaded')
+                    color:
+                        _status.contains('Success') ||
+                            _status.contains('uploaded')
                         ? Colors.green.shade300
-                        : _status.contains('Failed') || _status.contains('Invalid')
-                            ? Colors.red.shade300
-                            : Colors.grey.shade300,
+                        : _status.contains('Failed') ||
+                              _status.contains('Invalid')
+                        ? Colors.red.shade300
+                        : Colors.grey.shade300,
                   ),
                 ),
                 child: Text(
                   _status,
                   style: TextStyle(
-                    color: _status.contains('Success') || _status.contains('uploaded')
+                    color:
+                        _status.contains('Success') ||
+                            _status.contains('uploaded')
                         ? Colors.green.shade900
-                        : _status.contains('Failed') || _status.contains('Invalid')
-                            ? Colors.red.shade900
-                            : Colors.grey.shade900,
+                        : _status.contains('Failed') ||
+                              _status.contains('Invalid')
+                        ? Colors.red.shade900
+                        : Colors.grey.shade900,
                   ),
                   textAlign: TextAlign.center,
                 ),

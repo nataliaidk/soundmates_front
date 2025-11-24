@@ -2,11 +2,16 @@ import 'package:flutter/material.dart';
 import '../api/api_client.dart';
 import '../api/models.dart';
 import '../api/token_store.dart';
+import '../theme/app_design_system.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   final ApiClient api;
   final TokenStore tokens;
-  const ChangePasswordScreen({super.key, required this.api, required this.tokens});
+  const ChangePasswordScreen({
+    super.key,
+    required this.api,
+    required this.tokens,
+  });
 
   @override
   State<ChangePasswordScreen> createState() => _ChangePasswordScreenState();
@@ -41,25 +46,44 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() { _submitting = true; _status = 'Changing password...'; });
+    setState(() {
+      _submitting = true;
+      _status = 'Changing password...';
+    });
     try {
-      final dto = ChangePasswordDto(oldPassword: _oldCtrl.text.trim(), newPassword: _newCtrl.text.trim());
+      final dto = ChangePasswordDto(
+        oldPassword: _oldCtrl.text.trim(),
+        newPassword: _newCtrl.text.trim(),
+      );
       final resp = await widget.api.changePassword(dto);
       if (!mounted) return;
       if (resp.statusCode == 200) {
-        setState(() { _status = 'Password changed successfully'; });
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Password changed')));
+        setState(() {
+          _status = 'Password changed successfully';
+        });
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Password changed')));
         Navigator.pop(context);
       } else if (resp.statusCode == 400 || resp.statusCode == 401) {
-        setState(() { _status = 'Invalid current password'; });
+        setState(() {
+          _status = 'Invalid current password';
+        });
       } else {
-        setState(() { _status = 'Change failed: ${resp.statusCode}'; });
+        setState(() {
+          _status = 'Change failed: ${resp.statusCode}';
+        });
       }
     } catch (_) {
       if (!mounted) return;
-      setState(() { _status = 'Network error'; });
+      setState(() {
+        _status = 'Network error';
+      });
     } finally {
-      if (mounted) setState(() { _submitting = false; });
+      if (mounted)
+        setState(() {
+          _submitting = false;
+        });
     }
   }
 
@@ -80,7 +104,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 decoration: InputDecoration(
                   labelText: 'Current password',
                   suffixIcon: IconButton(
-                    icon: Icon(_obscureOld ? Icons.visibility : Icons.visibility_off),
+                    icon: Icon(
+                      _obscureOld ? Icons.visibility : Icons.visibility_off,
+                    ),
                     onPressed: () => setState(() => _obscureOld = !_obscureOld),
                   ),
                 ),
@@ -93,7 +119,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 decoration: InputDecoration(
                   labelText: 'New password',
                   suffixIcon: IconButton(
-                    icon: Icon(_obscureNew ? Icons.visibility : Icons.visibility_off),
+                    icon: Icon(
+                      _obscureNew ? Icons.visibility : Icons.visibility_off,
+                    ),
                     onPressed: () => setState(() => _obscureNew = !_obscureNew),
                   ),
                 ),
@@ -101,12 +129,21 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               ),
               const SizedBox(height: 20),
               if (_status.isNotEmpty) ...[
-                Text(_status, style: const TextStyle(color: Colors.grey)),
+                Text(
+                  _status,
+                  style: const TextStyle(color: AppColors.textGrey),
+                ),
                 const SizedBox(height: 8),
               ],
               ElevatedButton(
                 onPressed: _submitting ? null : _submit,
-                child: _submitting ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Change password'),
+                child: _submitting
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Change password'),
               ),
             ],
           ),

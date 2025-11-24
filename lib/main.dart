@@ -13,7 +13,6 @@ import 'screens/profile/profile_edit_tags_screen.dart';
 import 'screens/profile/profile_add_media_screen.dart';
 import 'screens/profile/profile_manage_media_screen.dart';
 import 'screens/profile/profile_edit_basic_info_screen.dart';
-// import 'screens/messages_screen.dart';
 import 'screens/match_screen.dart';
 import 'screens/matches_screen.dart';
 import 'screens/users_screen.dart';

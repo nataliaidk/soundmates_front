@@ -4,6 +4,7 @@ import 'package:photo_view/photo_view.dart';
 import 'package:video_player/video_player.dart';
 import 'package:just_audio/just_audio.dart';
 import 'media_models.dart';
+import '../../theme/app_design_system.dart';
 
 /// Instagram-style post viewer for media items
 class InstagramPostViewer extends StatefulWidget {
@@ -71,7 +72,7 @@ class _InstagramPostViewerState extends State<InstagramPostViewer> {
         }
       },
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.surfaceWhite,
         body: Column(
           children: [
             // Top Bar (like Instagram)
@@ -83,7 +84,10 @@ class _InstagramPostViewerState extends State<InstagramPostViewer> {
                 child: Row(
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.close, color: Colors.black87),
+                      icon: const Icon(
+                        Icons.close,
+                        color: AppColors.textBlack87,
+                      ),
                       onPressed: () => Navigator.pop(context),
                     ),
                     const Spacer(),
@@ -102,7 +106,7 @@ class _InstagramPostViewerState extends State<InstagramPostViewer> {
                               borderRadius: BorderRadius.circular(2),
                               color: index == _currentIndex
                                   ? widget.accentColor
-                                  : Colors.grey.shade300,
+                                  : AppColors.borderLight,
                             ),
                           ),
                         ),
@@ -290,7 +294,11 @@ class _MediaPostContentState extends State<_MediaPostContent> {
         backgroundDecoration: const BoxDecoration(color: Colors.white),
         errorBuilder: (context, error, stackTrace) {
           return const Center(
-            child: Icon(Icons.broken_image, color: Colors.grey, size: 64),
+            child: Icon(
+              Icons.broken_image,
+              color: AppColors.textGrey,
+              size: 64,
+            ),
           );
         },
       ),
@@ -309,7 +317,7 @@ class _MediaPostContentState extends State<_MediaPostContent> {
               SizedBox(height: 16),
               Text(
                 'Failed to load video',
-                style: TextStyle(color: Colors.black87),
+                style: TextStyle(color: AppColors.textBlack87),
               ),
             ],
           ),
@@ -321,7 +329,7 @@ class _MediaPostContentState extends State<_MediaPostContent> {
       return Container(
         color: Colors.white,
         child: const Center(
-          child: CircularProgressIndicator(color: Colors.grey),
+          child: CircularProgressIndicator(color: AppColors.textGrey),
         ),
       );
     }
@@ -388,7 +396,7 @@ class _MediaPostContentState extends State<_MediaPostContent> {
               SizedBox(height: 16),
               Text(
                 'Failed to load audio',
-                style: TextStyle(color: Colors.black87),
+                style: TextStyle(color: AppColors.textBlack87),
               ),
             ],
           ),
@@ -400,7 +408,7 @@ class _MediaPostContentState extends State<_MediaPostContent> {
       return Container(
         color: Colors.white,
         child: const Center(
-          child: CircularProgressIndicator(color: Colors.grey),
+          child: CircularProgressIndicator(color: AppColors.textGrey),
         ),
       );
     }
@@ -458,7 +466,7 @@ class _MediaPostContentState extends State<_MediaPostContent> {
                             _audioPlayer!.seek(newPosition);
                           },
                           activeColor: widget.accentColor,
-                          inactiveColor: Colors.grey.shade300,
+                          inactiveColor: AppColors.borderLight,
                         ),
                       ),
                       Padding(
@@ -503,7 +511,7 @@ class _MediaPostContentState extends State<_MediaPostContent> {
                       IconButton(
                         icon: const Icon(
                           Icons.replay_10,
-                          color: Colors.black87,
+                          color: AppColors.textBlack87,
                           size: 32,
                         ),
                         onPressed: () {
@@ -552,7 +560,7 @@ class _MediaPostContentState extends State<_MediaPostContent> {
                       IconButton(
                         icon: const Icon(
                           Icons.forward_10,
-                          color: Colors.black87,
+                          color: AppColors.textBlack87,
                           size: 32,
                         ),
                         onPressed: () {
