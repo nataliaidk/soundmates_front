@@ -8,7 +8,6 @@ import 'api/token_store.dart';
 import 'utils/audio_notifier.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
-import 'screens/home_screen.dart';
 import 'screens/profile/profile_screen_new.dart' as profile_new;
 import 'screens/profile/profile_edit_tags_screen.dart';
 import 'screens/profile/profile_add_media_screen.dart';
@@ -140,7 +139,8 @@ class _MyAppState extends State<MyApp> {
       final token = await tokens.readAccessToken();
       if (token == null || token.isEmpty) return;
       final decoded = JwtDecoder.decode(token);
-      _currentUserId = (decoded['sub'] ?? decoded['userId'] ?? decoded['id'])?.toString();
+      _currentUserId = (decoded['sub'] ?? decoded['userId'] ?? decoded['id'])
+          ?.toString();
     } catch (e) {
       debugPrint('Failed to decode user id from token: $e');
     }
@@ -270,7 +270,6 @@ class _MyAppState extends State<MyApp> {
           tokens: tokens,
           onRegistered: () => onRegisterSuccess(c),
         ),
-        '/home': (c) => HomeScreen(api: api, tokens: tokens),
         '/profile': (c) => profile_new.ProfileScreen(
           api: api,
           tokens: tokens,
