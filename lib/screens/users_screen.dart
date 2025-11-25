@@ -569,11 +569,31 @@ class _UsersScreenState extends State<UsersScreen>
           final Widget phoneExperience = _buildPhoneExperience(isWide);
 
           // Create the phone card with different layouts for mobile vs wide
+          // Calculate dynamic dimensions for the phone frame
+          // We want it to be as big as possible but:
+          // 1. Not taller than 90% of screen height
+          // 2. Not wider than available width minus side nav space (approx 150px safe buffer)
+          // 3. Maintain 9:16 aspect ratio
+
+          final double maxAvailableHeight = constraints.maxHeight * 0.90;
+          // Side nav is roughly ~100px + paddings, so 200px is a safe reserve
+          final double maxAvailableWidth = constraints.maxWidth - 200;
+
+          // Calculate height based on width constraint: W = H * (9/16) => H = W * (16/9)
+          final double heightFromWidth = maxAvailableWidth * (16 / 9);
+
+          // Take the smaller of the two height constraints to satisfy both
+          final double phoneHeight = (heightFromWidth < maxAvailableHeight)
+              ? heightFromWidth
+              : maxAvailableHeight;
+
+          final double phoneWidth = phoneHeight * (9 / 16);
+
           final Widget framedPhone = isWide
               ? ConstrainedBox(
                   constraints: BoxConstraints(
-                    maxHeight: 800,
-                    maxWidth: 800 * (9 / 16), // Match aspect ratio
+                    maxHeight: phoneHeight,
+                    maxWidth: phoneWidth,
                   ),
                   child: AspectRatio(
                     aspectRatio: 9 / 16,
