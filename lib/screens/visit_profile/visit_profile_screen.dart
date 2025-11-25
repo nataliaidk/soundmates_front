@@ -1,6 +1,5 @@
 import 'dart:ui'; // Wymagane dla ImageFilter (Blur)
 import 'dart:convert';
-import 'dart:math';
 import 'package:flutter/material.dart';
 
 // Importy zależności projektu
@@ -179,9 +178,8 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
                   (constraints.maxHeight - shellPadding.vertical)
                       .clamp(0.0, constraints.maxHeight)
                       .toDouble();
-              final double cardWidth = isWide
-                  ? max(284, availableWidth * 0.278)
-                  : availableWidth;
+              // Use fixed width on wide screens instead of percentage-based
+              final double cardWidth = isWide ? 440.0 : availableWidth;
               final double cardHeight = isWide
                   ? availableHeight * 0.99
                   : availableHeight;

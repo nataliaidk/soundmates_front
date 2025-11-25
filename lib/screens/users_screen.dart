@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:math';
 import 'dart:ui' show lerpDouble;
 import 'package:flutter/material.dart';
 import 'package:zpi_test/screens/visit_profile/visit_profile_screen.dart';
@@ -22,7 +21,7 @@ class UsersScreen extends StatefulWidget {
 }
 
 class _UsersScreenState extends State<UsersScreen>
-  with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin {
   List<Map<String, dynamic>> _users = [];
   final Map<String, String?> _userImages = {};
   int _totalMatches = 0;
@@ -42,7 +41,8 @@ class _UsersScreenState extends State<UsersScreen>
   final Map<String, TagDto> _tagById = {}; // tagId -> TagDto
   // Location dictionaries for resolving IDs to names
   final Map<String, String> _countryIdToName = {}; // countryId -> countryName
-  final Map<String, Map<String, String>> _citiesByCountry = {}; // countryId -> {cityId: cityName}
+  final Map<String, Map<String, String>> _citiesByCountry =
+      {}; // countryId -> {cityId: cityName}
   // Gender dictionary for resolving genderId to name
   final Map<String, String> _genderIdToName = {}; // genderId -> genderName
   late final AnimationController _ambientController;
@@ -103,7 +103,8 @@ class _UsersScreenState extends State<UsersScreen>
         }
 
         for (final t in tags) {
-          if (t.tagCategoryId != null && _tagGroups.containsKey(t.tagCategoryId)) {
+          if (t.tagCategoryId != null &&
+              _tagGroups.containsKey(t.tagCategoryId)) {
             _tagGroups[t.tagCategoryId]!.add(t);
           }
         }
@@ -161,8 +162,12 @@ class _UsersScreenState extends State<UsersScreen>
         if (decoded is String) decoded = jsonDecode(decoded);
         if (decoded is Map) {
           setState(() {
-            _showArtists = decoded['showArtists'] is bool ? decoded['showArtists'] : true;
-            _showBands = decoded['showBands'] is bool ? decoded['showBands'] : true;
+            _showArtists = decoded['showArtists'] is bool
+                ? decoded['showArtists']
+                : true;
+            _showBands = decoded['showBands'] is bool
+                ? decoded['showBands']
+                : true;
           });
         }
       }
@@ -182,8 +187,11 @@ class _UsersScreenState extends State<UsersScreen>
         setState(() {
           _currentUserCountryId = decoded['countryId']?.toString();
           _currentUserCityId = decoded['cityId']?.toString();
-          _currentUserCountryName = decoded['countryName']?.toString() ?? decoded['country']?.toString();
-          _currentUserCityName = decoded['cityName']?.toString() ?? decoded['city']?.toString();
+          _currentUserCountryName =
+              decoded['countryName']?.toString() ??
+              decoded['country']?.toString();
+          _currentUserCityName =
+              decoded['cityName']?.toString() ?? decoded['city']?.toString();
         });
       }
     } catch (_) {
@@ -200,16 +208,21 @@ class _UsersScreenState extends State<UsersScreen>
     });
 
     final List<Map<String, dynamic>> allUsers = [];
-    
+
     // Fetch artists if enabled
     if (_showArtists) {
       try {
-        final resp = await widget.api.getPotentialMatchesArtists(limit: 50, offset: 0);
+        final resp = await widget.api.getPotentialMatchesArtists(
+          limit: 50,
+          offset: 0,
+        );
         if (resp.statusCode == 200) {
           var decoded = jsonDecode(resp.body);
           if (decoded is String) decoded = jsonDecode(decoded);
           if (decoded is List) {
-            allUsers.addAll(decoded.whereType<Map>().map((m) => Map<String, dynamic>.from(m)));
+            allUsers.addAll(
+              decoded.whereType<Map>().map((m) => Map<String, dynamic>.from(m)),
+            );
           }
         }
       } catch (_) {}
@@ -218,12 +231,17 @@ class _UsersScreenState extends State<UsersScreen>
     // Fetch bands if enabled
     if (_showBands) {
       try {
-        final resp = await widget.api.getPotentialMatchesBands(limit: 50, offset: 0);
+        final resp = await widget.api.getPotentialMatchesBands(
+          limit: 50,
+          offset: 0,
+        );
         if (resp.statusCode == 200) {
           var decoded = jsonDecode(resp.body);
           if (decoded is String) decoded = jsonDecode(decoded);
           if (decoded is List) {
-            allUsers.addAll(decoded.whereType<Map>().map((m) => Map<String, dynamic>.from(m)));
+            allUsers.addAll(
+              decoded.whereType<Map>().map((m) => Map<String, dynamic>.from(m)),
+            );
           }
         }
       } catch (_) {}
@@ -291,14 +309,23 @@ class _UsersScreenState extends State<UsersScreen>
 
   String get _matchHeadline {
     if (_totalMatches == 0) {
-      return _isLoading ? 'Fetching potential matches…' : 'No potential matches yet';
+      return _isLoading
+          ? 'Fetching potential matches…'
+          : 'No potential matches yet';
     }
     return 'Showing $_currentMatchIndex of $_totalMatches potential matches';
   }
 
   String get _currentLocationLabel {
-    final city = _resolveCityName(_currentUserCountryId, _currentUserCityId, _currentUserCityName);
-    final country = _resolveCountryName(_currentUserCountryId, _currentUserCountryName);
+    final city = _resolveCityName(
+      _currentUserCountryId,
+      _currentUserCityId,
+      _currentUserCityName,
+    );
+    final country = _resolveCountryName(
+      _currentUserCountryId,
+      _currentUserCountryName,
+    );
     if (city != null && country != null) return '$city, $country';
     return city ?? country ?? 'Location not set';
   }
@@ -312,7 +339,11 @@ class _UsersScreenState extends State<UsersScreen>
     return null;
   }
 
-  String? _resolveCityName(String? countryId, String? cityId, String? fallback) {
+  String? _resolveCityName(
+    String? countryId,
+    String? cityId,
+    String? fallback,
+  ) {
     if (countryId != null && cityId != null) {
       final mapped = _citiesByCountry[countryId]?[cityId];
       if (mapped != null && mapped.isNotEmpty) return mapped;
@@ -321,10 +352,14 @@ class _UsersScreenState extends State<UsersScreen>
     return null;
   }
 
-  Future<void> _fetchUserImage(String userId, Map<String, dynamic> userData) async {
+  Future<void> _fetchUserImage(
+    String userId,
+    Map<String, dynamic> userData,
+  ) async {
     try {
       // Try to use profilePictures from the user data first
-      if (userData['profilePictures'] is List && (userData['profilePictures'] as List).isNotEmpty) {
+      if (userData['profilePictures'] is List &&
+          (userData['profilePictures'] as List).isNotEmpty) {
         final pics = userData['profilePictures'] as List;
         final first = pics.first;
         if (first is Map) {
@@ -347,7 +382,16 @@ class _UsersScreenState extends State<UsersScreen>
         if (first is Map) {
           // try common fields
           String? url;
-          for (final key in ['url', 'fileUrl', 'downloadUrl', 'path', 'file', 'fileName', 'filename', 'id']) {
+          for (final key in [
+            'url',
+            'fileUrl',
+            'downloadUrl',
+            'path',
+            'file',
+            'fileName',
+            'filename',
+            'id',
+          ]) {
             if (first.containsKey(key) && first[key] != null) {
               final v = first[key].toString();
               if (key == 'id') {
@@ -370,13 +414,17 @@ class _UsersScreenState extends State<UsersScreen>
   Future<void> _like(String id) async {
     final resp = await widget.api.like(SwipeDto(receiverId: id));
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Like: ${resp.statusCode}')));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Like: ${resp.statusCode}')));
   }
 
   Future<void> _dislike(String id) async {
     final resp = await widget.api.dislike(SwipeDto(receiverId: id));
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Dislike: ${resp.statusCode}')));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Dislike: ${resp.statusCode}')));
   }
 
   @override
@@ -406,7 +454,9 @@ class _UsersScreenState extends State<UsersScreen>
                 ? Center(
                     child: _isLoading
                         ? const CircularProgressIndicator()
-                        : const Text('No potential matches.\nTry adjusting your preferences.'),
+                        : const Text(
+                            'No potential matches.\nTry adjusting your preferences.',
+                          ),
                   )
                 : Stack(
                     children: List.generate(_users.length, (index) {
@@ -415,18 +465,26 @@ class _UsersScreenState extends State<UsersScreen>
                       final name = u['name']?.toString() ?? '(no name)';
                       final imageUrl = _userImages[id];
                       final top = index == _users.length - 1;
-                      final rawCountryId = (u['countryId'] ?? u['country'])?.toString();
+                      final rawCountryId = (u['countryId'] ?? u['country'])
+                          ?.toString();
                       final rawCityId = (u['cityId'] ?? u['city'])?.toString();
                       final countryName = rawCountryId != null
-                          ? (_countryIdToName[rawCountryId] ?? u['countryName']?.toString())
-                          : (u['countryName']?.toString() ?? u['country']?.toString());
-                      final cityName = (rawCountryId != null && rawCityId != null)
+                          ? (_countryIdToName[rawCountryId] ??
+                                u['countryName']?.toString())
+                          : (u['countryName']?.toString() ??
+                                u['country']?.toString());
+                      final cityName =
+                          (rawCountryId != null && rawCityId != null)
                           ? (_citiesByCountry[rawCountryId] != null
-                              ? (_citiesByCountry[rawCountryId]![rawCityId] ?? u['cityName']?.toString())
-                              : u['cityName']?.toString())
-                          : (u['cityName']?.toString() ?? u['city']?.toString());
+                                ? (_citiesByCountry[rawCountryId]![rawCityId] ??
+                                      u['cityName']?.toString())
+                                : u['cityName']?.toString())
+                          : (u['cityName']?.toString() ??
+                                u['city']?.toString());
                       String? gender;
-                      final isBand = u['isBand'] is bool ? u['isBand'] as bool : false;
+                      final isBand = u['isBand'] is bool
+                          ? u['isBand'] as bool
+                          : false;
                       if (!isBand) {
                         if (u['gender'] != null) {
                           gender = u['gender'].toString();
@@ -434,7 +492,9 @@ class _UsersScreenState extends State<UsersScreen>
                           gender = _genderIdToName[u['genderId'].toString()];
                         }
                       }
-                      final cardKey = top ? GlobalKey<_DraggableCardState>() : null;
+                      final cardKey = top
+                          ? GlobalKey<_DraggableCardState>()
+                          : null;
                       if (top) _topCardKey = cardKey;
                       return Positioned.fill(
                         child: DraggableCard(
@@ -462,9 +522,12 @@ class _UsersScreenState extends State<UsersScreen>
                           tokens: widget.tokens,
                           showPrimaryActions: top,
                           isWideLayout: isWideLayout,
-                          onPrimaryDislike: () => _topCardKey?.currentState?.swipeLeft(),
-                          onPrimaryFilter: () => Navigator.pushNamed(context, '/filters'),
-                          onPrimaryLike: () => _topCardKey?.currentState?.swipeRight(),
+                          onPrimaryDislike: () =>
+                              _topCardKey?.currentState?.swipeLeft(),
+                          onPrimaryFilter: () =>
+                              Navigator.pushNamed(context, '/filters'),
+                          onPrimaryLike: () =>
+                              _topCardKey?.currentState?.swipeRight(),
                         ),
                       );
                     }),
@@ -502,13 +565,22 @@ class _UsersScreenState extends State<UsersScreen>
           final bool isWide = constraints.maxWidth >= 800;
           final bool showWideHeader = constraints.maxWidth > 1100;
           final double borderRadius = isWide ? 36 : 0;
-            final EdgeInsets shellPadding = isWide
+          final EdgeInsets shellPadding = isWide
               ? const EdgeInsets.symmetric(horizontal: 120, vertical: 20)
               : EdgeInsets.zero;
-            final double availableWidth = (constraints.maxWidth - shellPadding.horizontal).clamp(0.0, constraints.maxWidth).toDouble();
-            final double availableHeight = (constraints.maxHeight - shellPadding.vertical).clamp(0.0, constraints.maxHeight).toDouble();
-          final double cardWidth = isWide ? max(284, availableWidth * 0.278) : availableWidth;
-          final double cardHeight = isWide ? availableHeight * 0.99 : availableHeight;
+          final double availableWidth =
+              (constraints.maxWidth - shellPadding.horizontal)
+                  .clamp(0.0, constraints.maxWidth)
+                  .toDouble();
+          final double availableHeight =
+              (constraints.maxHeight - shellPadding.vertical)
+                  .clamp(0.0, constraints.maxHeight)
+                  .toDouble();
+          // Use fixed width on wide screens instead of percentage-based
+          final double cardWidth = isWide ? 440.0 : availableWidth;
+          final double cardHeight = isWide
+              ? availableHeight * 0.99
+              : availableHeight;
 
           final Widget phoneExperience = _buildPhoneExperience(isWide);
           final Widget phoneShell = Container(
@@ -529,7 +601,11 @@ class _UsersScreenState extends State<UsersScreen>
             ),
             child: SizedBox.expand(child: phoneExperience),
           );
-          final Widget framedPhone = SizedBox(width: cardWidth, height: cardHeight, child: phoneShell);
+          final Widget framedPhone = SizedBox(
+            width: cardWidth,
+            height: cardHeight,
+            child: phoneShell,
+          );
 
           return Container(
             decoration: const BoxDecoration(
@@ -595,7 +671,10 @@ class _UsersScreenState extends State<UsersScreen>
                         child: Visibility(
                           visible: showWideHeader,
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 72, vertical: 32),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 72,
+                              vertical: 32,
+                            ),
                             child: _WideHeader(
                               headline: _matchHeadline,
                               locationLabel: _currentLocationLabel,
@@ -677,10 +756,7 @@ class _WideHeader extends StatelessWidget {
   final String headline;
   final String locationLabel;
 
-  const _WideHeader({
-    required this.headline,
-    required this.locationLabel,
-  });
+  const _WideHeader({required this.headline, required this.locationLabel});
 
   @override
   Widget build(BuildContext context) {
@@ -695,18 +771,18 @@ class _WideHeader extends StatelessWidget {
               Text(
                 'Discover',
                 style: theme.textTheme.headlineMedium?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.2,
-                    ),
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.2,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
                 headline,
                 style: theme.textTheme.titleMedium?.copyWith(
-                      color: Colors.white.withOpacity(0.85),
-                      fontWeight: FontWeight.w500,
-                    ),
+                  color: Colors.white.withOpacity(0.85),
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ],
           ),
@@ -737,7 +813,11 @@ class _WideHeader extends StatelessWidget {
                     colors: [Color(0xFF7C4DFF), Color(0xFF40C9FF)],
                   ),
                 ),
-                child: const Icon(Icons.my_location, color: Colors.white, size: 18),
+                child: const Icon(
+                  Icons.my_location,
+                  color: Colors.white,
+                  size: 18,
+                ),
               ),
               const SizedBox(width: 14),
               Column(
@@ -783,8 +863,8 @@ class DraggableCard extends StatefulWidget {
   final VoidCallback onSwipedLeft;
   final VoidCallback onSwipedRight;
   final bool isDraggable;
-  final ApiClient api;  // Add this
-  final TokenStore tokens;  // Add this
+  final ApiClient api; // Add this
+  final TokenStore tokens; // Add this
   final bool showPrimaryActions;
   final VoidCallback? onPrimaryLike;
   final VoidCallback? onPrimaryDislike;
@@ -799,15 +879,15 @@ class DraggableCard extends StatefulWidget {
     this.isBand = false,
     this.city,
     this.country,
-  this.gender,
+    this.gender,
     required this.userData,
     required this.tagById,
     required this.categoryNames,
     required this.onSwipedLeft,
     required this.onSwipedRight,
     this.isDraggable = true,
-    required this.api,  // Add this
-    required this.tokens,  // Add this
+    required this.api, // Add this
+    required this.tokens, // Add this
     this.showPrimaryActions = false,
     this.onPrimaryLike,
     this.onPrimaryDislike,
@@ -819,8 +899,8 @@ class DraggableCard extends StatefulWidget {
   State<DraggableCard> createState() => _DraggableCardState();
 }
 
-
-class _DraggableCardState extends State<DraggableCard> with SingleTickerProviderStateMixin {
+class _DraggableCardState extends State<DraggableCard>
+    with SingleTickerProviderStateMixin {
   Offset _pos = Offset.zero;
   double _rot = 0.0;
   late AnimationController _ctrl;
@@ -829,18 +909,22 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
   final ScrollController _scrollController = ScrollController();
   int _currentImageIndex = 0;
   bool _isAnimating = false;
-  _Decision _decision = _Decision.none; // explicit decision state for keyboard swipes
+  _Decision _decision =
+      _Decision.none; // explicit decision state for keyboard swipes
 
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 300));
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
   }
 
   List<String> get _allImages {
     final images = <String>[];
     if (widget.imageUrl != null) images.add(widget.imageUrl!);
-    
+
     // Add more images from profilePictures if available
     if (widget.userData['profilePictures'] is List) {
       final pics = widget.userData['profilePictures'] as List;
@@ -870,8 +954,14 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
   }
 
   void _runOffScreen(Offset target, double rot, VoidCallback onComplete) {
-    _animPos = Tween(begin: _pos, end: target).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
-    _animRot = Tween(begin: _rot, end: rot).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
+    _animPos = Tween(
+      begin: _pos,
+      end: target,
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
+    _animRot = Tween(
+      begin: _rot,
+      end: rot,
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
     _ctrl.addListener(() {
       setState(() {
         _pos = _animPos.value;
@@ -923,14 +1013,14 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
     final double actionIconSize = isWide ? 20 : 22;
     final double actionSpacing = isWide ? 12 : 16;
     final double contentBottomPadding = widget.showPrimaryActions
-      ? (isWide ? 150 : 190)
-      : (isWide ? 110 : 140);
+        ? (isWide ? 150 : 190)
+        : (isWide ? 110 : 140);
     final threshold = w * 0.25;
     final dragLike = (_pos.dx / threshold).clamp(0.0, 1.0);
     final dragNope = (-_pos.dx / threshold).clamp(0.0, 1.0);
     final likeOpacity = _decision == _Decision.like ? 1.0 : dragLike;
     final nopeOpacity = _decision == _Decision.nope ? 1.0 : dragNope;
-    
+
     // Extract tags grouped by category (analogous to ProfileScreen)
     final Map<String, List<String>> groupedTags = {};
     if (widget.userData['tagsIds'] is List) {
@@ -946,22 +1036,30 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
       }
     } else if (widget.userData['tags'] is List) {
       // Fallback: when backend returns names directly
-      groupedTags['Tags'] = (widget.userData['tags'] as List).map((e) => e.toString()).toList();
+      groupedTags['Tags'] = (widget.userData['tags'] as List)
+          .map((e) => e.toString())
+          .toList();
     }
-    
+
     // Extract age for artists
     int? age;
     if (widget.userData['birthDate'] != null && !widget.isBand) {
       try {
-        final birthDate = DateTime.parse(widget.userData['birthDate'].toString());
+        final birthDate = DateTime.parse(
+          widget.userData['birthDate'].toString(),
+        );
         age = DateTime.now().year - birthDate.year;
       } catch (_) {}
     }
-    
+
     // Extract band members
     final bandMembers = <Map<String, dynamic>>[];
     if (widget.isBand && widget.userData['bandMembers'] is List) {
-      bandMembers.addAll((widget.userData['bandMembers'] as List).whereType<Map>().map((m) => Map<String, dynamic>.from(m)));
+      bandMembers.addAll(
+        (widget.userData['bandMembers'] as List).whereType<Map>().map(
+          (m) => Map<String, dynamic>.from(m),
+        ),
+      );
     }
 
     return Transform.translate(
@@ -989,13 +1087,25 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
               ? (e) {
                   final threshold = w * 0.25;
                   if (_pos.dx > threshold) {
-                    _runOffScreen(Offset(w * 1.5, _pos.dy), 0.5, widget.onSwipedRight);
+                    _runOffScreen(
+                      Offset(w * 1.5, _pos.dy),
+                      0.5,
+                      widget.onSwipedRight,
+                    );
                   } else if (_pos.dx < -threshold) {
-                    _runOffScreen(Offset(-w * 1.5, _pos.dy), -0.5, widget.onSwipedLeft);
+                    _runOffScreen(
+                      Offset(-w * 1.5, _pos.dy),
+                      -0.5,
+                      widget.onSwipedLeft,
+                    );
                   } else {
                     // snap back
-                    _animPos = Tween(begin: _pos, end: Offset.zero).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
-                    _animRot = Tween(begin: _rot, end: 0.0).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
+                    _animPos = Tween(begin: _pos, end: Offset.zero).animate(
+                      CurvedAnimation(parent: _ctrl, curve: Curves.easeOut),
+                    );
+                    _animRot = Tween(begin: _rot, end: 0.0).animate(
+                      CurvedAnimation(parent: _ctrl, curve: Curves.easeOut),
+                    );
                     _ctrl.addListener(() {
                       setState(() {
                         _pos = _animPos.value;
@@ -1031,251 +1141,381 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
                         controller: _scrollController,
                         padding: EdgeInsets.only(bottom: contentBottomPadding),
                         child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Main image section with indicators
-                      Stack(
-                        children: [
-                          // Image
-                          Container(
-                            height: heroHeight,
-                            width: double.infinity,
-                            child: images.isNotEmpty
-                                ? Image.network(
-                                    images[_currentImageIndex],
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return Container(
-                                        color: Colors.grey[300],
-                                        child: Icon(Icons.person, size: 100, color: Colors.grey[500]),
-                                      );
-                                    },
-                                  )
-                                : Container(
-                                    color: Colors.grey[300],
-                                    child: Icon(Icons.person, size: 100, color: Colors.grey[500]),
-                                  ),
-                          ),
-                          // (Removed small overlays; replaced by global stamps below)
-                          // Image indicators
-                          if (images.length > 1)
-                            Positioned(
-                              top: 8,
-                              left: 0,
-                              right: 0,
-                              child: Row(
-                                children: List.generate(
-                                  images.length,
-                                  (idx) => Expanded(
-                                    child: Container(
-                                      height: 3,
-                                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                                      decoration: BoxDecoration(
-                                        color: idx == _currentImageIndex ? Colors.white : Colors.white.withOpacity(0.5),
-                                        borderRadius: BorderRadius.circular(2),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          // Artist/Band Tag (Top Right)
-                          Positioned(
-                            top: 24,
-                            right: 20,
-                            child: Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: isWide ? 12 : 16,
-                                vertical: isWide ? 6 : 8,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
-                                border: Border.all(color: Colors.white.withOpacity(0.4), width: 1),
-                                borderRadius: BorderRadius.circular(30),
-                              ),
-                              child: Text(
-                                widget.isBand ? 'BAND' : 'ARTIST',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: isWide ? 11 : 12,
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 1.0,
-                                ),
-                              ),
-                            ),
-                          ),
-                          // Gradient overlay at bottom
-                          Positioned(
-                            bottom: 0,
-                            left: 0,
-                            right: 0,
-                            child: Container(
-                              height: heroHeight * 0.8,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  colors: [
-                                    Colors.transparent,
-                                    const Color(0xFF150A32).withOpacity(0.2),
-                                    const Color(0xFF150A32).withOpacity(0.8),
-                                    const Color(0xFF150A32),
-                                  ],
-                                  stops: const [0.0, 0.3, 0.75, 1.0],
-                                ),
-                              ),
-                            ),
-                          ),
-                          // Name and location overlay
-                          Positioned(
-                            bottom: 12,
-                            left: 20,
-                            right: 20,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Main image section with indicators
+                            Stack(
                               children: [
-                                GestureDetector(
-                                  onTap: () {
-                                    final userId = widget.userData['id']?.toString() ?? '';
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => VisitProfileScreen(
-                                          api: widget.api,
-                                          tokens: widget.tokens,
-                                          userId: userId,
+                                // Image
+                                Container(
+                                  height: heroHeight,
+                                  width: double.infinity,
+                                  child: images.isNotEmpty
+                                      ? Image.network(
+                                          images[_currentImageIndex],
+                                          fit: BoxFit.cover,
+                                          errorBuilder:
+                                              (context, error, stackTrace) {
+                                                return Container(
+                                                  color: Colors.grey[300],
+                                                  child: Icon(
+                                                    Icons.person,
+                                                    size: 100,
+                                                    color: Colors.grey[500],
+                                                  ),
+                                                );
+                                              },
+                                        )
+                                      : Container(
+                                          color: Colors.grey[300],
+                                          child: Icon(
+                                            Icons.person,
+                                            size: 100,
+                                            color: Colors.grey[500],
+                                          ),
+                                        ),
+                                ),
+                                // (Removed small overlays; replaced by global stamps below)
+                                // Image indicators
+                                if (images.length > 1)
+                                  Positioned(
+                                    top: 8,
+                                    left: 0,
+                                    right: 0,
+                                    child: Row(
+                                      children: List.generate(
+                                        images.length,
+                                        (idx) => Expanded(
+                                          child: Container(
+                                            height: 3,
+                                            margin: const EdgeInsets.symmetric(
+                                              horizontal: 4,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: idx == _currentImageIndex
+                                                  ? Colors.white
+                                                  : Colors.white.withOpacity(
+                                                      0.5,
+                                                    ),
+                                              borderRadius:
+                                                  BorderRadius.circular(2),
+                                            ),
+                                          ),
                                         ),
                                       ),
-                                    );
-                                  },
-                                  child: Text(
-                                    '${widget.name}${age != null ? ', $age' : ''}',
-                                    style: TextStyle(
-                                      fontSize: isWide ? 22 : 24,
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.white,
-                                      letterSpacing: 0.3,
-                                      shadows: [
-                                        Shadow(
-                                          color: Colors.black.withOpacity(0.5),
-                                          blurRadius: 12,
-                                          offset: const Offset(0, 2),
-                                        ),
-                                      ],
                                     ),
                                   ),
-                                ),
-                                if ((widget.city ?? '').isNotEmpty || (widget.country ?? '').isNotEmpty)
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 4),
+                                // Artist/Band Tag (Top Right)
+                                Positioned(
+                                  top: 24,
+                                  right: 20,
+                                  child: Container(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: isWide ? 12 : 16,
+                                      vertical: isWide ? 6 : 8,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.2),
+                                      border: Border.all(
+                                        color: Colors.white.withOpacity(0.4),
+                                        width: 1,
+                                      ),
+                                      borderRadius: BorderRadius.circular(30),
+                                    ),
                                     child: Text(
-                                      [widget.city, widget.country]
-                                          .where((e) => e != null && e.isNotEmpty)
-                                          .join(', ')
-                                          .toUpperCase(),
+                                      widget.isBand ? 'BAND' : 'ARTIST',
                                       style: TextStyle(
-                                        color: Colors.white.withOpacity(0.95),
+                                        color: Colors.white,
                                         fontSize: isWide ? 11 : 12,
                                         fontWeight: FontWeight.w600,
                                         letterSpacing: 1.0,
-                                        shadows: [
-                                          Shadow(
-                                            color: Colors.black.withOpacity(0.5),
-                                            blurRadius: 8,
-                                            offset: const Offset(0, 1),
-                                          ),
-                                        ],
                                       ),
                                     ),
                                   ),
-                                if (widget.showPrimaryActions) ...[
-                                  const SizedBox(height: 18),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
+                                ),
+                                // Gradient overlay at bottom
+                                Positioned(
+                                  bottom: 0,
+                                  left: 0,
+                                  right: 0,
+                                  child: Container(
+                                    height: heroHeight * 0.8,
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topCenter,
+                                        end: Alignment.bottomCenter,
+                                        colors: [
+                                          Colors.transparent,
+                                          const Color(
+                                            0xFF150A32,
+                                          ).withOpacity(0.2),
+                                          const Color(
+                                            0xFF150A32,
+                                          ).withOpacity(0.8),
+                                          const Color(0xFF150A32),
+                                        ],
+                                        stops: const [0.0, 0.3, 0.75, 1.0],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                // Name and location overlay
+                                Positioned(
+                                  bottom: 12,
+                                  left: 20,
+                                  right: 20,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      _RoundActionButton(
-                                        icon: Icons.close,
-                                        backgroundColor: Colors.white.withOpacity(0.92),
-                                        iconColor: const Color(0xFF9245D5),
-                                        onTap: widget.onPrimaryDislike ?? () {},
-                                        size: actionButtonSize,
-                                        iconSize: actionIconSize,
+                                      GestureDetector(
+                                        onTap: () {
+                                          final userId =
+                                              widget.userData['id']
+                                                  ?.toString() ??
+                                              '';
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  VisitProfileScreen(
+                                                    api: widget.api,
+                                                    tokens: widget.tokens,
+                                                    userId: userId,
+                                                  ),
+                                            ),
+                                          );
+                                        },
+                                        child: Text(
+                                          '${widget.name}${age != null ? ', $age' : ''}',
+                                          style: TextStyle(
+                                            fontSize: isWide ? 22 : 24,
+                                            fontWeight: FontWeight.w700,
+                                            color: Colors.white,
+                                            letterSpacing: 0.3,
+                                            shadows: [
+                                              Shadow(
+                                                color: Colors.black.withOpacity(
+                                                  0.5,
+                                                ),
+                                                blurRadius: 12,
+                                                offset: const Offset(0, 2),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
                                       ),
-                                      SizedBox(width: actionSpacing),
-                                      _RoundActionButton(
-                                        icon: Icons.tune,
-                                        backgroundColor: Colors.white.withOpacity(0.92),
-                                        iconColor: const Color(0xFF4C3F8F),
-                                        onTap: widget.onPrimaryFilter ?? () {},
-                                        size: actionButtonSize,
-                                        iconSize: actionIconSize,
-                                        isElevated: true,
-                                      ),
-                                      SizedBox(width: actionSpacing),
-                                      _RoundActionButton(
-                                        icon: Icons.favorite,
-                                        backgroundColor: Colors.white.withOpacity(0.92),
-                                        iconColor: const Color(0xFFE65080),
-                                        onTap: widget.onPrimaryLike ?? () {},
-                                        size: actionButtonSize,
-                                        iconSize: actionIconSize,
-                                      ),
+                                      if ((widget.city ?? '').isNotEmpty ||
+                                          (widget.country ?? '').isNotEmpty)
+                                        Padding(
+                                          padding: const EdgeInsets.only(
+                                            top: 4,
+                                          ),
+                                          child: Text(
+                                            [widget.city, widget.country]
+                                                .where(
+                                                  (e) =>
+                                                      e != null && e.isNotEmpty,
+                                                )
+                                                .join(', ')
+                                                .toUpperCase(),
+                                            style: TextStyle(
+                                              color: Colors.white.withOpacity(
+                                                0.95,
+                                              ),
+                                              fontSize: isWide ? 11 : 12,
+                                              fontWeight: FontWeight.w600,
+                                              letterSpacing: 1.0,
+                                              shadows: [
+                                                Shadow(
+                                                  color: Colors.black
+                                                      .withOpacity(0.5),
+                                                  blurRadius: 8,
+                                                  offset: const Offset(0, 1),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      if (widget.showPrimaryActions) ...[
+                                        const SizedBox(height: 18),
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            _RoundActionButton(
+                                              icon: Icons.close,
+                                              backgroundColor: Colors.white
+                                                  .withOpacity(0.92),
+                                              iconColor: const Color(
+                                                0xFF9245D5,
+                                              ),
+                                              onTap:
+                                                  widget.onPrimaryDislike ??
+                                                  () {},
+                                              size: actionButtonSize,
+                                              iconSize: actionIconSize,
+                                            ),
+                                            SizedBox(width: actionSpacing),
+                                            _RoundActionButton(
+                                              icon: Icons.tune,
+                                              backgroundColor: Colors.white
+                                                  .withOpacity(0.92),
+                                              iconColor: const Color(
+                                                0xFF4C3F8F,
+                                              ),
+                                              onTap:
+                                                  widget.onPrimaryFilter ??
+                                                  () {},
+                                              size: actionButtonSize,
+                                              iconSize: actionIconSize,
+                                              isElevated: true,
+                                            ),
+                                            SizedBox(width: actionSpacing),
+                                            _RoundActionButton(
+                                              icon: Icons.favorite,
+                                              backgroundColor: Colors.white
+                                                  .withOpacity(0.92),
+                                              iconColor: const Color(
+                                                0xFFE65080,
+                                              ),
+                                              onTap:
+                                                  widget.onPrimaryLike ?? () {},
+                                              size: actionButtonSize,
+                                              iconSize: actionIconSize,
+                                            ),
+                                          ],
+                                        ),
+                                      ],
                                     ],
                                   ),
-                                ],
+                                ),
                               ],
                             ),
-                          ),
-                        ],
-                      ),
-                      // About section
-                      if (widget.description.isNotEmpty)
-                        Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: isWide ? 18 : 20,
-                            vertical: isWide ? 16 : 20,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'ABOUT',
-                                style: TextStyle(
-                                  fontSize: isWide ? 12 : 13,
-                                  letterSpacing: 1.0,
-                                  fontWeight: FontWeight.w700,
-                                  color: const Color(0xFF6A4DBE),
+                            // About section
+                            if (widget.description.isNotEmpty)
+                              Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: isWide ? 18 : 20,
+                                  vertical: isWide ? 16 : 20,
                                 ),
-                              ),
-                              SizedBox(height: isWide ? 8 : 10),
-                              Text(
-                                widget.description,
-                                style: TextStyle(
-                                  fontSize: isWide ? 13 : 14,
-                                  height: 1.45,
-                                  color: const Color(0xFF1F1F1F),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      // Tag sections styled per mock
-                      if (groupedTags.isNotEmpty)
-                        Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: isWide ? 18 : 20,
-                            vertical: 8,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: groupedTags.entries.map((entry) {
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 18),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      entry.key.toUpperCase(),
+                                      'ABOUT',
+                                      style: TextStyle(
+                                        fontSize: isWide ? 12 : 13,
+                                        letterSpacing: 1.0,
+                                        fontWeight: FontWeight.w700,
+                                        color: const Color(0xFF6A4DBE),
+                                      ),
+                                    ),
+                                    SizedBox(height: isWide ? 8 : 10),
+                                    Text(
+                                      widget.description,
+                                      style: TextStyle(
+                                        fontSize: isWide ? 13 : 14,
+                                        height: 1.45,
+                                        color: const Color(0xFF1F1F1F),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            // Tag sections styled per mock
+                            if (groupedTags.isNotEmpty)
+                              Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: isWide ? 18 : 20,
+                                  vertical: 8,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: groupedTags.entries.map((entry) {
+                                    return Padding(
+                                      padding: const EdgeInsets.only(
+                                        bottom: 18,
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            entry.key.toUpperCase(),
+                                            style: TextStyle(
+                                              fontSize: isWide ? 12 : 13,
+                                              fontWeight: FontWeight.w700,
+                                              letterSpacing: 1.0,
+                                              color: const Color(0xFF6A4DBE),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Wrap(
+                                            spacing: isWide ? 6 : 8,
+                                            runSpacing: isWide ? 8 : 10,
+                                            children: entry.value
+                                                .map(
+                                                  (tagName) => Container(
+                                                    padding:
+                                                        EdgeInsets.symmetric(
+                                                          horizontal: isWide
+                                                              ? 12
+                                                              : 16,
+                                                          vertical: isWide
+                                                              ? 8
+                                                              : 10,
+                                                        ),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors
+                                                          .deepPurple
+                                                          .shade50,
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            20,
+                                                          ),
+                                                      border: Border.all(
+                                                        color: Colors
+                                                            .deepPurple
+                                                            .shade200,
+                                                      ),
+                                                    ),
+                                                    child: Text(
+                                                      tagName,
+                                                      style: TextStyle(
+                                                        fontSize: isWide
+                                                            ? 11
+                                                            : 12,
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                        color: Colors
+                                                            .deepPurple
+                                                            .shade700,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                )
+                                                .toList(),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
+                            // Gender section (under tags)
+                            if (widget.gender != null &&
+                                widget.gender!.isNotEmpty)
+                              Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: isWide ? 18 : 16,
+                                  vertical: 8,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'GENDER',
                                       style: TextStyle(
                                         fontSize: isWide ? 12 : 13,
                                         fontWeight: FontWeight.w700,
@@ -1284,135 +1524,100 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
                                       ),
                                     ),
                                     const SizedBox(height: 8),
-                                    Wrap(
-                                      spacing: isWide ? 6 : 8,
-                                      runSpacing: isWide ? 8 : 10,
-                                      children: entry.value
-                                          .map(
-                                            (tagName) => Container(
-                                              padding: EdgeInsets.symmetric(
-                                                horizontal: isWide ? 12 : 16,
-                                                vertical: isWide ? 8 : 10,
-                                              ),
-                                              decoration: BoxDecoration(
-                                                color: Colors.deepPurple.shade50,
-                                                borderRadius: BorderRadius.circular(20),
-                                                border: Border.all(color: Colors.deepPurple.shade200),
-                                              ),
-                                              child: Text(
-                                                tagName,
-                                                style: TextStyle(
-                                                  fontSize: isWide ? 11 : 12,
-                                                  fontWeight: FontWeight.w500,
-                                                  color: Colors.deepPurple.shade700,
-                                                ),
-                                              ),
-                                            ),
-                                          )
-                                          .toList(),
+                                    Text(
+                                      widget.gender!,
+                                      style: TextStyle(
+                                        fontSize: isWide ? 13 : 14,
+                                        color: Colors.grey[700],
+                                      ),
                                     ),
                                   ],
                                 ),
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                      // Gender section (under tags)
-                      if (widget.gender != null && widget.gender!.isNotEmpty)
-                        Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: isWide ? 18 : 16,
-                            vertical: 8,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'GENDER',
-                                style: TextStyle(
-                                  fontSize: isWide ? 12 : 13,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 1.0,
-                                  color: const Color(0xFF6A4DBE),
-                                ),
                               ),
-                              const SizedBox(height: 8),
-                              Text(
-                                widget.gender!,
-                                style: TextStyle(
-                                  fontSize: isWide ? 13 : 14,
-                                  color: Colors.grey[700],
+                            // Band members section
+                            if (bandMembers.isNotEmpty)
+                              Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: isWide ? 18 : 16,
+                                  vertical: 8,
                                 ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      // Band members section
-                      if (bandMembers.isNotEmpty)
-                        Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: isWide ? 18 : 16,
-                            vertical: 8,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'BAND MEMBERS',
-                                style: TextStyle(
-                                  fontSize: isWide ? 12 : 13,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 1.0,
-                                  color: const Color(0xFF6A4DBE),
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              ...bandMembers.map((member) {
-                                final name = member['name']?.toString() ?? '';
-                                final age = member['age']?.toString() ?? '';
-                                final role = member['bandRole']?.toString() ?? member['bandRoleName']?.toString() ?? '';
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 8),
-                                  child: Row(
-                                    children: [
-                                      CircleAvatar(
-                                        radius: 20,
-                                        backgroundColor: Colors.purple[100],
-                                        child: Icon(Icons.person, color: Colors.purple[700], size: 20),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'BAND MEMBERS',
+                                      style: TextStyle(
+                                        fontSize: isWide ? 12 : 13,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 1.0,
+                                        color: const Color(0xFF6A4DBE),
                                       ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    ...bandMembers.map((member) {
+                                      final name =
+                                          member['name']?.toString() ?? '';
+                                      final age =
+                                          member['age']?.toString() ?? '';
+                                      final role =
+                                          member['bandRole']?.toString() ??
+                                          member['bandRoleName']?.toString() ??
+                                          '';
+                                      return Padding(
+                                        padding: const EdgeInsets.only(
+                                          bottom: 8,
+                                        ),
+                                        child: Row(
                                           children: [
-                                            Text(
-                                              '$name${age.isNotEmpty ? ', $age' : ''}',
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.w600,
-                                                fontSize: isWide ? 13 : 14,
+                                            CircleAvatar(
+                                              radius: 20,
+                                              backgroundColor:
+                                                  Colors.purple[100],
+                                              child: Icon(
+                                                Icons.person,
+                                                color: Colors.purple[700],
+                                                size: 20,
                                               ),
                                             ),
-                                            if (role.isNotEmpty)
-                                              Text(
-                                                role,
-                                                style: TextStyle(
-                                                  fontSize: isWide ? 11 : 12,
-                                                  color: Colors.grey[600],
-                                                ),
+                                            const SizedBox(width: 12),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    '$name${age.isNotEmpty ? ', $age' : ''}',
+                                                    style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      fontSize: isWide
+                                                          ? 13
+                                                          : 14,
+                                                    ),
+                                                  ),
+                                                  if (role.isNotEmpty)
+                                                    Text(
+                                                      role,
+                                                      style: TextStyle(
+                                                        fontSize: isWide
+                                                            ? 11
+                                                            : 12,
+                                                        color: Colors.grey[600],
+                                                      ),
+                                                    ),
+                                                ],
                                               ),
+                                            ),
                                           ],
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              }),
-                            ],
-                          ),
+                                      );
+                                    }),
+                                  ],
+                                ),
+                              ),
+                            const SizedBox(height: 24),
+                          ],
                         ),
-                      const SizedBox(height: 24),
-                    ],
-                  ),
                       ),
                     ),
                     // Tinted decision overlay
@@ -1421,10 +1626,14 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
                         child: Container(
                           decoration: BoxDecoration(
                             color: likeOpacity > 0
-                                ? Colors.green.withOpacity((isWide ? 0.06 : 0.10) * likeOpacity + 0.04)
+                                ? Colors.green.withOpacity(
+                                    (isWide ? 0.06 : 0.10) * likeOpacity + 0.04,
+                                  )
                                 : nopeOpacity > 0
-                                    ? Colors.redAccent.withOpacity((isWide ? 0.06 : 0.10) * nopeOpacity + 0.04)
-                                    : Colors.transparent,
+                                ? Colors.redAccent.withOpacity(
+                                    (isWide ? 0.06 : 0.10) * nopeOpacity + 0.04,
+                                  )
+                                : Colors.transparent,
                           ),
                         ),
                       ),
@@ -1446,7 +1655,13 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
                               color: Colors.white.withOpacity(0.85),
                               border: Border.all(color: Colors.green, width: 4),
                               borderRadius: BorderRadius.circular(12),
-                              boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0,4))],
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Colors.black26,
+                                  blurRadius: 10,
+                                  offset: Offset(0, 4),
+                                ),
+                              ],
                             ),
                             child: Text(
                               'LIKE',
@@ -1476,9 +1691,18 @@ class _DraggableCardState extends State<DraggableCard> with SingleTickerProvider
                             ),
                             decoration: BoxDecoration(
                               color: Colors.white.withOpacity(0.85),
-                              border: Border.all(color: Colors.redAccent, width: 4),
+                              border: Border.all(
+                                color: Colors.redAccent,
+                                width: 4,
+                              ),
                               borderRadius: BorderRadius.circular(12),
-                              boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0,4))],
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Colors.black26,
+                                  blurRadius: 10,
+                                  offset: Offset(0, 4),
+                                ),
+                              ],
                             ),
                             child: Text(
                               'NOPE',
