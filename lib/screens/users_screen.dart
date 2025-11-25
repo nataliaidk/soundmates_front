@@ -565,48 +565,38 @@ class _UsersScreenState extends State<UsersScreen>
         builder: (context, constraints) {
           final bool isWide = constraints.maxWidth >= 800;
           final bool showWideHeader = constraints.maxWidth > 1100;
-          final double borderRadius = isWide ? 36 : 0;
-          final EdgeInsets shellPadding = isWide
-              ? const EdgeInsets.symmetric(horizontal: 120, vertical: 20)
-              : EdgeInsets.zero;
-          final double availableWidth =
-              (constraints.maxWidth - shellPadding.horizontal)
-                  .clamp(0.0, constraints.maxWidth)
-                  .toDouble();
-          final double availableHeight =
-              (constraints.maxHeight - shellPadding.vertical)
-                  .clamp(0.0, constraints.maxHeight)
-                  .toDouble();
-          // Use fixed width on wide screens instead of percentage-based
-          final double cardWidth = isWide ? 440.0 : availableWidth;
-          final double cardHeight = isWide
-              ? availableHeight * 0.99
-              : availableHeight;
 
           final Widget phoneExperience = _buildPhoneExperience(isWide);
-          final Widget phoneShell = Container(
-            clipBehavior: borderRadius > 0 ? Clip.antiAlias : Clip.none,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(borderRadius),
-              boxShadow: isWide
-                  ? [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 40,
-                        offset: const Offset(0, 30),
-                        spreadRadius: 4,
+
+          // Create the phone card with different layouts for mobile vs wide
+          final Widget framedPhone = isWide
+              ? ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: 800,
+                    maxWidth: 800 * (9 / 16), // Match aspect ratio
+                  ),
+                  child: AspectRatio(
+                    aspectRatio: 9 / 16,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(36),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.3),
+                              blurRadius: 60,
+                              offset: const Offset(0, 30),
+                              spreadRadius: 8,
+                            ),
+                          ],
+                        ),
+                        child: phoneExperience,
                       ),
-                    ]
-                  : null,
-            ),
-            child: SizedBox.expand(child: phoneExperience),
-          );
-          final Widget framedPhone = SizedBox(
-            width: cardWidth,
-            height: cardHeight,
-            child: phoneShell,
-          );
+                    ),
+                  ),
+                )
+              : SizedBox.expand(child: phoneExperience);
 
           return Container(
             decoration: const BoxDecoration(
@@ -686,16 +676,18 @@ class _UsersScreenState extends State<UsersScreen>
                     ),
                   ),
                 // Center the card and side nav together on wide screens
-                Align(
-                  alignment: Alignment.center,
-                  child: Padding(
-                    padding: shellPadding,
+                Padding(
+                  padding: EdgeInsets.only(
+                    top: showWideHeader ? 10 : 0,
+                    bottom: showWideHeader ? 10 : 0,
+                  ),
+                  child: Center(
                     child: isWide
                         ? Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               framedPhone,
-                              const SizedBox(width: 32),
+                              const SizedBox(width: 16),
                               AppSideNav(current: SideNavItem.home),
                             ],
                           )
