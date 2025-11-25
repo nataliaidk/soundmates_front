@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:video_player/video_player.dart';
 import '../../api/api_client.dart';
 import '../../api/models.dart';
 import 'profile_band_member_dialog.dart';
@@ -556,23 +557,8 @@ class _ProfileViewTabsState extends State<ProfileViewTabs> {
                                   },
                                 )
                               else if (media.type == _MediaType.video)
-                                // Try to show video thumbnail or fallback to icon
-                                Image.network(
-                                  media.url,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Container(
-                                      color: Colors.blue[50],
-                                      child: const Center(
-                                        child: Icon(
-                                          Icons.videocam,
-                                          size: 48,
-                                          color: Colors.blue,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                )
+                                // Show video thumbnail (first frame)
+                                _VideoThumbnail(videoUrl: media.url)
                               else
                                 // Audio files
                                 Container(
@@ -749,4 +735,87 @@ class _MediaItem {
   final String fileName;
 
   _MediaItem({required this.type, required this.url, required this.fileName});
+}
+
+/// Widget that displays video thumbnail (first frame)
+class _VideoThumbnail extends StatefulWidget {
+  final String videoUrl;
+
+  const _VideoThumbnail({required this.videoUrl});
+
+  @override
+  State<_VideoThumbnail> createState() => _VideoThumbnailState();
+}
+
+class _VideoThumbnailState extends State<_VideoThumbnail> {
+  VideoPlayerController? _controller;
+  bool _initialized = false;
+  bool _hasError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeVideo();
+  }
+
+  Future<void> _initializeVideo() async {
+    try {
+      _controller = VideoPlayerController.networkUrl(
+        Uri.parse(widget.videoUrl),
+      );
+      await _controller!.initialize();
+      // Pause immediately to show first frame
+      await _controller!.pause();
+      if (mounted) {
+        setState(() {
+          _initialized = true;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading video thumbnail: $e');
+      if (mounted) {
+        setState(() {
+          _hasError = true;
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_hasError) {
+      return Container(
+        color: Colors.grey[300],
+        child: const Icon(Icons.videocam_off, color: Colors.grey, size: 32),
+      );
+    }
+
+    if (!_initialized || _controller == null) {
+      return Container(
+        color: Colors.grey[200],
+        child: const Center(
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      );
+    }
+
+    return FittedBox(
+      fit: BoxFit.cover,
+      child: SizedBox(
+        width: _controller!.value.size.width,
+        height: _controller!.value.size.height,
+        child: VideoPlayer(_controller!),
+      ),
+    );
+  }
 }
