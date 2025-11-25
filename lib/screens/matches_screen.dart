@@ -194,6 +194,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
                           match: _matches[index],
                           api: widget.api,
                           tokens: widget.tokens,
+                          eventHubService: widget.eventHubService,
                         ),
                       ),
                     ),
@@ -233,6 +234,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
                                   tokens: widget.tokens,
                                   onRefresh: _loadLastMessages,
                                   eventHubService: widget.eventHubService,
+                                  currentUserId: _currentUserId,
                                 ),
                               ),
                       ),
@@ -255,11 +257,13 @@ class _RecentMatchCard extends StatelessWidget {
   final OtherUserProfileDto match;
   final ApiClient api;
   final TokenStore tokens;
+  final EventHubService? eventHubService;
 
   const _RecentMatchCard({
     required this.match,
     required this.api,
     required this.tokens,
+    this.eventHubService,
   });
 
   @override
@@ -274,7 +278,12 @@ class _RecentMatchCard extends StatelessWidget {
           context,
           MaterialPageRoute(
             builder: (context) =>
-                VisitProfileScreen(api: api, tokens: tokens, userId: match.id),
+                VisitProfileScreen(
+                  api: api,
+                  tokens: tokens,
+                  userId: match.id,
+                  eventHubService: eventHubService,
+                ),
           ),
         );
       },
@@ -351,6 +360,7 @@ class _MatchListItem extends StatelessWidget {
   final TokenStore tokens;
   final VoidCallback onRefresh;
   final EventHubService? eventHubService;
+  final String? currentUserId;
 
   const _MatchListItem({
     required this.match,
@@ -359,6 +369,7 @@ class _MatchListItem extends StatelessWidget {
     required this.tokens,
     required this.onRefresh,
     this.eventHubService,
+    this.currentUserId,
   });
 
   @override
@@ -366,6 +377,16 @@ class _MatchListItem extends StatelessWidget {
     final imageUrl = match.profilePictures.isNotEmpty
         ? match.profilePictures.first.getAbsoluteUrl(api.baseUrl)
         : null;
+
+    final isMe = currentUserId != null && lastMessage?.senderId == currentUserId;
+    final isUnread = lastMessage != null && !isMe && !lastMessage!.isSeen;
+
+    String displayContent = lastMessage?.content ??
+        (match.description.isNotEmpty ? match.description : 'New match');
+
+    if (lastMessage != null && isMe) {
+      displayContent = 'You: $displayContent';
+    }
 
     return GestureDetector(
       onTap: () async {
@@ -407,13 +428,13 @@ class _MatchListItem extends StatelessWidget {
                   Text(match.name ?? 'User', style: AppTextStyles.bodyMedium),
                   const SizedBox(height: 4),
                   Text(
-                    lastMessage?.content ??
-                        (match.description.isNotEmpty
-                            ? match.description
-                            : 'New match'),
+                    displayContent,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.bodyRegular,
+                    style: AppTextStyles.bodyRegular.copyWith(
+                      fontWeight: isUnread ? FontWeight.bold : FontWeight.normal,
+                      color: isUnread ? Colors.black87 : null,
+                    ),
                   ),
                 ],
               ),
