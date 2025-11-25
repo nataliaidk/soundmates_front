@@ -3,6 +3,7 @@ import 'dart:ui' show lerpDouble;
 import 'package:flutter/material.dart';
 import 'package:zpi_test/screens/visit_profile/visit_profile_screen.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import '../widgets/app_bottom_nav.dart';
 import '../widgets/app_side_nav.dart';
 import '../api/api_client.dart';
@@ -571,50 +572,58 @@ class _UsersScreenState extends State<UsersScreen>
       backgroundColor: Colors.transparent,
       body: LayoutBuilder(
         builder: (context, constraints) {
-          final bool isWide = constraints.maxWidth >= 800;
-          final bool showWideHeader = constraints.maxWidth > 1100;
-          final double borderRadius = isWide ? 36 : 0;
-          final EdgeInsets shellPadding = isWide
-              ? const EdgeInsets.symmetric(horizontal: 120, vertical: 20)
-              : EdgeInsets.zero;
-          final double availableWidth =
-              (constraints.maxWidth - shellPadding.horizontal)
-                  .clamp(0.0, constraints.maxWidth)
-                  .toDouble();
-          final double availableHeight =
-              (constraints.maxHeight - shellPadding.vertical)
-                  .clamp(0.0, constraints.maxHeight)
-                  .toDouble();
-          // Use fixed width on wide screens instead of percentage-based
-          final double cardWidth = isWide ? 325.0 : availableWidth;
-          final double cardHeight = isWide
-              ? availableHeight * 0.99
-              : availableHeight;
+          final bool isMobile =
+              defaultTargetPlatform == TargetPlatform.iOS ||
+              defaultTargetPlatform == TargetPlatform.android;
 
-          final Widget phoneExperience = _buildPhoneExperience(isWide);
+          // Calculate base phone dimensions from available height to check if we can frame it
+          // We use 95% of height as the target phone height
+          final double basePhoneHeight = constraints.maxHeight * 0.95;
+          final double basePhoneWidth = basePhoneHeight * (9 / 16);
 
-          // Create the phone card with different layouts for mobile vs wide
-          // Calculate dynamic dimensions for the phone frame
-          // We want it to be as big as possible but:
-          // 1. Not taller than 90% of screen height
-          // 2. Not wider than available width minus side nav space (approx 150px safe buffer)
-          // 3. Maintain 9:16 aspect ratio
+          // Framed mode activates if:
+          // 1. Not on mobile (unless we want to force it on tablets, but user said "For apps... keep vertical full screen")
+          // 2. Screen width is wider than the calculated phone width
+          final bool isFramed =
+              !isMobile && constraints.maxWidth > basePhoneWidth;
 
-          final double maxAvailableHeight = constraints.maxHeight * 0.90;
-          // Side nav is roughly ~100px + paddings, so 200px is a safe reserve
-          final double maxAvailableWidth = constraints.maxWidth - 200;
+          final bool isLandscape = constraints.maxWidth > constraints.maxHeight;
 
-          // Calculate height based on width constraint: W = H * (9/16) => H = W * (16/9)
-          final double heightFromWidth = maxAvailableWidth * (16 / 9);
+          // Navigation visibility
+          // Side nav: Only in framed mode AND landscape (Wider than Taller)
+          final bool showSideNav = isFramed && isLandscape;
+          // Bottom nav: Default for non-framed, or framed but portrait (Taller than Wider)
+          final bool showBottomNav = !isFramed || (isFramed && !isLandscape);
 
-          // Take the smaller of the two height constraints to satisfy both
-          final double phoneHeight = (heightFromWidth < maxAvailableHeight)
-              ? heightFromWidth
-              : maxAvailableHeight;
+          final bool showWideHeader = isFramed && constraints.maxWidth > 1100;
 
+          final Widget phoneExperience = _buildPhoneExperience(isFramed);
+
+          // Calculate final dimensions for the framed phone
+          double availableWidth = constraints.maxWidth;
+          double availableHeight = constraints.maxHeight;
+
+          if (showSideNav) {
+            // Reserve space for side nav (approx 100px + padding)
+            availableWidth -= 200;
+          }
+
+          if (showBottomNav) {
+            // Reserve space for bottom nav (approx 80-100px)
+            // We subtract this because the phone needs to fit in the remaining vertical space
+            availableHeight -= 100;
+          }
+
+          // Calculate max allowed height based on 95% of available height
+          final double maxH = availableHeight * 0.95;
+          // Calculate height derived from available width constraint
+          final double hFromW = availableWidth * (16 / 9);
+
+          // Take the smaller height to satisfy all constraints
+          final double phoneHeight = (hFromW < maxH) ? hFromW : maxH;
           final double phoneWidth = phoneHeight * (9 / 16);
 
-          final Widget framedPhone = isWide
+          final Widget framedPhone = isFramed
               ? ConstrainedBox(
                   constraints: BoxConstraints(
                     maxHeight: phoneHeight,
@@ -651,106 +660,112 @@ class _UsersScreenState extends State<UsersScreen>
                 end: Alignment.bottomRight,
               ),
             ),
-            child: Stack(
+            child: Column(
               children: [
-                Positioned.fill(
-                  child: IgnorePointer(
-                    child: AnimatedBuilder(
-                      animation: _ambientDrift,
-                      builder: (context, _) {
-                        final Alignment centerOne = Alignment(
-                          lerpDouble(-0.4, 0.3, _ambientDrift.value)!,
-                          lerpDouble(-0.8, -0.2, _ambientDrift.value)!,
-                        );
-                        final Alignment centerTwo = Alignment(
-                          lerpDouble(0.8, -0.2, _ambientDrift.value)!,
-                          lerpDouble(0.6, 0.2, _ambientDrift.value)!,
-                        );
-                        return Container(
-                          decoration: BoxDecoration(
-                            gradient: RadialGradient(
-                              center: centerOne,
-                              radius: 1.2,
-                              colors: [
-                                const Color(0xFF9C6BFF).withOpacity(0.25),
-                                Colors.transparent,
-                              ],
-                            ),
-                          ),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              gradient: RadialGradient(
-                                center: centerTwo,
-                                radius: 1.0,
-                                colors: [
-                                  const Color(0xFF40C9FF).withOpacity(0.18),
-                                  Colors.transparent,
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-                if (isWide)
-                  Positioned(
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    child: SafeArea(
-                      bottom: false,
-                      child: AnimatedOpacity(
-                        duration: const Duration(milliseconds: 350),
-                        opacity: showWideHeader ? 1 : 0,
-                        child: Visibility(
-                          visible: showWideHeader,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 72,
-                              vertical: 32,
-                            ),
-                            child: _WideHeader(
-                              headline: _matchHeadline,
-                              locationLabel: _currentLocationLabel,
-                            ),
+                Expanded(
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
+                        child: IgnorePointer(
+                          child: AnimatedBuilder(
+                            animation: _ambientDrift,
+                            builder: (context, _) {
+                              final Alignment centerOne = Alignment(
+                                lerpDouble(-0.4, 0.3, _ambientDrift.value)!,
+                                lerpDouble(-0.8, -0.2, _ambientDrift.value)!,
+                              );
+                              final Alignment centerTwo = Alignment(
+                                lerpDouble(0.8, -0.2, _ambientDrift.value)!,
+                                lerpDouble(0.6, 0.2, _ambientDrift.value)!,
+                              );
+                              return Container(
+                                decoration: BoxDecoration(
+                                  gradient: RadialGradient(
+                                    center: centerOne,
+                                    radius: 1.2,
+                                    colors: [
+                                      const Color(0xFF9C6BFF).withOpacity(0.25),
+                                      Colors.transparent,
+                                    ],
+                                  ),
+                                ),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    gradient: RadialGradient(
+                                      center: centerTwo,
+                                      radius: 1.0,
+                                      colors: [
+                                        const Color(
+                                          0xFF40C9FF,
+                                        ).withOpacity(0.18),
+                                        Colors.transparent,
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                         ),
                       ),
-                    ),
-                  ),
-                // Center the card and side nav together on wide screens
-                Padding(
-                  padding: EdgeInsets.only(
-                    top: showWideHeader ? 10 : 0,
-                    bottom: showWideHeader ? 10 : 0,
-                  ),
-                  child: Center(
-                    child: isWide
-                        ? Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              framedPhone,
-                              const SizedBox(width: 16),
-                              AppSideNav(current: SideNavItem.home),
-                            ],
-                          )
-                        : framedPhone,
+                      if (isFramed)
+                        Positioned(
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          child: SafeArea(
+                            bottom: false,
+                            child: AnimatedOpacity(
+                              duration: const Duration(milliseconds: 350),
+                              opacity: showWideHeader ? 1 : 0,
+                              child: Visibility(
+                                visible: showWideHeader,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 72,
+                                    vertical: 32,
+                                  ),
+                                  child: _WideHeader(
+                                    headline: _matchHeadline,
+                                    locationLabel: _currentLocationLabel,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      // Center the card and side nav together on wide screens
+                      Padding(
+                        padding: EdgeInsets.only(
+                          top: showWideHeader ? 10 : 0,
+                          bottom: showWideHeader ? 10 : 0,
+                        ),
+                        child: Center(
+                          child: showSideNav
+                              ? Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    framedPhone,
+                                    const SizedBox(width: 16),
+                                    AppSideNav(current: SideNavItem.home),
+                                  ],
+                                )
+                              : framedPhone,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                // Bottom navigation for mobile only
-                if (!isWide)
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 12,
-                    child: SafeArea(
-                      top: false,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 28),
-                        child: AppBottomNav(current: BottomNavItem.home),
+                // Bottom navigation for mobile or portrait desktop
+                if (showBottomNav)
+                  SafeArea(
+                    top: false,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 28,
+                        vertical: 12,
                       ),
+                      child: AppBottomNav(current: BottomNavItem.home),
                     ),
                   ),
               ],
