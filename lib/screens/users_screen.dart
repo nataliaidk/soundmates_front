@@ -17,7 +17,12 @@ class UsersScreen extends StatefulWidget {
   final ApiClient api;
   final TokenStore tokens;
   final EventHubService? eventHubService;
-  const UsersScreen({super.key, required this.api, required this.tokens, this.eventHubService});
+  const UsersScreen({
+    super.key,
+    required this.api,
+    required this.tokens,
+    this.eventHubService,
+  });
 
   @override
   State<UsersScreen> createState() => _UsersScreenState();
@@ -587,29 +592,56 @@ class _UsersScreenState extends State<UsersScreen>
               : availableHeight;
 
           final Widget phoneExperience = _buildPhoneExperience(isWide);
-          final Widget phoneShell = Container(
-            clipBehavior: borderRadius > 0 ? Clip.antiAlias : Clip.none,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(borderRadius),
-              boxShadow: isWide
-                  ? [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 40,
-                        offset: const Offset(0, 30),
-                        spreadRadius: 4,
+
+          // Create the phone card with different layouts for mobile vs wide
+          // Calculate dynamic dimensions for the phone frame
+          // We want it to be as big as possible but:
+          // 1. Not taller than 90% of screen height
+          // 2. Not wider than available width minus side nav space (approx 150px safe buffer)
+          // 3. Maintain 9:16 aspect ratio
+
+          final double maxAvailableHeight = constraints.maxHeight * 0.90;
+          // Side nav is roughly ~100px + paddings, so 200px is a safe reserve
+          final double maxAvailableWidth = constraints.maxWidth - 200;
+
+          // Calculate height based on width constraint: W = H * (9/16) => H = W * (16/9)
+          final double heightFromWidth = maxAvailableWidth * (16 / 9);
+
+          // Take the smaller of the two height constraints to satisfy both
+          final double phoneHeight = (heightFromWidth < maxAvailableHeight)
+              ? heightFromWidth
+              : maxAvailableHeight;
+
+          final double phoneWidth = phoneHeight * (9 / 16);
+
+          final Widget framedPhone = isWide
+              ? ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: phoneHeight,
+                    maxWidth: phoneWidth,
+                  ),
+                  child: AspectRatio(
+                    aspectRatio: 9 / 16,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(36),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.3),
+                              blurRadius: 60,
+                              offset: const Offset(0, 30),
+                              spreadRadius: 8,
+                            ),
+                          ],
+                        ),
+                        child: phoneExperience,
                       ),
-                    ]
-                  : null,
-            ),
-            child: SizedBox.expand(child: phoneExperience),
-          );
-          final Widget framedPhone = SizedBox(
-            width: cardWidth,
-            height: cardHeight,
-            child: phoneShell,
-          );
+                    ),
+                  ),
+                )
+              : SizedBox.expand(child: phoneExperience);
 
           return Container(
             decoration: const BoxDecoration(
@@ -689,16 +721,18 @@ class _UsersScreenState extends State<UsersScreen>
                     ),
                   ),
                 // Center the card and side nav together on wide screens
-                Align(
-                  alignment: Alignment.center,
-                  child: Padding(
-                    padding: shellPadding,
+                Padding(
+                  padding: EdgeInsets.only(
+                    top: showWideHeader ? 10 : 0,
+                    bottom: showWideHeader ? 10 : 0,
+                  ),
+                  child: Center(
                     child: isWide
                         ? Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               framedPhone,
-                              const SizedBox(width: 32),
+                              const SizedBox(width: 16),
                               AppSideNav(current: SideNavItem.home),
                             ],
                           )
@@ -1303,7 +1337,8 @@ class _DraggableCardState extends State<DraggableCard>
                                                     api: widget.api,
                                                     tokens: widget.tokens,
                                                     userId: userId,
-                                                    eventHubService: widget.eventHubService,
+                                                    eventHubService:
+                                                        widget.eventHubService,
                                                   ),
                                             ),
                                           );
