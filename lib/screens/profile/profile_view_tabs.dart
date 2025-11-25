@@ -63,6 +63,7 @@ class _ProfileViewTabsState extends State<ProfileViewTabs> {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
+      padding: const EdgeInsets.only(bottom: 100), // Space for navbar
       child: Column(
         children: [
           const SizedBox(height: 20),
@@ -148,20 +149,20 @@ class _ProfileViewTabsState extends State<ProfileViewTabs> {
                         ),
 
                       // Birth Date (for artists)
-                      if (widget.birthDate != null) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          widget.birthDate!
-                              .toIso8601String()
-                              .split('T')
-                              .first
-                              .replaceAll('-', '/'),
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
+                      // if (widget.birthDate != null) ...[
+                      //   const SizedBox(height: 4),
+                      //   Text(
+                      //     widget.birthDate!
+                      //         .toIso8601String()
+                      //         .split('T')
+                      //         .first
+                      //         .replaceAll('-', '/'),
+                      //     style: TextStyle(
+                      //       fontSize: 14,
+                      //       color: Colors.grey[600],
+                      //     ),
+                      //   ),
+                      // ],
                     ],
                   ),
                 ),

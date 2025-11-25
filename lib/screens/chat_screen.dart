@@ -440,6 +440,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   api: widget.api,
                   tokens: widget.tokens,
                   userId: widget.userId,
+                  eventHubService: widget.eventHubService,
                 ),
               ),
             );
@@ -557,6 +558,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                   userId: widget.userId,
                                   api: widget.api,
                                   tokens: widget.tokens,
+                                  eventHubService: widget.eventHubService,
                                   showStatus: isLastMessage,
                                   showTimestamp: isLastMessage,
                                 );
@@ -696,6 +698,7 @@ class _MessageBubble extends StatelessWidget {
   final String userId;
   final ApiClient api;
   final TokenStore tokens;
+  final EventHubService? eventHubService;
   final bool showStatus;
   final bool showTimestamp;
 
@@ -706,6 +709,7 @@ class _MessageBubble extends StatelessWidget {
     required this.userId,
     required this.api,
     required this.tokens,
+    this.eventHubService,
     this.showStatus = false,
     this.showTimestamp = true,
   });
@@ -738,6 +742,7 @@ class _MessageBubble extends StatelessWidget {
                       api: api,
                       tokens: tokens,
                       userId: userId,
+                      eventHubService: eventHubService,
                     ),
                   ),
                 );

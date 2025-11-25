@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 // Importy zależności projektu
 import '../../api/api_client.dart';
 import '../../api/token_store.dart';
+import '../../api/event_hub_service.dart';
 import '../../widgets/app_bottom_nav.dart';
 import '../../widgets/app_side_nav.dart';
 import '../chat_screen.dart';
@@ -21,12 +22,14 @@ class VisitProfileScreen extends StatefulWidget {
   final ApiClient api;
   final TokenStore tokens;
   final String userId;
+  final EventHubService? eventHubService;
 
   const VisitProfileScreen({
     super.key,
     required this.api,
     required this.tokens,
     required this.userId,
+    this.eventHubService,
   });
 
   @override
@@ -99,6 +102,7 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
           userId: widget.userId,
           userName: userName,
           userImageUrl: userImageUrl,
+          eventHubService: widget.eventHubService,
         ),
       ),
     );
