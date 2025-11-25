@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../../api/api_client.dart';
 import '../../api/token_store.dart';
 import '../../widgets/app_bottom_nav.dart';
+import '../../widgets/app_side_nav.dart';
 import '../chat_screen.dart';
 
 // Importy naszej nowej struktury
@@ -442,24 +443,39 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
                           ),
                         ),
                       ),
+                    // Center the card and side nav together on wide screens
                     Align(
                       alignment: Alignment.center,
-                      child: Padding(padding: shellPadding, child: framedPhone),
+                      child: Padding(
+                        padding: shellPadding,
+                        child: isWide
+                            ? Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  framedPhone,
+                                  const SizedBox(width: 32),
+                                  AppSideNav(current: SideNavItem.home),
+                                ],
+                              )
+                            : framedPhone,
+                      ),
                     ),
-                    Positioned(
-                      left: 0,
-                      right: 0,
-                      bottom: 12,
-                      child: SafeArea(
-                        top: false,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 28),
-                          child: const AppBottomNav(
-                            current: BottomNavItem.home,
+                    // Bottom navigation for mobile only
+                    if (!isWide)
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: 12,
+                        child: SafeArea(
+                          top: false,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 28),
+                            child: const AppBottomNav(
+                              current: BottomNavItem.home,
+                            ),
                           ),
                         ),
                       ),
-                    ),
                   ],
                 ),
               );
