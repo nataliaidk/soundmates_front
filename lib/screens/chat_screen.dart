@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:zpi_test/screens/visit_profile/visit_profile_screen.dart';
 import '../api/api_client.dart';
 import '../api/token_store.dart';
@@ -508,110 +509,112 @@ class _ChatScreenState extends State<ChatScreen> {
             end: Alignment.bottomCenter,
           ),
         ),
-        child: Column(
-          children: [
-            Expanded(
-              child: _loading
-                  ? const Center(
-                      child: CircularProgressIndicator(
-                        color: Color(0xFF7C4DFF),
-                      ),
-                    )
-                  : _messages.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.chat_bubble_outline,
-                                size: 64,
-                                color: Colors.grey.shade300,
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'No messages yet',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  color: Colors.grey.shade500,
-                                ),
-                              ),
-                            ],
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1000),
+            child: Column(
+              children: [
+                Expanded(
+                  child: _loading
+                      ? const Center(
+                          child: CircularProgressIndicator(
+                            color: Color(0xFF7C4DFF),
                           ),
                         )
-                        : ListView.builder(
-                          controller: _scrollController,
-                          padding: const EdgeInsets.all(16),
-                          physics: const BouncingScrollPhysics(),
-                          itemCount: _messages.length,
-                          itemBuilder: (context, index) {
-                            final lastMyMessageIndex = _messages.lastIndexWhere(
-                                (msg) => msg.senderId == _currentUserId);
-                            final isLastMyMessage = index == lastMyMessageIndex;
-                              final showTimestamp = index == _messages.length - 1;
+                      : _messages.isEmpty
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.chat_bubble_outline,
+                                    size: 64,
+                                    color: Colors.grey.shade300,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'No messages yet',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      color: Colors.grey.shade500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                            : ListView.builder(
+                              controller: _scrollController,
+                              padding: const EdgeInsets.all(16),
+                              physics: const BouncingScrollPhysics(),
+                              itemCount: _messages.length,
+                              itemBuilder: (context, index) {
+                                final isLastMessage = index == _messages.length - 1;
 
-                            return _MessageBubble(
-                              message: _messages[index],
-                              userImageUrl: widget.userImageUrl,
-                              currentUserId: _currentUserId,
-                              userId: widget.userId,
-                              api: widget.api,
-                              tokens: widget.tokens,
-                              showStatus: isLastMyMessage,
-                                showTimestamp: showTimestamp,
-                            );
-                          },
+                                return _MessageBubble(
+                                  message: _messages[index],
+                                  userImageUrl: widget.userImageUrl,
+                                  currentUserId: _currentUserId,
+                                  userId: widget.userId,
+                                  api: widget.api,
+                                  tokens: widget.tokens,
+                                  showStatus: isLastMessage,
+                                  showTimestamp: isLastMessage,
+                                );
+                              },
+                            ),
+                ),
+                _buildMessageInput(),
+                if (_showEmojiPicker)
+                  SizedBox(
+                    height: 250,
+                    child: EmojiPicker(
+                      onEmojiSelected: (category, emoji) {
+                        _messageController.text += emoji.emoji;
+                      },
+                      config: Config(
+                        emojiViewConfig: EmojiViewConfig(
+                          columns: 7,
+                          emojiSizeMax: 32.0,
+                          backgroundColor: Colors.white,
+                          buttonMode: ButtonMode.MATERIAL,
+                          recentsLimit: 28,
+                          noRecents: const Text('No Recents', style: TextStyle(fontSize: 20)),
+                          loadingIndicator: const CircularProgressIndicator(
+                            color: Color(0xFF6B4CE6),
+                          ),
+                          gridPadding: EdgeInsets.zero,
+                          horizontalSpacing: 0,
+                          verticalSpacing: 0,
+                          replaceEmojiOnLimitExceed: false,
                         ),
-            ),
-            _buildMessageInput(),
-            if (_showEmojiPicker)
-              SizedBox(
-                height: 250,
-                child: EmojiPicker(
-                  onEmojiSelected: (category, emoji) {
-                    _messageController.text += emoji.emoji;
-                  },
-                  config: Config(
-                    emojiViewConfig: EmojiViewConfig(
-                      columns: 7,
-                      emojiSizeMax: 32.0,
-                      backgroundColor: Colors.white,
-                      buttonMode: ButtonMode.MATERIAL,
-                      recentsLimit: 28,
-                      noRecents: const Text('No Recents', style: TextStyle(fontSize: 20)),
-                      loadingIndicator: const CircularProgressIndicator(
-                        color: Color(0xFF6B4CE6),
+                        categoryViewConfig: CategoryViewConfig(
+                          initCategory: Category.RECENT,
+                          backgroundColor: Colors.white,
+                          indicatorColor: const Color(0xFF6B4CE6),
+                          iconColor: Colors.grey,
+                          iconColorSelected: const Color(0xFF6B4CE6),
+                          dividerColor: Colors.grey.shade200,
+                          categoryIcons: const CategoryIcons(),
+                          recentTabBehavior: RecentTabBehavior.RECENT,
+                        ),
+                        bottomActionBarConfig: BottomActionBarConfig(
+                          backgroundColor: Colors.white,
+                          buttonColor: Colors.grey.shade200,
+                          buttonIconColor: const Color(0xFF6B4CE6),
+                        ),
+                        searchViewConfig: SearchViewConfig(
+                          backgroundColor: Colors.white,
+                          buttonIconColor: const Color(0xFF6B4CE6),
+                          hintText: 'Search emoji',
+                        ),
                       ),
-                      gridPadding: EdgeInsets.zero,
-                      horizontalSpacing: 0,
-                      verticalSpacing: 0,
-                      replaceEmojiOnLimitExceed: false,
-                    ),
-                    categoryViewConfig: CategoryViewConfig(
-                      initCategory: Category.RECENT,
-                      backgroundColor: Colors.white,
-                      indicatorColor: const Color(0xFF6B4CE6),
-                      iconColor: Colors.grey,
-                      iconColorSelected: const Color(0xFF6B4CE6),
-                      dividerColor: Colors.grey.shade200,
-                      categoryIcons: const CategoryIcons(),
-                      recentTabBehavior: RecentTabBehavior.RECENT,
-                    ),
-                    bottomActionBarConfig: BottomActionBarConfig(
-                      backgroundColor: Colors.white,
-                      buttonColor: Colors.grey.shade200,
-                      buttonIconColor: const Color(0xFF6B4CE6),
-                    ),
-                    searchViewConfig: SearchViewConfig(
-                      backgroundColor: Colors.white,
-                      buttonIconColor: const Color(0xFF6B4CE6),
-                      hintText: 'Search emoji',
+
+
                     ),
                   ),
-
-
-                ),
-              ),
-          ],
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -619,24 +622,10 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Widget _buildMessageInput() {
     return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 12,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: SafeArea(
         child: Row(
           children: [
-            IconButton(
-              icon: const Icon(Icons.add_circle_outline, color: Colors.grey),
-              onPressed: () {},
-            ),
             IconButton(
               icon: Icon(
                 _showEmojiPicker ? Icons.keyboard : Icons.emoji_emotions_outlined,
@@ -657,19 +646,25 @@ class _ChatScreenState extends State<ChatScreen> {
                   borderRadius: BorderRadius.circular(28),
                   border: Border.all(color: const Color(0xFFE0E4F0)),
                 ),
-                child: TextField(
-                  controller: _messageController,
-                  decoration: const InputDecoration(
-                    hintText: 'Type a message...',
-                    hintStyle: TextStyle(color: Color(0xFF9EA3B5)),
-                    border: InputBorder.none,
-                    isCollapsed: true,
+                child: CallbackShortcuts(
+                  bindings: {
+                    const SingleActivator(LogicalKeyboardKey.enter): () => _sendMessage(),
+                  },
+                  child: TextField(
+                    controller: _messageController,
+                    decoration: const InputDecoration(
+                      hintText: 'Type a message...',
+                      hintStyle: TextStyle(color: Color(0xFF9EA3B5)),
+                      border: InputBorder.none,
+                      isCollapsed: true,
+                    ),
+                    style: const TextStyle(color: Color(0xFF1F2430)),
+                    textCapitalization: TextCapitalization.sentences,
+                    minLines: 1,
+                    maxLines: 4,
+                    textInputAction: TextInputAction.send,
+                    onSubmitted: (_) => _sendMessage(),
                   ),
-                  style: const TextStyle(color: Color(0xFF1F2430)),
-                  textCapitalization: TextCapitalization.sentences,
-                  minLines: 1,
-                  maxLines: 4,
-                  onSubmitted: (_) => _sendMessage(),
                 ),
               ),
             ),

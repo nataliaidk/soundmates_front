@@ -578,7 +578,7 @@ class _UsersScreenState extends State<UsersScreen>
                   .clamp(0.0, constraints.maxHeight)
                   .toDouble();
           // Use fixed width on wide screens instead of percentage-based
-          final double cardWidth = isWide ? 440.0 : availableWidth;
+          final double cardWidth = isWide ? 325.0 : availableWidth;
           final double cardHeight = isWide
               ? availableHeight * 0.99
               : availableHeight;
