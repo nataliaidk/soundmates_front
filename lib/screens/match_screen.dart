@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:zpi_test/api/api_client.dart';
 import 'package:zpi_test/api/token_store.dart';
+import 'package:zpi_test/api/event_hub_service.dart';
 import 'package:zpi_test/screens/chat_screen.dart';
 import 'package:zpi_test/screens/visit_profile/visit_profile_loader.dart';
 import 'package:zpi_test/screens/visit_profile/visit_profile_model.dart';
@@ -11,6 +12,7 @@ class MatchScreen extends StatefulWidget {
   final TokenStore tokens;
   final String userId;
   final DateTime? matchTime;
+  final EventHubService? eventHubService;
 
   const MatchScreen({
     super.key,
@@ -18,6 +20,7 @@ class MatchScreen extends StatefulWidget {
     required this.tokens,
     required this.userId,
     this.matchTime,
+    this.eventHubService,
   });
 
   @override
@@ -45,6 +48,7 @@ class _MatchScreenState extends State<MatchScreen> {
           userId: widget.userId,
           userName: data.profile.name ?? 'User',
           userImageUrl: data.profileImageUrl,
+          eventHubService: widget.eventHubService,
         ),
       ),
     );

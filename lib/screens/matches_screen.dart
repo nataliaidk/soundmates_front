@@ -194,6 +194,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
                           match: _matches[index],
                           api: widget.api,
                           tokens: widget.tokens,
+                          eventHubService: widget.eventHubService,
                         ),
                       ),
                     ),
@@ -255,11 +256,13 @@ class _RecentMatchCard extends StatelessWidget {
   final OtherUserProfileDto match;
   final ApiClient api;
   final TokenStore tokens;
+  final EventHubService? eventHubService;
 
   const _RecentMatchCard({
     required this.match,
     required this.api,
     required this.tokens,
+    this.eventHubService,
   });
 
   @override
@@ -274,7 +277,12 @@ class _RecentMatchCard extends StatelessWidget {
           context,
           MaterialPageRoute(
             builder: (context) =>
-                VisitProfileScreen(api: api, tokens: tokens, userId: match.id),
+                VisitProfileScreen(
+                  api: api,
+                  tokens: tokens,
+                  userId: match.id,
+                  eventHubService: eventHubService,
+                ),
           ),
         );
       },

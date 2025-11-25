@@ -8,6 +8,7 @@ import '../widgets/app_side_nav.dart';
 import '../api/api_client.dart';
 import '../api/token_store.dart';
 import '../api/models.dart';
+import '../api/event_hub_service.dart';
 
 const Color _filtersBackgroundStart = Color(0xFF2D1B4E);
 const Color _filtersBackgroundEnd = Color(0xFF150A32);
@@ -15,7 +16,8 @@ const Color _filtersBackgroundEnd = Color(0xFF150A32);
 class UsersScreen extends StatefulWidget {
   final ApiClient api;
   final TokenStore tokens;
-  const UsersScreen({super.key, required this.api, required this.tokens});
+  final EventHubService? eventHubService;
+  const UsersScreen({super.key, required this.api, required this.tokens, this.eventHubService});
 
   @override
   State<UsersScreen> createState() => _UsersScreenState();
@@ -521,6 +523,7 @@ class _UsersScreenState extends State<UsersScreen>
                           isDraggable: top,
                           api: widget.api,
                           tokens: widget.tokens,
+                          eventHubService: widget.eventHubService,
                           showPrimaryActions: top,
                           isWideLayout: isWideLayout,
                           onPrimaryDislike: () =>
@@ -881,6 +884,7 @@ class DraggableCard extends StatefulWidget {
   final bool isDraggable;
   final ApiClient api; // Add this
   final TokenStore tokens; // Add this
+  final EventHubService? eventHubService;
   final bool showPrimaryActions;
   final VoidCallback? onPrimaryLike;
   final VoidCallback? onPrimaryDislike;
@@ -904,6 +908,7 @@ class DraggableCard extends StatefulWidget {
     this.isDraggable = true,
     required this.api, // Add this
     required this.tokens, // Add this
+    this.eventHubService,
     this.showPrimaryActions = false,
     this.onPrimaryLike,
     this.onPrimaryDislike,
@@ -1298,6 +1303,7 @@ class _DraggableCardState extends State<DraggableCard>
                                                     api: widget.api,
                                                     tokens: widget.tokens,
                                                     userId: userId,
+                                                    eventHubService: widget.eventHubService,
                                                   ),
                                             ),
                                           );

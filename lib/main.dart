@@ -95,7 +95,12 @@ class _MyAppState extends State<MyApp> {
         navigatorKey.currentState?.push(
           MaterialPageRoute(
             builder: (context) =>
-                MatchScreen(api: api, tokens: tokens, userId: userId!),
+                MatchScreen(
+                  api: api,
+                  tokens: tokens,
+                  userId: userId!,
+                  eventHubService: eventHub,
+                ),
           ),
         );
       } else {
@@ -214,7 +219,12 @@ class _MyAppState extends State<MyApp> {
                 context,
                 MaterialPageRoute(
                   builder: (context) =>
-                      MatchScreen(api: api, tokens: tokens, userId: userId!),
+                      MatchScreen(
+                        api: api,
+                        tokens: tokens,
+                        userId: userId!,
+                        eventHubService: eventHub,
+                      ),
                 ),
               );
             },
@@ -290,7 +300,7 @@ class _MyAppState extends State<MyApp> {
             ProfileManageMediaScreen(api: api, tokens: tokens),
         '/matches': (c) =>
             MatchesScreen(api: api, tokens: tokens, eventHubService: eventHub),
-        '/users': (c) => UsersScreen(api: api, tokens: tokens),
+        '/users': (c) => UsersScreen(api: api, tokens: tokens, eventHubService: eventHub),
         '/filters': (c) => FiltersScreen(api: api, tokens: tokens),
         '/settings': (c) => SettingsScreen(api: api, tokens: tokens),
         '/terms': (c) => const TermsOfServiceScreen(),
