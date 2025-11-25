@@ -286,6 +286,7 @@ class _MediaPostContentState extends State<_MediaPostContent> {
   Widget _buildImageView() {
     return Container(
       color: Colors.white,
+      padding: const EdgeInsets.only(bottom: 48.0),
       child: PhotoView(
         imageProvider: NetworkImage(widget.item.url),
         minScale: PhotoViewComputedScale.contained,
