@@ -272,52 +272,49 @@ class _MyAppState extends State<MyApp> {
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: themeProvider.themeMode,
-            
-
-      initialRoute: '/login',
-      routes: {
-        '/login': (c) => LoginScreen(
-          api: api,
-          tokens: tokens,
-          onLoggedIn: () => onAuthSuccess(c),
-        ),
-        '/register': (c) => RegisterScreen(
-          api: api,
-          tokens: tokens,
-          onRegistered: () => onRegisterSuccess(c),
-        ),
-        '/profile': (c) => profile_new.ProfileScreen(
-          api: api,
-          tokens: tokens,
-          startInEditMode: false,
-        ),
-        '/profile/create': (c) => profile_new.ProfileScreen(
-          api: api,
-          tokens: tokens,
-          startInEditMode: true,
-          isFromRegistration: true,
-        ),
-        '/profile/edit': (c) =>
-            ProfileEditBasicInfoScreen(api: api, tokens: tokens),
-        '/profile/edit-tags': (c) =>
-            ProfileEditTagsScreen(api: api, tokens: tokens),
-        '/profile/add-media': (c) =>
-            ProfileAddMediaScreen(api: api, tokens: tokens),
-        '/profile/manage-media': (c) =>
-            ProfileManageMediaScreen(api: api, tokens: tokens),
-        '/matches': (c) =>
-            MatchesScreen(api: api, tokens: tokens, eventHubService: eventHub),
-        '/discover': (c) =>
-            SwipingScreen(api: api, tokens: tokens, eventHubService: eventHub),
-        '/filters': (c) => FiltersScreen(api: api, tokens: tokens),
-        '/settings': (c) => SettingsScreen(api: api, tokens: tokens),
-        '/terms': (c) => const TermsOfServiceScreen(),
-      },
-    );
-  }
+            initialRoute: '/login',
+            routes: {
+              '/login': (c) => LoginScreen(
+                api: api,
+                tokens: tokens,
+                onLoggedIn: () => onAuthSuccess(c),
+              ),
+              '/register': (c) => RegisterScreen(
+                api: api,
+                tokens: tokens,
+                onRegistered: () => onRegisterSuccess(c),
+              ),
+              '/profile': (c) => profile_new.ProfileScreen(
+                api: api,
+                tokens: tokens,
+                startInEditMode: false,
+              ),
+              '/profile/create': (c) => profile_new.ProfileScreen(
+                api: api,
+                tokens: tokens,
+                startInEditMode: true,
+                isFromRegistration: true,
+              ),
+              '/profile/edit': (c) =>
+                  ProfileEditBasicInfoScreen(api: api, tokens: tokens),
+              '/profile/edit-tags': (c) =>
+                  ProfileEditTagsScreen(api: api, tokens: tokens),
+              '/profile/add-media': (c) =>
+                  ProfileAddMediaScreen(api: api, tokens: tokens),
+              '/profile/manage-media': (c) =>
+                  ProfileManageMediaScreen(api: api, tokens: tokens),
+              '/matches': (c) =>
+                  MatchesScreen(api: api, tokens: tokens, eventHubService: eventHub),
+              '/discover': (c) =>
+                  SwipingScreen(api: api, tokens: tokens, eventHubService: eventHub),
+              '/filters': (c) => FiltersScreen(api: api, tokens: tokens),
+              '/settings': (c) => SettingsScreen(api: api, tokens: tokens),
+              '/terms': (c) => const TermsOfServiceScreen(),
+            },
           );
         },
       ),
     );
   }
-  
+}
+
