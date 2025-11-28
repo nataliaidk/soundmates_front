@@ -76,6 +76,19 @@ class AppBottomNav extends StatelessWidget {
                 const SizedBox(width: 22),
                 _button(
                   context,
+                  item: BottomNavItem.home,
+                  icon: Icons.style_outlined,
+                  emphasized: true,
+                  onTap: () {
+                    if (current != BottomNavItem.home) {
+                      // Navigate to users (discover) screen as requested
+                      Navigator.pushReplacementNamed(context, '/discover');
+                    }
+                  },
+                ),
+                const SizedBox(width: 22),
+                _button(
+                  context,
                   item: BottomNavItem.messages,
                   icon: Icons.chat_bubble_outline,
                   onTap: () {
