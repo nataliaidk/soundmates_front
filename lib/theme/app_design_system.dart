@@ -552,3 +552,323 @@ class AppSpacing {
   static const double lg = 24.0;
   static const double xl = 32.0;
 }
+
+/// App Theme Configuration
+/// Provides complete ThemeData for light and dark modes
+class AppTheme {
+  AppTheme._();
+
+  // ============ Light Theme ============
+  static ThemeData lightTheme = ThemeData(
+    useMaterial3: true,
+    brightness: Brightness.light,
+    scaffoldBackgroundColor: AppColors.backgroundLight,
+    
+    colorScheme: const ColorScheme.light(
+      primary: AppColors.accentPurple,
+      secondary: AppColors.accentPurpleLight,
+      surface: AppColors.surfaceWhite,
+      error: AppColors.accentRed,
+      onPrimary: AppColors.textWhite,
+      onSecondary: AppColors.textWhite,
+      onSurface: AppColors.textPrimary,
+      onError: AppColors.textWhite,
+    ),
+
+    appBarTheme: const AppBarTheme(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      iconTheme: IconThemeData(color: AppColors.textPrimaryAlt),
+      titleTextStyle: TextStyle(
+        color: AppColors.textPrimaryAlt,
+        fontWeight: FontWeight.w700,
+        fontSize: 20,
+        letterSpacing: 0.5,
+      ),
+    ),
+
+    cardTheme: CardThemeData(
+      color: AppColors.surfaceWhite,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppBorderRadius.radiusMedium),
+      ),
+      shadowColor: Colors.black.withOpacity(0.05),
+    ),
+
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.accentPurple,
+        foregroundColor: AppColors.textWhite,
+        elevation: 0,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppBorderRadius.radiusMedium),
+        ),
+      ),
+    ),
+
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: AppColors.surfaceWhite,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppBorderRadius.radiusSmall),
+        borderSide: BorderSide(color: AppColors.borderLight),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppBorderRadius.radiusSmall),
+        borderSide: BorderSide(color: AppColors.borderLight),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppBorderRadius.radiusSmall),
+        borderSide: const BorderSide(color: AppColors.accentPurple, width: 2),
+      ),
+    ),
+
+    switchTheme: SwitchThemeData(
+      thumbColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return AppColors.accentPurple;
+        }
+        return Colors.grey.shade400;
+      }),
+      trackColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return AppColors.accentPurpleLight.withOpacity(0.5);
+        }
+        return Colors.grey.shade300;
+      }),
+    ),
+
+    textTheme: const TextTheme(
+      displayLarge: TextStyle(
+        fontSize: 32,
+        fontWeight: FontWeight.bold,
+        color: AppColors.textPrimary,
+      ),
+      displayMedium: TextStyle(
+        fontSize: 28,
+        fontWeight: FontWeight.bold,
+        color: AppColors.textPrimary,
+      ),
+      headlineMedium: TextStyle(
+        fontSize: 24,
+        fontWeight: FontWeight.bold,
+        color: AppColors.textPrimary,
+      ),
+      titleLarge: TextStyle(
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+        color: AppColors.textPrimary,
+      ),
+      titleMedium: TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        color: AppColors.textPrimary,
+      ),
+      bodyLarge: TextStyle(
+        fontSize: 16,
+        color: AppColors.textPrimary,
+      ),
+      bodyMedium: TextStyle(
+        fontSize: 14,
+        color: AppColors.textSecondary,
+      ),
+      bodySmall: TextStyle(
+        fontSize: 12,
+        color: AppColors.textPlaceholder,
+      ),
+    ),
+
+    dividerColor: AppColors.borderLight,
+    dividerTheme: const DividerThemeData(
+      color: AppColors.borderLight,
+      thickness: 1,
+    ),
+  );
+
+  // ============ Dark Theme ============
+  static ThemeData darkTheme = ThemeData(
+    useMaterial3: true,
+    brightness: Brightness.dark,
+    scaffoldBackgroundColor: AppColors.backgroundDark,
+    
+    colorScheme: const ColorScheme.dark(
+      primary: AppColors.accentPurpleLight,
+      secondary: AppColors.accentPurpleSoft,
+      surface: AppColors.surfaceDark,
+      error: AppColors.accentRed,
+      onPrimary: AppColors.textWhite,
+      onSecondary: AppColors.textWhite,
+      onSurface: AppColors.textWhite,
+      onError: AppColors.textWhite,
+    ),
+
+    appBarTheme: const AppBarTheme(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      iconTheme: IconThemeData(color: AppColors.textWhite),
+      titleTextStyle: TextStyle(
+        color: AppColors.textWhite,
+        fontWeight: FontWeight.w700,
+        fontSize: 20,
+        letterSpacing: 0.5,
+      ),
+    ),
+
+    cardTheme: CardThemeData(
+      color: AppColors.surfaceDark,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppBorderRadius.radiusMedium),
+      ),
+      shadowColor: Colors.black.withOpacity(0.3),
+    ),
+
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.accentPurpleLight,
+        foregroundColor: AppColors.textWhite,
+        elevation: 0,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppBorderRadius.radiusMedium),
+        ),
+      ),
+    ),
+
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: AppColors.surfaceDark,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppBorderRadius.radiusSmall),
+        borderSide: BorderSide(color: AppColors.surfaceDarkGrey),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppBorderRadius.radiusSmall),
+        borderSide: BorderSide(color: AppColors.surfaceDarkGrey),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppBorderRadius.radiusSmall),
+        borderSide: const BorderSide(color: AppColors.accentPurpleLight, width: 2),
+      ),
+    ),
+
+    switchTheme: SwitchThemeData(
+      thumbColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return AppColors.accentPurpleLight;
+        }
+        return Colors.grey.shade600;
+      }),
+      trackColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return AppColors.accentPurpleSoft.withOpacity(0.5);
+        }
+        return Colors.grey.shade700;
+      }),
+    ),
+
+    textTheme: const TextTheme(
+      displayLarge: TextStyle(
+        fontSize: 32,
+        fontWeight: FontWeight.bold,
+        color: AppColors.textWhite,
+      ),
+      displayMedium: TextStyle(
+        fontSize: 28,
+        fontWeight: FontWeight.bold,
+        color: AppColors.textWhite,
+      ),
+      headlineMedium: TextStyle(
+        fontSize: 24,
+        fontWeight: FontWeight.bold,
+        color: AppColors.textWhite,
+      ),
+      titleLarge: TextStyle(
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+        color: AppColors.textWhite,
+      ),
+      titleMedium: TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        color: AppColors.textWhite,
+      ),
+      bodyLarge: TextStyle(
+        fontSize: 16,
+        color: AppColors.textWhite,
+      ),
+      bodyMedium: TextStyle(
+        fontSize: 14,
+        color: AppColors.textWhite70,
+      ),
+      bodySmall: TextStyle(
+        fontSize: 12,
+        color: AppColors.textPlaceholder,
+      ),
+    ),
+
+    dividerColor: AppColors.surfaceDarkGrey,
+    dividerTheme: const DividerThemeData(
+      color: AppColors.surfaceDarkGrey,
+      thickness: 1,
+    ),
+  );
+
+  // ============ Helper Methods ============
+  
+  /// Get scaffold background color based on current theme
+  static Color getScaffoldBackground(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? AppColors.backgroundDark
+        : AppColors.backgroundLight;
+  }
+
+  /// Get app bar background color based on current theme
+  static Color getAppBarBackground(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? AppColors.surfaceDark
+        : Colors.transparent;
+  }
+
+  /// Get primary text color based on current theme
+  static Color getTextColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? AppColors.textWhite
+        : AppColors.textPrimary;
+  }
+
+  /// Get secondary text color based on current theme
+  static Color getSecondaryTextColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? AppColors.textWhite70
+        : AppColors.textSecondary;
+  }
+
+  /// Get surface color based on current theme
+  static Color getSurfaceColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? AppColors.surfaceDark
+        : AppColors.surfaceWhite;
+  }
+
+  /// Get card background color based on current theme
+  static Color getCardBackground(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? AppColors.surfaceDark
+        : AppColors.surfaceWhite;
+  }
+
+  /// Get divider color based on current theme
+  static Color getDividerColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? AppColors.surfaceDarkGrey
+        : AppColors.borderLight;
+  }
+
+  /// Check if current theme is dark
+  static bool isDark(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark;
+  }
+}

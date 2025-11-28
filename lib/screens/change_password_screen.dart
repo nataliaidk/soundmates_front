@@ -80,17 +80,31 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         _status = 'Network error';
       });
     } finally {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _submitting = false;
         });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      appBar: AppBar(title: const Text('Change Password')),
+      backgroundColor: isDark ? AppColors.backgroundDark : null,
+      appBar: AppBar(
+        backgroundColor: isDark ? AppColors.surfaceDark : null,
+        title: Text(
+          'Change Password',
+          style: TextStyle(
+            color: isDark ? AppColors.textWhite : null,
+          ),
+        ),
+        iconTheme: IconThemeData(
+          color: isDark ? AppColors.textWhite : null,
+        ),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Form(

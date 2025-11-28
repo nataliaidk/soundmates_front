@@ -50,8 +50,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: AppColors.surfaceWhite,
+      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.surfaceWhite,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(

@@ -439,13 +439,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
               final city = CityDto.fromJson(map);
               list.add(city);
               // try to parse coordinates from common keys
-              double? _toDouble(dynamic v) {
+              double? toDouble(dynamic v) {
                 if (v == null) return null;
                 if (v is num) return v.toDouble();
                 return double.tryParse(v.toString());
               }
-              final lat = _toDouble(map['latitude'] ?? map['lat'] ?? map['Latitude']);
-              final lon = _toDouble(map['longitude'] ?? map['lng'] ?? map['lon'] ?? map['Longitude']);
+              final lat = toDouble(map['latitude'] ?? map['lat'] ?? map['Latitude']);
+              final lon = toDouble(map['longitude'] ?? map['lng'] ?? map['lon'] ?? map['Longitude']);
               if (lat != null && lon != null) {
                 _cityCoords[city.id] = LatLng(lat, lon);
               }
@@ -1026,7 +1026,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               // ✅ dropdown for role instead of TextField
               const SizedBox(height: 12),
               DropdownButtonFormField<BandRoleDto>(
-                value: selectedRole,
+                initialValue: selectedRole,
                 decoration: const InputDecoration(labelText: 'Role', border: OutlineInputBorder()),
                 items: _bandRoles!.map(
                   (r) => DropdownMenuItem(value: r, child: Text(r.name)),
@@ -2007,7 +2007,7 @@ Widget _buildBandMembersSection() {
                 ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
-                  value: _selectedGender?.id,
+                  initialValue: _selectedGender?.id,
                   decoration: const InputDecoration(labelText: 'Gender', border: OutlineInputBorder()),
                   items: _genders
                       .map((g) => DropdownMenuItem<String>(value: g.id, child: Text(g.name)))

@@ -565,20 +565,24 @@ class _ProfileEditBasicInfoScreenState
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: AppColors.surfaceWhite,
+      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.surfaceWhite,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: AppColors.surfaceWhite,
-        title: const Text(
+        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceWhite,
+        title: Text(
           'Edit Basic Information',
           style: TextStyle(
-            color: AppColors.textPrimaryAlt,
+            color: isDark ? AppColors.textWhite : AppColors.textPrimaryAlt,
             fontWeight: FontWeight.w600,
           ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimaryAlt),
+          icon: Icon(
+            Icons.arrow_back,
+            color: isDark ? AppColors.textWhite : AppColors.textPrimaryAlt,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
       ),

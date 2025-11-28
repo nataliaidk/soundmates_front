@@ -410,7 +410,6 @@ class _ActionButton extends StatelessWidget {
   final VoidCallback onTap;
 
   const _ActionButton({
-    super.key, // Dodaj super.key dla wydajności
     required this.text,
     required this.icon,
     required this.color,

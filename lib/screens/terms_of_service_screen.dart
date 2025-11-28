@@ -6,19 +6,23 @@ class TermsOfServiceScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: AppColors.backgroundLightPurple,
+      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLightPurple,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimaryAlt),
+          icon: Icon(
+            Icons.arrow_back,
+            color: isDark ? AppColors.textWhite : AppColors.textPrimaryAlt,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Terms of Service',
           style: TextStyle(
-            color: AppColors.textPrimaryAlt,
+            color: isDark ? AppColors.textWhite : AppColors.textPrimaryAlt,
             fontWeight: FontWeight.w700,
           ),
         ),

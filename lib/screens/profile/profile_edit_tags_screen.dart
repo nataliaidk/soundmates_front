@@ -3,6 +3,7 @@ import 'package:file_picker/file_picker.dart';
 import '../../api/api_client.dart';
 import '../../api/token_store.dart';
 import '../../api/models.dart';
+import '../../theme/app_design_system.dart';
 import 'profile_data_loader.dart';
 import 'profile_tag_manager.dart';
 import 'profile_band_member_dialog.dart';
@@ -230,7 +231,7 @@ class _ProfileEditTagsScreenState extends State<ProfileEditTagsScreen> {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
             return AlertDialog(
-              title: Text('Select ${category}'),
+              title: Text('Select $category'),
               content: SizedBox(
                 width: double.maxFinite,
                 child: ListView(
@@ -340,20 +341,24 @@ class _ProfileEditTagsScreenState extends State<ProfileEditTagsScreen> {
     final tagOptions = _tagManager.buildOptionsForEdit();
     final categories = tagOptions.keys.toList();
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? AppColors.backgroundDark : Colors.white,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.white,
-        title: const Text(
+        backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
+        title: Text(
           'Edit Profile',
           style: TextStyle(
-            color: Colors.black,
+            color: isDark ? AppColors.textWhite : Colors.black,
             fontWeight: FontWeight.w600,
           ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: Icon(
+            Icons.arrow_back,
+            color: isDark ? AppColors.textWhite : Colors.black,
+          ),
           onPressed: () => Navigator.pushReplacementNamed(context, '/profile'),
         ),
       ),

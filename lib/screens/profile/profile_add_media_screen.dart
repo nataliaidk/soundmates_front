@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../api/api_client.dart';
 import '../../api/token_store.dart';
+import '../../theme/app_design_system.dart';
 
 /// Simple screen for adding photos/videos/audio to profile
 class ProfileAddMediaScreen extends StatefulWidget {
@@ -20,7 +21,7 @@ class ProfileAddMediaScreen extends StatefulWidget {
 }
 
 class _ProfileAddMediaScreenState extends State<ProfileAddMediaScreen> {
-  List<PlatformFile> _pickedFiles = [];
+  final List<PlatformFile> _pickedFiles = [];
   String _status = '';
   bool _uploading = false;
   bool _loadingExisting = true;
@@ -61,14 +62,14 @@ class _ProfileAddMediaScreenState extends State<ProfileAddMediaScreen> {
           final profilePictures = profileData['profilePictures'];
           if (profilePictures is List) {
             _existingImageCount = profilePictures.length;
-            print('📷 Found ${_existingImageCount} existing images');
+            print('📷 Found $_existingImageCount existing images');
           }
           
           // Get music samples (MP3 and MP4 combined)
           final musicSamples = profileData['musicSamples'];
           if (musicSamples is List) {
             _existingAudioVideoCount = musicSamples.length;
-            print('🎵 Found ${_existingAudioVideoCount} audio/video files');
+            print('🎵 Found $_existingAudioVideoCount audio/video files');
           }
         } else {
           print('👤 Unexpected profile data type: ${profileData.runtimeType}');
@@ -326,12 +327,22 @@ class _ProfileAddMediaScreenState extends State<ProfileAddMediaScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: isDark ? AppColors.backgroundDark : Colors.grey[50],
       appBar: AppBar(
-        title: const Text('Add Media'),
+        backgroundColor: isDark ? AppColors.surfaceDark : null,
+        title: Text(
+          'Add Media',
+          style: TextStyle(
+            color: isDark ? AppColors.textWhite : null,
+          ),
+        ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(
+            Icons.arrow_back,
+            color: isDark ? AppColors.textWhite : null,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
       ),
