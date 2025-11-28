@@ -1,13 +1,12 @@
 import 'dart:ui'; // Wymagane dla ImageFilter (Blur)
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 // Importy zależności projektu
 import '../../api/api_client.dart';
 import '../../api/token_store.dart';
 import '../../api/event_hub_service.dart';
-import '../../widgets/app_bottom_nav.dart';
-import '../../widgets/app_side_nav.dart';
 import '../chat_screen.dart';
 
 // Importy naszej nowej struktury
@@ -169,25 +168,32 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
           backgroundColor: Colors.transparent,
           body: LayoutBuilder(
             builder: (context, constraints) {
-              final bool isWide = constraints.maxWidth >= 800;
-              final bool showWideHeader = constraints.maxWidth > 1100;
-              final double borderRadius = isWide ? 36 : 0;
-              final EdgeInsets shellPadding = isWide
-                  ? const EdgeInsets.symmetric(horizontal: 120, vertical: 20)
-                  : EdgeInsets.zero;
-              final double availableWidth =
-                  (constraints.maxWidth - shellPadding.horizontal)
-                      .clamp(0.0, constraints.maxWidth)
-                      .toDouble();
-              final double availableHeight =
-                  (constraints.maxHeight - shellPadding.vertical)
-                      .clamp(0.0, constraints.maxHeight)
-                      .toDouble();
-              // Use fixed width on wide screens instead of percentage-based
-              final double cardWidth = isWide ? 440.0 : availableWidth;
-              final double cardHeight = isWide
-                  ? availableHeight * 0.99
-                  : availableHeight;
+              final bool isMobile =
+                  defaultTargetPlatform == TargetPlatform.iOS ||
+                  defaultTargetPlatform == TargetPlatform.android;
+
+              // Calculate base phone dimensions from available height to check if we can frame it
+              // We use 95% of height as the target phone height
+              final double basePhoneHeight = constraints.maxHeight * 0.95;
+              final double basePhoneWidth = basePhoneHeight * (9 / 16);
+
+              // Framed mode activates if:
+              // 1. Not on mobile
+              // 2. Screen width is wider than the calculated phone width
+              final bool isFramed =
+                  !isMobile && constraints.maxWidth > basePhoneWidth;
+
+              final bool showWideHeader =
+                  isFramed && constraints.maxWidth > 1100;
+
+              // Calculate final dimensions for the framed phone
+              // No nav reservations needed for this screen
+              final double maxH = constraints.maxHeight * 0.95;
+              final double hFromW = constraints.maxWidth * (16 / 9);
+
+              // Take the smaller height to satisfy all constraints
+              final double phoneHeight = (hFromW < maxH) ? hFromW : maxH;
+              final double phoneWidth = phoneHeight * (9 / 16);
 
               final Widget profileContent = Stack(
                 children: [
@@ -388,30 +394,36 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
                 ],
               );
 
-              final Widget phoneShell = Container(
-                clipBehavior: borderRadius > 0 ? Clip.antiAlias : Clip.none,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(borderRadius),
-                  boxShadow: isWide
-                      ? [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
-                            blurRadius: 40,
-                            offset: const Offset(0, 30),
-                            spreadRadius: 4,
+              final Widget framedPhone = isFramed
+                  ? Center(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxHeight: phoneHeight,
+                          maxWidth: phoneWidth,
+                        ),
+                        child: AspectRatio(
+                          aspectRatio: 9 / 16,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(36),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.3),
+                                    blurRadius: 60,
+                                    offset: const Offset(0, 30),
+                                    spreadRadius: 8,
+                                  ),
+                                ],
+                              ),
+                              child: profileContent,
+                            ),
                           ),
-                        ]
-                      : null,
-                ),
-                child: SizedBox.expand(child: profileContent),
-              );
-
-              final Widget framedPhone = SizedBox(
-                width: cardWidth,
-                height: cardHeight,
-                child: phoneShell,
-              );
+                        ),
+                      ),
+                    )
+                  : SizedBox.expand(child: profileContent);
 
               return Container(
                 decoration: const BoxDecoration(
@@ -423,8 +435,7 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
                 ),
                 child: Stack(
                   children: [
-                    // Wide header
-                    if (isWide)
+                    if (showWideHeader)
                       Positioned(
                         top: 0,
                         left: 0,
@@ -447,39 +458,7 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
                           ),
                         ),
                       ),
-                    // Center the card and side nav together on wide screens
-                    Align(
-                      alignment: Alignment.center,
-                      child: Padding(
-                        padding: shellPadding,
-                        child: isWide
-                            ? Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  framedPhone,
-                                  const SizedBox(width: 32),
-                                  AppSideNav(current: SideNavItem.home),
-                                ],
-                              )
-                            : framedPhone,
-                      ),
-                    ),
-                    // Bottom navigation for mobile only
-                    if (!isWide)
-                      Positioned(
-                        left: 0,
-                        right: 0,
-                        bottom: 12,
-                        child: SafeArea(
-                          top: false,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 28),
-                            child: const AppBottomNav(
-                              current: BottomNavItem.home,
-                            ),
-                          ),
-                        ),
-                      ),
+                    framedPhone,
                   ],
                 ),
               );

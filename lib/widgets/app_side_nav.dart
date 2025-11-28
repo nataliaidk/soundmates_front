@@ -89,7 +89,7 @@ class AppSideNav extends StatelessWidget {
                     emphasized: true,
                     onTap: () {
                       if (current != SideNavItem.home) {
-                        Navigator.pushReplacementNamed(context, '/users');
+                        Navigator.pushReplacementNamed(context, '/discover');
                       }
                     },
                   ),
