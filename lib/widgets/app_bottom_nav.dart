@@ -10,7 +10,8 @@ class AppBottomNav extends StatelessWidget {
     return item == current ? const Color(0xFF5B3CF0) : const Color(0xFF8E7CC9);
   }
 
-  Widget _button(BuildContext context, {
+  Widget _button(
+    BuildContext context, {
     required BottomNavItem item,
     required IconData icon,
     required VoidCallback onTap,
@@ -28,7 +29,9 @@ class AppBottomNav extends StatelessWidget {
         shape: BoxShape.circle,
       ),
       child: IconButton(
-        tooltip: item == BottomNavItem.home ? 'Discover' : (item == BottomNavItem.profile ? 'Profile' : 'Messages'),
+        tooltip: item == BottomNavItem.home
+            ? 'Discover'
+            : (item == BottomNavItem.profile ? 'Profile' : 'Messages'),
         iconSize: iconSize,
         splashRadius: size / 2,
         icon: Icon(icon, color: _iconColor(item)),
@@ -67,19 +70,6 @@ class AppBottomNav extends StatelessWidget {
                   onTap: () {
                     if (current != BottomNavItem.profile) {
                       Navigator.pushReplacementNamed(context, '/profile');
-                    }
-                  },
-                ),
-                const SizedBox(width: 22),
-                _button(
-                  context,
-                  item: BottomNavItem.home,
-                  icon: Icons.style_outlined,
-                  emphasized: true,
-                  onTap: () {
-                    if (current != BottomNavItem.home) {
-                      // Navigate to users (discover) screen as requested
-                      Navigator.pushReplacementNamed(context, '/users');
                     }
                   },
                 ),

@@ -15,7 +15,7 @@ import 'screens/profile/profile_manage_media_screen.dart';
 import 'screens/profile/profile_edit_basic_info_screen.dart';
 import 'screens/match_screen.dart';
 import 'screens/matches_screen.dart';
-import 'screens/users_screen.dart';
+import 'screens/swiping_screen.dart';
 import 'screens/filters_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/terms_of_service_screen.dart';
@@ -94,13 +94,12 @@ class _MyAppState extends State<MyApp> {
         print("🚀 Navigating to MatchScreen for user: $userId");
         navigatorKey.currentState?.push(
           MaterialPageRoute(
-            builder: (context) =>
-                MatchScreen(
-                  api: api,
-                  tokens: tokens,
-                  userId: userId!,
-                  eventHubService: eventHub,
-                ),
+            builder: (context) => MatchScreen(
+              api: api,
+              tokens: tokens,
+              userId: userId!,
+              eventHubService: eventHub,
+            ),
           ),
         );
       } else {
@@ -218,13 +217,12 @@ class _MyAppState extends State<MyApp> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) =>
-                      MatchScreen(
-                        api: api,
-                        tokens: tokens,
-                        userId: userId!,
-                        eventHubService: eventHub,
-                      ),
+                  builder: (context) => MatchScreen(
+                    api: api,
+                    tokens: tokens,
+                    userId: userId!,
+                    eventHubService: eventHub,
+                  ),
                 ),
               );
             },
@@ -248,7 +246,7 @@ class _MyAppState extends State<MyApp> {
         // Callbacks are already set in initState
       });
       _hydrateCurrentUserId();
-      Navigator.pushReplacementNamed(navContext, '/users');
+      Navigator.pushReplacementNamed(navContext, '/discover');
     }
 
     void onRegisterSuccess(BuildContext navContext) {
@@ -300,7 +298,8 @@ class _MyAppState extends State<MyApp> {
             ProfileManageMediaScreen(api: api, tokens: tokens),
         '/matches': (c) =>
             MatchesScreen(api: api, tokens: tokens, eventHubService: eventHub),
-        '/users': (c) => UsersScreen(api: api, tokens: tokens, eventHubService: eventHub),
+        '/discover': (c) =>
+            SwipingScreen(api: api, tokens: tokens, eventHubService: eventHub),
         '/filters': (c) => FiltersScreen(api: api, tokens: tokens),
         '/settings': (c) => SettingsScreen(api: api, tokens: tokens),
         '/terms': (c) => const TermsOfServiceScreen(),
