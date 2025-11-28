@@ -8,6 +8,7 @@ import 'swiping_action_buttons.dart';
 import '../../shared/native_audio_player.dart';
 import '../../shared/instagram_post_viewer.dart';
 import '../../shared/media_models.dart';
+import '../../shared/video_thumbnail.dart';
 
 /// Draggable user card widget with swipe functionality.
 /// Displays user profile information and handles swipe gestures for like/dislike actions.
@@ -84,36 +85,56 @@ class DraggableCardState extends State<DraggableCard>
     );
   }
 
-  List<String> get _allImages {
-    final images = <String>[];
-    if (widget.imageUrl != null) images.add(widget.imageUrl!);
+  List<Map<String, dynamic>> get _allMedia {
+    final media = <Map<String, dynamic>>[];
 
-    // Add more images from profilePictures if available
+    // Main image
+    if (widget.imageUrl != null) {
+      media.add({'type': 'image', 'url': widget.imageUrl!});
+    }
+
+    // Profile pictures
     if (widget.userData['profilePictures'] is List) {
       final pics = widget.userData['profilePictures'] as List;
       for (final pic in pics) {
         if (pic is Map) {
-          String? url;
-          // prefer explicit url field
-          url = pic['url']?.toString();
-          // fallback to fileUrl (backend uses fileUrl) and build absolute
-          url ??= pic['fileUrl']?.toString();
+          String? url = pic['url']?.toString() ?? pic['fileUrl']?.toString();
           if (url != null && url.isNotEmpty) {
-            // Normalize absolute if needed
             if (!url.startsWith('http://') && !url.startsWith('https://')) {
-              final abs = Uri.parse(widget.api.baseUrl)
+              url = Uri.parse(widget.api.baseUrl)
                   .resolve(url.startsWith('/') ? url.substring(1) : url)
                   .toString();
-              url = abs;
             }
-            if (!images.contains(url)) {
-              images.add(url);
+            media.add({'type': 'image', 'url': url});
+          }
+        }
+      }
+    }
+
+    // Music samples (videos)
+    if (widget.userData['musicSamples'] is List) {
+      final samples = widget.userData['musicSamples'] as List;
+      for (final sample in samples) {
+        if (sample is Map) {
+          final url = sample['fileUrl']?.toString();
+          if (url != null && url.isNotEmpty) {
+            final isVideo = url.toLowerCase().endsWith('.mp4') ||
+                url.toLowerCase().endsWith('.mov');
+            String absoluteUrl = url;
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+              absoluteUrl = Uri.parse(widget.api.baseUrl)
+                  .resolve(url.startsWith('/') ? url.substring(1) : url)
+                  .toString();
+            }
+            if (isVideo) {
+              media.add({'type': 'video', 'url': absoluteUrl});
             }
           }
         }
       }
     }
-    return images;
+
+    return media;
   }
 
   void _runOffScreen(Offset target, double rot, VoidCallback onComplete) {
@@ -169,7 +190,7 @@ class DraggableCardState extends State<DraggableCard>
   Widget build(BuildContext context) {
     final w = MediaQuery.of(context).size.width;
     final h = MediaQuery.of(context).size.height;
-    final images = _allImages;
+    final media = _allMedia;
     final bool isWide = widget.isWideLayout;
     final double heroHeight = isWide ? h * 0.48 : h * 0.45;
     final double actionButtonSize = isWide ? 44 : 50;
@@ -238,32 +259,32 @@ class DraggableCardState extends State<DraggableCard>
 
             // Left 25%: Previous image
             if (dx < width * 0.25) {
-              if (images.length > 1) {
+              if (media.length > 1) {
                 setState(() {
                   _currentImageIndex =
-                      (_currentImageIndex - 1 + images.length) % images.length;
+                      (_currentImageIndex - 1 + media.length) % media.length;
                 });
               }
             }
             // Right 25%: Next image
             else if (dx > width * 0.75) {
-              if (images.length > 1) {
+              if (media.length > 1) {
                 setState(() {
-                  _currentImageIndex = (_currentImageIndex + 1) % images.length;
+                  _currentImageIndex = (_currentImageIndex + 1) % media.length;
                 });
               }
             }
             // Center 50%: Open full screen viewer
             else {
-              if (images.isNotEmpty) {
-                final mediaItems = images
+              if (media.isNotEmpty) {
+                final mediaItems = media
                     .map(
-                      (url) => MediaItem(
-                        url: url,
-                        type: MediaType.image,
-                        fileName: 'image.jpg',
-                      ),
-                    )
+                      (item) => MediaItem(
+                    url: item['url'],
+                    type: item['type'] == 'video' ? MediaType.video : MediaType.image,
+                    fileName: item['url'].split('/').last,
+                  ),
+                )
                     .toList();
 
                 Navigator.push(
@@ -354,40 +375,44 @@ class DraggableCardState extends State<DraggableCard>
                                 SizedBox(
                                   height: heroHeight,
                                   width: double.infinity,
-                                  child: images.isNotEmpty
+                                  child: media.isNotEmpty
+                                      ? media[_currentImageIndex]['type'] == 'image'
                                       ? Image.network(
-                                          images[_currentImageIndex],
-                                          fit: BoxFit.cover,
-                                          errorBuilder:
-                                              (context, error, stackTrace) {
-                                                return Container(
-                                                  color: Colors.grey[300],
-                                                  child: Icon(
-                                                    Icons.person,
-                                                    size: 100,
-                                                    color: Colors.grey[500],
-                                                  ),
-                                                );
-                                              },
+                                    media[_currentImageIndex]['url'],
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        color: Colors.grey[300],
+                                        child: Icon(
+                                          Icons.person,
+                                          size: 100,
+                                          color: Colors.grey[500],
+                                        ),
+                                      );
+                                    },
+                                  )
+                                      : VideoThumbnail(
+                                          videoUrl: media[_currentImageIndex]['url'],
+                                          autoplay: true,
                                         )
                                       : Container(
-                                          color: Colors.grey[300],
-                                          child: Icon(
-                                            Icons.person,
-                                            size: 100,
-                                            color: Colors.grey[500],
-                                          ),
-                                        ),
+                                    color: Colors.grey[300],
+                                    child: Icon(
+                                      Icons.person,
+                                      size: 100,
+                                      color: Colors.grey[500],
+                                    ),
+                                  ),
                                 ),
                                 // Image indicators
-                                if (images.length > 1)
+                                if (media.length > 1)
                                   Positioned(
                                     top: 8,
                                     left: 0,
                                     right: 0,
                                     child: Row(
                                       children: List.generate(
-                                        images.length,
+                                        media.length,
                                         (idx) => Expanded(
                                           child: Container(
                                             height: 3,
