@@ -6,6 +6,8 @@ import '../../../api/models.dart';
 import '../../../api/event_hub_service.dart';
 import 'swiping_action_buttons.dart';
 import '../../shared/native_audio_player.dart';
+import '../../shared/instagram_post_viewer.dart';
+import '../../shared/media_models.dart';
 
 /// Draggable user card widget with swipe functionality.
 /// Displays user profile information and handles swipe gestures for like/dislike actions.
@@ -228,12 +230,53 @@ class DraggableCardState extends State<DraggableCard>
       child: Transform.rotate(
         angle: _rot,
         child: GestureDetector(
-          onTap: () {
-            // Tap to toggle image
-            if (images.length > 1) {
-              setState(() {
-                _currentImageIndex = (_currentImageIndex + 1) % images.length;
-              });
+          onTapUp: (details) {
+            final box = context.findRenderObject() as RenderBox?;
+            if (box == null) return;
+            final width = box.size.width;
+            final dx = details.localPosition.dx;
+
+            // Left 25%: Previous image
+            if (dx < width * 0.25) {
+              if (images.length > 1) {
+                setState(() {
+                  _currentImageIndex =
+                      (_currentImageIndex - 1 + images.length) % images.length;
+                });
+              }
+            }
+            // Right 25%: Next image
+            else if (dx > width * 0.75) {
+              if (images.length > 1) {
+                setState(() {
+                  _currentImageIndex = (_currentImageIndex + 1) % images.length;
+                });
+              }
+            }
+            // Center 50%: Open full screen viewer
+            else {
+              if (images.isNotEmpty) {
+                final mediaItems = images
+                    .map(
+                      (url) => MediaItem(
+                        url: url,
+                        type: MediaType.image,
+                        fileName: 'image.jpg',
+                      ),
+                    )
+                    .toList();
+
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => InstagramPostViewer(
+                      items: mediaItems,
+                      initialIndex: _currentImageIndex,
+                      accentColor: const Color(0xFF5B3CF0),
+                    ),
+                  ),
+                );
+              }
             }
           },
           onPanUpdate: widget.isDraggable
