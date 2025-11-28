@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
+import '../../theme/app_design_system.dart';
 
 /// Generic audio track interface for the native audio player
 class AudioTrack {
@@ -107,15 +108,17 @@ class _NativeAudioPlayerState extends State<NativeAudioPlayer> {
 
     final currentTrack = widget.tracks[_currentTrackIndex];
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.getAdaptiveSurface(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200, width: 1),
+        border: Border.all(color: AppTheme.getAdaptiveGrey(context, lightShade: 200, darkShade: 800), width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: (isDark ? Colors.black : Colors.black).withOpacity(isDark ? 0.3 : 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -152,7 +155,7 @@ class _NativeAudioPlayerState extends State<NativeAudioPlayer> {
                     borderRadius: BorderRadius.circular(4),
                     child: LinearProgressIndicator(
                       value: progress.clamp(0.0, 1.0),
-                      backgroundColor: Colors.grey.shade200,
+                      backgroundColor: AppTheme.getAdaptiveGrey(context, lightShade: 200, darkShade: 800),
                       valueColor: AlwaysStoppedAnimation<Color>(
                         widget.accentColor,
                       ),
@@ -166,11 +169,11 @@ class _NativeAudioPlayerState extends State<NativeAudioPlayer> {
                     children: [
                       Text(
                         _formatDuration(position),
-                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                        style: TextStyle(color: AppTheme.getAdaptiveGrey(context, lightShade: 600, darkShade: 400), fontSize: 12),
                       ),
                       Text(
                         _formatDuration(duration),
-                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                        style: TextStyle(color: AppTheme.getAdaptiveGrey(context, lightShade: 600, darkShade: 400), fontSize: 12),
                       ),
                     ],
                   ),
@@ -196,8 +199,8 @@ class _NativeAudioPlayerState extends State<NativeAudioPlayer> {
                     icon: Icon(
                       Icons.skip_previous,
                       color: _currentTrackIndex > 0
-                          ? const Color(0xFF1A1A1A)
-                          : Colors.grey.shade400,
+                          ? AppTheme.getAdaptiveText(context)
+                          : AppTheme.getAdaptiveGrey(context, lightShade: 400, darkShade: 600),
                       size: 32,
                     ),
                     onPressed: _currentTrackIndex > 0 ? _playPrevious : null,
@@ -253,8 +256,8 @@ class _NativeAudioPlayerState extends State<NativeAudioPlayer> {
                     icon: Icon(
                       Icons.skip_next,
                       color: _currentTrackIndex < widget.tracks.length - 1
-                          ? const Color(0xFF1A1A1A)
-                          : Colors.grey.shade400,
+                          ? AppTheme.getAdaptiveText(context)
+                          : AppTheme.getAdaptiveGrey(context, lightShade: 400, darkShade: 600),
                       size: 32,
                     ),
                     onPressed: _currentTrackIndex < widget.tracks.length - 1
@@ -274,9 +277,9 @@ class _NativeAudioPlayerState extends State<NativeAudioPlayer> {
     return Container(
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.getAdaptiveSurface(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200, width: 1),
+        border: Border.all(color: AppTheme.getAdaptiveGrey(context, lightShade: 200, darkShade: 800), width: 1),
       ),
       child: Center(
         child: CircularProgressIndicator(color: widget.accentColor),
@@ -288,9 +291,9 @@ class _NativeAudioPlayerState extends State<NativeAudioPlayer> {
     return Container(
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.getAdaptiveSurface(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200, width: 1),
+        border: Border.all(color: AppTheme.getAdaptiveGrey(context, lightShade: 200, darkShade: 800), width: 1),
       ),
       child: Column(
         children: [
@@ -298,7 +301,7 @@ class _NativeAudioPlayerState extends State<NativeAudioPlayer> {
           const SizedBox(height: 16),
           Text(
             'Failed to load audio',
-            style: TextStyle(color: Colors.grey[700]),
+            style: TextStyle(color: AppTheme.getAdaptiveGrey(context, lightShade: 700, darkShade: 300)),
           ),
         ],
       ),

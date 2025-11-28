@@ -542,13 +542,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
               backgroundColor: Colors.transparent,
               elevation: 0,
               automaticallyImplyLeading: false,
-              title: const Text(
+              title: Text(
                 'Your Profile',
-                style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: isDark ? AppColors.textWhite : Colors.black,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               actions: [
                 IconButton(
-                  icon: const Icon(Icons.settings, color: Colors.black),
+                  icon: Icon(
+                    Icons.settings,
+                    color: isDark ? AppColors.textWhite : Colors.black,
+                  ),
                   onPressed: () => Navigator.pushNamed(context, '/settings'),
                 ),
               ],

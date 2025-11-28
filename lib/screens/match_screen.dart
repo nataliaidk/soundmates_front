@@ -163,7 +163,7 @@ class _MatchScreenState extends State<MatchScreen> {
                           backgroundImage: imageUrl != null
                               ? NetworkImage(imageUrl)
                               : null,
-                          backgroundColor: Colors.grey.shade800,
+                          backgroundColor: AppTheme.getAdaptiveGrey(context, lightShade: 200, darkShade: 800),
                           child: imageUrl == null
                               ? Text(
                                   name.substring(0, 1).toUpperCase(),

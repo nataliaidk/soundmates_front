@@ -378,18 +378,18 @@ class _ProfileEditTagsScreenState extends State<ProfileEditTagsScreen> {
                           Container(
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              border: Border.all(color: Colors.deepPurple.shade400, width: 3),
+                              border: Border.all(color: AppColors.accentPurple, width: 3),
                             ),
                             child: CircleAvatar(
                               radius: 60,
-                              backgroundColor: Colors.deepPurple.shade50,
+                              backgroundColor: isDark ? AppColors.surfaceDarkAlt : AppColors.accentPurpleSoft,
                               backgroundImage: _pickedProfilePhoto?.bytes != null
                                   ? MemoryImage(_pickedProfilePhoto!.bytes!)
                                   : (_profilePictures.isNotEmpty
                                       ? NetworkImage(_profilePictures.first.getAbsoluteUrl(widget.api.baseUrl))
                                       : null),
                               child: _pickedProfilePhoto?.bytes == null && _profilePictures.isEmpty
-                                  ? Icon(Icons.person, size: 60, color: Colors.deepPurple.shade200)
+                                  ? Icon(Icons.person, size: 60, color: AppColors.accentPurple.withOpacity(0.5))
                                   : null,
                             ),
                           ),
@@ -398,9 +398,9 @@ class _ProfileEditTagsScreenState extends State<ProfileEditTagsScreen> {
                             right: 0,
                             child: Container(
                               decoration: BoxDecoration(
-                                color: Colors.deepPurple.shade400,
+                                color: AppColors.accentPurple,
                                 shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white, width: 2),
+                                border: Border.all(color: isDark ? AppColors.surfaceDark : Colors.white, width: 2),
                               ),
                               child: IconButton(
                                 icon: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
@@ -442,7 +442,7 @@ class _ProfileEditTagsScreenState extends State<ProfileEditTagsScreen> {
                   Center(
                     child: Text(
                       'Tap to ${_pickedProfilePhoto == null ? 'add' : 'change'} profile photo',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      style: TextStyle(fontSize: 12, color: AppTheme.getAdaptiveGrey(context, lightShade: 600, darkShade: 400)),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -452,7 +452,7 @@ class _ProfileEditTagsScreenState extends State<ProfileEditTagsScreen> {
                     decoration: InputDecoration(
                       labelText: 'Description',
                       filled: true,
-                      fillColor: Colors.deepPurple.shade50,
+                      fillColor: isDark ? AppColors.surfaceDarkAlt : AppColors.accentPurpleSoft,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(20),
                         borderSide: BorderSide.none,
@@ -494,7 +494,7 @@ class _ProfileEditTagsScreenState extends State<ProfileEditTagsScreen> {
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
                               decoration: BoxDecoration(
-                                color: Colors.deepPurple.shade50,
+                                color: isDark ? AppColors.surfaceDarkAlt : AppColors.accentPurpleSoft,
                                 borderRadius: BorderRadius.circular(30),
                               ),
                               child: Row(
@@ -524,8 +524,8 @@ class _ProfileEditTagsScreenState extends State<ProfileEditTagsScreen> {
                                 final label = found['label']?.toString() ?? val.toString();
                                 return Chip(
                                   label: Text(label),
-                                  backgroundColor: Colors.deepPurple.shade100,
-                                  deleteIconColor: Colors.deepPurple.shade700,
+                                  backgroundColor: isDark ? AppColors.surfaceDarkAlt : AppColors.accentPurpleSoft,
+                                  deleteIconColor: AppColors.accentPurple,
                                   onDeleted: () {
                                     setState(() {
                                       _tagManager.selected[cat]?.remove(val);
@@ -556,7 +556,7 @@ class _ProfileEditTagsScreenState extends State<ProfileEditTagsScreen> {
                       ..._bandMembers.map((m) => Container(
                             margin: const EdgeInsets.only(bottom: 12),
                             decoration: BoxDecoration(
-                              color: Colors.deepPurple.shade50,
+                              color: isDark ? AppColors.surfaceDarkAlt : AppColors.accentPurpleSoft,
                               borderRadius: BorderRadius.circular(16),
                             ),
                             child: ListTile(
@@ -568,11 +568,11 @@ class _ProfileEditTagsScreenState extends State<ProfileEditTagsScreen> {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   IconButton(
-                                    icon: Icon(Icons.edit, color: Colors.deepPurple.shade400),
+                                    icon: Icon(Icons.edit, color: AppColors.accentPurple),
                                     onPressed: () => _editBandMember(m),
                                   ),
                                   IconButton(
-                                    icon: Icon(Icons.delete, color: Colors.red.shade400),
+                                    icon: Icon(Icons.delete, color: isDark ? const Color(0xFFE57373) : const Color(0xFFEF5350)),
                                     onPressed: () => _removeBandMember(m),
                                   ),
                                 ],
@@ -583,8 +583,8 @@ class _ProfileEditTagsScreenState extends State<ProfileEditTagsScreen> {
                     OutlinedButton.icon(
                       icon: const Icon(Icons.add),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.deepPurple.shade400,
-                        side: BorderSide(color: Colors.deepPurple.shade400, width: 2),
+                        foregroundColor: AppColors.accentPurple,
+                        side: BorderSide(color: AppColors.accentPurple, width: 2),
                       ),
                       label: const Text('Add Band Member'),
                       onPressed: _addBandMember,
@@ -599,7 +599,7 @@ class _ProfileEditTagsScreenState extends State<ProfileEditTagsScreen> {
                     child: ElevatedButton(
                       onPressed: _save,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.deepPurple.shade400,
+                        backgroundColor: AppColors.accentPurple,
                         foregroundColor: Colors.white,
                         minimumSize: const Size(double.infinity, 56),
                         shape: RoundedRectangleBorder(
@@ -621,21 +621,21 @@ class _ProfileEditTagsScreenState extends State<ProfileEditTagsScreen> {
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: _status.contains('200')
-                            ? Colors.green.shade50
-                            : Colors.red.shade50,
+                            ? (isDark ? const Color(0xFF1B5E20) : const Color(0xFFE8F5E9))
+                            : (isDark ? const Color(0xFFB71C1C) : const Color(0xFFFFEBEE)),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: _status.contains('200')
-                              ? Colors.green.shade300
-                              : Colors.red.shade300,
+                              ? (isDark ? const Color(0xFF4CAF50) : const Color(0xFF81C784))
+                              : (isDark ? const Color(0xFFE57373) : const Color(0xFFE57373)),
                         ),
                       ),
                       child: Text(
                         _status,
                         style: TextStyle(
                           color: _status.contains('200')
-                              ? Colors.green.shade900
-                              : Colors.red.shade900,
+                              ? (isDark ? const Color(0xFFA5D6A7) : const Color(0xFF1B5E20))
+                              : (isDark ? const Color(0xFFFFCDD2) : const Color(0xFFC62828)),
                         ),
                       ),
                     ),

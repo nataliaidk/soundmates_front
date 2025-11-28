@@ -316,7 +316,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
                               Icon(
                                 Icons.chat_bubble_outline,
                                 size: 64,
-                                color: isDark ? Colors.grey.shade600 : Colors.grey.shade400,
+                                color: AppTheme.getAdaptiveGrey(context, lightShade: 400, darkShade: 600),
                               ),
                               const SizedBox(height: 16),
                               Text(
@@ -405,7 +405,7 @@ class _RecentMatchCard extends StatelessWidget {
                       backgroundImage: imageUrl != null
                           ? NetworkImage(imageUrl)
                           : null,
-                      backgroundColor: Colors.grey.shade800,
+                      backgroundColor: AppTheme.getAdaptiveGrey(context, lightShade: 200, darkShade: 800),
                       child: imageUrl == null
                           ? Text(
                               (match.name ?? 'U').substring(0, 1).toUpperCase(),
@@ -443,7 +443,7 @@ class _RecentMatchCard extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: isDesktop 
-                  ? AppTextStyles.recentMatchName.copyWith(color: Colors.black87)
+                  ? AppTextStyles.recentMatchName.copyWith(color: AppTheme.getAdaptiveText(context))
                   : AppTextStyles.recentMatchName,
             ),
           ],
@@ -517,7 +517,7 @@ class _MatchListItem extends StatelessWidget {
             CircleAvatar(
               radius: 30,
               backgroundImage: imageUrl != null ? NetworkImage(imageUrl) : null,
-              backgroundColor: Colors.grey.shade300,
+              backgroundColor: AppTheme.getAdaptiveGrey(context, lightShade: 300, darkShade: 700),
               child: imageUrl == null
                   ? Text(
                       (match.name ?? 'U').substring(0, 1).toUpperCase(),
@@ -541,7 +541,7 @@ class _MatchListItem extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: AppTextStyles.bodyRegular.copyWith(
                             fontWeight: isUnread ? FontWeight.bold : FontWeight.normal,
-                            color: isUnread ? Colors.black87 : null,
+                            color: isUnread ? AppTheme.getAdaptiveText(context) : null,
                           ),
                         ),
                       ),
@@ -551,7 +551,7 @@ class _MatchListItem extends StatelessWidget {
                           timeText,
                           style: AppTextStyles.bodyRegular.copyWith(
                             fontSize: 12,
-                            color: Colors.grey,
+                            color: AppTheme.getAdaptiveGrey(context, lightShade: 600, darkShade: 400),
                           ),
                         ),
                       ],

@@ -258,14 +258,14 @@ class _ProfileAddMediaScreenState extends State<ProfileAddMediaScreen> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: isAtLimit 
-              ? [Colors.red.shade50, Colors.red.shade100]
+              ? [const Color(0xFFFFEBEE), const Color(0xFFFFCDD2)]
               : [color.shade50, color.shade100],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isAtLimit ? Colors.red.shade300 : color.shade300,
+          color: isAtLimit ? const Color(0xFFE57373) : color.shade300,
           width: 2,
         ),
       ),
@@ -274,32 +274,40 @@ class _ProfileAddMediaScreenState extends State<ProfileAddMediaScreen> {
           Icon(
             icon,
             size: 40,
-            color: isAtLimit ? Colors.red.shade700 : color.shade700,
+            color: isAtLimit ? const Color(0xFFC62828) : color.shade700,
           ),
           const SizedBox(height: 8),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey.shade800,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: TextStyle(
-              fontSize: 11,
-              color: Colors.grey.shade600,
-            ),
-            textAlign: TextAlign.center,
+          Builder(
+            builder: (context) {
+              return Column(
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.getAdaptiveGrey(context, lightShade: 800, darkShade: 200),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppTheme.getAdaptiveGrey(context, lightShade: 600, darkShade: 400),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              );
+            },
           ),
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: isAtLimit ? Colors.red.shade700 : color.shade700,
+              color: isAtLimit ? const Color(0xFFC62828) : color.shade700,
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
@@ -317,7 +325,7 @@ class _ProfileAddMediaScreenState extends State<ProfileAddMediaScreen> {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: isAtLimit ? Colors.red.shade700 : color.shade700,
+              color: isAtLimit ? const Color(0xFFC62828) : color.shade700,
             ),
           ),
         ],
@@ -355,18 +363,18 @@ class _ProfileAddMediaScreenState extends State<ProfileAddMediaScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.blue.shade50,
+                color: isDark ? AppColors.surfaceDarkAlt : const Color(0xFFE3F2FD),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.blue.shade200),
+                border: Border.all(color: isDark ? AppColors.accentPurple.withOpacity(0.3) : const Color(0xFF90CAF9)),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.info_outline, color: Colors.blue.shade700),
+                  Icon(Icons.info_outline, color: isDark ? AppColors.accentPurple : const Color(0xFF1976D2)),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       'Select photos, videos, or audio files to add to your profile',
-                      style: TextStyle(color: Colors.blue.shade900, fontSize: 14),
+                      style: TextStyle(color: AppTheme.getAdaptiveText(context), fontSize: 14),
                     ),
                   ),
                 ],
@@ -378,9 +386,9 @@ class _ProfileAddMediaScreenState extends State<ProfileAddMediaScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.grey.shade100,
+                color: AppTheme.getAdaptiveGrey(context, lightShade: 100, darkShade: 850),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade300),
+                border: Border.all(color: AppTheme.getAdaptiveGrey(context, lightShade: 300, darkShade: 700)),
               ),
               child: _loadingExisting
                   ? const Center(
@@ -435,7 +443,7 @@ class _ProfileAddMediaScreenState extends State<ProfileAddMediaScreen> {
                 icon: const Icon(Icons.add_photo_alternate),
                 label: const Text('Select Files'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.purple.shade400,
+                  backgroundColor: AppColors.accentPurple,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -446,7 +454,7 @@ class _ProfileAddMediaScreenState extends State<ProfileAddMediaScreen> {
             Center(
               child: Text(
                 'Supported: JPG, JPEG, MP3, MP4',
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                style: TextStyle(fontSize: 12, color: AppTheme.getAdaptiveGrey(context, lightShade: 600, darkShade: 400)),
               ),
             ),
             const SizedBox(height: 24),
@@ -558,27 +566,27 @@ class _ProfileAddMediaScreenState extends State<ProfileAddMediaScreen> {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: _status.contains('Success') || _status.contains('uploaded')
-                      ? Colors.green.shade50
+                      ? (isDark ? const Color(0xFF1B5E20) : const Color(0xFFE8F5E9))
                       : _status.contains('Failed') || _status.contains('Invalid')
-                          ? Colors.red.shade50
-                          : Colors.grey.shade100,
+                          ? (isDark ? const Color(0xFFB71C1C) : const Color(0xFFFFEBEE))
+                          : AppTheme.getAdaptiveGrey(context, lightShade: 100, darkShade: 850),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
                     color: _status.contains('Success') || _status.contains('uploaded')
-                        ? Colors.green.shade300
+                        ? (isDark ? const Color(0xFF4CAF50) : const Color(0xFF81C784))
                         : _status.contains('Failed') || _status.contains('Invalid')
-                            ? Colors.red.shade300
-                            : Colors.grey.shade300,
+                            ? (isDark ? const Color(0xFFE57373) : const Color(0xFFE57373))
+                            : AppTheme.getAdaptiveGrey(context, lightShade: 300, darkShade: 700),
                   ),
                 ),
                 child: Text(
                   _status,
                   style: TextStyle(
                     color: _status.contains('Success') || _status.contains('uploaded')
-                        ? Colors.green.shade900
+                        ? (isDark ? const Color(0xFFA5D6A7) : const Color(0xFF1B5E20))
                         : _status.contains('Failed') || _status.contains('Invalid')
-                            ? Colors.red.shade900
-                            : Colors.grey.shade900,
+                            ? (isDark ? const Color(0xFFFFCDD2) : const Color(0xFFC62828))
+                            : AppTheme.getAdaptiveText(context),
                   ),
                   textAlign: TextAlign.center,
                 ),

@@ -871,4 +871,21 @@ class AppTheme {
   static bool isDark(BuildContext context) {
     return Theme.of(context).brightness == Brightness.dark;
   }
+
+  /// Get adaptive color based on theme - for grey shades
+  static Color getAdaptiveGrey(BuildContext context, {int lightShade = 100, int darkShade = 800}) {
+    return isDark(context)
+        ? Color.lerp(Colors.grey[darkShade]!, AppColors.surfaceDarkGrey, 0.5)!
+        : Colors.grey[lightShade]!;
+  }
+
+  /// Get adaptive white/dark surface color
+  static Color getAdaptiveSurface(BuildContext context) {
+    return isDark(context) ? AppColors.surfaceDark : Colors.white;
+  }
+
+  /// Get adaptive black/white text color
+  static Color getAdaptiveText(BuildContext context) {
+    return isDark(context) ? AppColors.textWhite : Colors.black;
+  }
 }
