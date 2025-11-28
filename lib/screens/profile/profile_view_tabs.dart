@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
+import 'package:zpi_test/screens/shared/video_thumbnail.dart';
 import '../../api/api_client.dart';
 import '../../api/models.dart';
 import '../../theme/app_design_system.dart';
@@ -570,7 +571,7 @@ class _ProfileViewTabsState extends State<ProfileViewTabs> {
                                 )
                               else if (media.type == _MediaType.video)
                                 // Show video thumbnail (first frame)
-                                _VideoThumbnail(videoUrl: media.url)
+                                VideoThumbnail(videoUrl: media.url)
                               else
                                 // Audio files
                                 Container(
@@ -801,26 +802,21 @@ class _VideoThumbnailState extends State<_VideoThumbnail> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
     if (_hasError) {
       return Container(
-        color: AppTheme.getAdaptiveGrey(context, lightShade: 300, darkShade: 700),
-        child: Icon(Icons.videocam_off, color: AppTheme.getAdaptiveGrey(context, lightShade: 500, darkShade: 500), size: 32),
+        color: Colors.grey[300],
+        child: const Icon(Icons.videocam_off, color: Colors.grey, size: 32),
       );
     }
 
     if (!_initialized || _controller == null) {
       return Container(
-        color: AppTheme.getAdaptiveGrey(context, lightShade: 200, darkShade: 800),
-        child: Center(
+        color: Colors.grey[200],
+        child: const Center(
           child: SizedBox(
             width: 20,
             height: 20,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: isDark ? AppColors.accentPurple : AppColors.accentPurple,
-            ),
+            child: CircularProgressIndicator(strokeWidth: 2),
           ),
         ),
       );

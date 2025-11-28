@@ -3,7 +3,9 @@ import 'package:video_player/video_player.dart';
 import '../visit_profile_model.dart';
 import '../../shared/media_models.dart';
 import '../../shared/instagram_post_viewer.dart';
+import '../../shared/video_thumbnail.dart';
 import '../../../theme/app_design_system.dart';
+
 
 class VisitMediaTab extends StatelessWidget {
   final List<VisitProfileMediaItem> items;
@@ -128,7 +130,7 @@ class _MediaGridItem extends StatelessWidget {
                   ),
                 )
               else if (item.type == VisitProfileMediaType.video)
-                _VideoThumbnail(videoUrl: item.url)
+                VideoThumbnail(videoUrl: item.url)
               else
                 // Audio placeholder with gradient and music notes
                 Container(
@@ -207,85 +209,3 @@ class _MediaGridItem extends StatelessWidget {
   }
 }
 
-/// Widget that displays video thumbnail (first frame)
-class _VideoThumbnail extends StatefulWidget {
-  final String videoUrl;
-
-  const _VideoThumbnail({required this.videoUrl});
-
-  @override
-  State<_VideoThumbnail> createState() => _VideoThumbnailState();
-}
-
-class _VideoThumbnailState extends State<_VideoThumbnail> {
-  VideoPlayerController? _controller;
-  bool _initialized = false;
-  bool _hasError = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _initializeVideo();
-  }
-
-  Future<void> _initializeVideo() async {
-    try {
-      _controller = VideoPlayerController.networkUrl(
-        Uri.parse(widget.videoUrl),
-      );
-      await _controller!.initialize();
-      // Pause immediately to show first frame
-      await _controller!.pause();
-      if (mounted) {
-        setState(() {
-          _initialized = true;
-        });
-      }
-    } catch (e) {
-      debugPrint('Error loading video thumbnail: $e');
-      if (mounted) {
-        setState(() {
-          _hasError = true;
-        });
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller?.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_hasError) {
-      return Container(
-        color: Colors.grey[300],
-        child: const Icon(Icons.videocam_off, color: Colors.grey, size: 32),
-      );
-    }
-
-    if (!_initialized || _controller == null) {
-      return Container(
-        color: Colors.grey[200],
-        child: const Center(
-          child: SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
-        ),
-      );
-    }
-
-    return FittedBox(
-      fit: BoxFit.cover,
-      child: SizedBox(
-        width: _controller!.value.size.width,
-        height: _controller!.value.size.height,
-        child: VideoPlayer(_controller!),
-      ),
-    );
-  }
-}
