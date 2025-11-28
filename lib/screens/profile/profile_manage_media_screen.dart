@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../api/api_client.dart';
 import '../../api/token_store.dart';
 import '../../api/models.dart';
+import '../../theme/app_design_system.dart';
 import '../shared/media_models.dart';
 import '../shared/instagram_post_viewer.dart';
 
@@ -370,12 +371,22 @@ class _ProfileManageMediaScreenState extends State<ProfileManageMediaScreen> {
       );
     }
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: isDark ? AppColors.backgroundDark : Colors.grey[50],
       appBar: AppBar(
-        title: const Text('Manage Media'),
+        backgroundColor: isDark ? AppColors.surfaceDark : null,
+        title: Text(
+          'Manage Media',
+          style: TextStyle(
+            color: isDark ? AppColors.textWhite : null,
+          ),
+        ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(
+            Icons.arrow_back,
+            color: isDark ? AppColors.textWhite : null,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
       ),

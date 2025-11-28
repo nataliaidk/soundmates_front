@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
+import 'package:provider/provider.dart';
 
 import 'api/api_client.dart';
 import 'api/event_hub_service.dart';
 import 'api/token_store.dart';
 import 'utils/audio_notifier.dart';
+import 'theme/theme_provider.dart';
+import 'theme/app_design_system.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/profile/profile_screen_new.dart' as profile_new;
@@ -259,51 +262,59 @@ class _MyAppState extends State<MyApp> {
       Navigator.pushReplacementNamed(navContext, '/profile/create');
     }
 
-    return MaterialApp(
-      navigatorKey: navigatorKey,
-      title: 'Soundmates Demo',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+    return ChangeNotifierProvider(
+      create: (_) => ThemeProvider(),
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, _) {
+          return MaterialApp(
+            navigatorKey: navigatorKey,
+            title: 'Soundmates Demo',
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: themeProvider.themeMode,
+            initialRoute: '/login',
+            routes: {
+              '/login': (c) => LoginScreen(
+                api: api,
+                tokens: tokens,
+                onLoggedIn: () => onAuthSuccess(c),
+              ),
+              '/register': (c) => RegisterScreen(
+                api: api,
+                tokens: tokens,
+                onRegistered: () => onRegisterSuccess(c),
+              ),
+              '/profile': (c) => profile_new.ProfileScreen(
+                api: api,
+                tokens: tokens,
+                startInEditMode: false,
+              ),
+              '/profile/create': (c) => profile_new.ProfileScreen(
+                api: api,
+                tokens: tokens,
+                startInEditMode: true,
+                isFromRegistration: true,
+              ),
+              '/profile/edit': (c) =>
+                  ProfileEditBasicInfoScreen(api: api, tokens: tokens),
+              '/profile/edit-tags': (c) =>
+                  ProfileEditTagsScreen(api: api, tokens: tokens),
+              '/profile/add-media': (c) =>
+                  ProfileAddMediaScreen(api: api, tokens: tokens),
+              '/profile/manage-media': (c) =>
+                  ProfileManageMediaScreen(api: api, tokens: tokens),
+              '/matches': (c) =>
+                  MatchesScreen(api: api, tokens: tokens, eventHubService: eventHub),
+              '/discover': (c) =>
+                  SwipingScreen(api: api, tokens: tokens, eventHubService: eventHub),
+              '/filters': (c) => FiltersScreen(api: api, tokens: tokens),
+              '/settings': (c) => SettingsScreen(api: api, tokens: tokens),
+              '/terms': (c) => const TermsOfServiceScreen(),
+            },
+          );
+        },
       ),
-      initialRoute: '/login',
-      routes: {
-        '/login': (c) => LoginScreen(
-          api: api,
-          tokens: tokens,
-          onLoggedIn: () => onAuthSuccess(c),
-        ),
-        '/register': (c) => RegisterScreen(
-          api: api,
-          tokens: tokens,
-          onRegistered: () => onRegisterSuccess(c),
-        ),
-        '/profile': (c) => profile_new.ProfileScreen(
-          api: api,
-          tokens: tokens,
-          startInEditMode: false,
-        ),
-        '/profile/create': (c) => profile_new.ProfileScreen(
-          api: api,
-          tokens: tokens,
-          startInEditMode: true,
-          isFromRegistration: true,
-        ),
-        '/profile/edit': (c) =>
-            ProfileEditBasicInfoScreen(api: api, tokens: tokens),
-        '/profile/edit-tags': (c) =>
-            ProfileEditTagsScreen(api: api, tokens: tokens),
-        '/profile/add-media': (c) =>
-            ProfileAddMediaScreen(api: api, tokens: tokens),
-        '/profile/manage-media': (c) =>
-            ProfileManageMediaScreen(api: api, tokens: tokens),
-        '/matches': (c) =>
-            MatchesScreen(api: api, tokens: tokens, eventHubService: eventHub),
-        '/discover': (c) =>
-            SwipingScreen(api: api, tokens: tokens, eventHubService: eventHub),
-        '/filters': (c) => FiltersScreen(api: api, tokens: tokens),
-        '/settings': (c) => SettingsScreen(api: api, tokens: tokens),
-        '/terms': (c) => const TermsOfServiceScreen(),
-      },
     );
   }
 }
+

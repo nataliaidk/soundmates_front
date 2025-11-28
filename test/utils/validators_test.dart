@@ -40,7 +40,7 @@ void main() {
     });
 
     test('should return error for password too long', () {
-      final longPass = '${'a' * 20}A1!' + 'x' * 20;
+      final longPass = '${'a' * 20}A1!${'x' * 20}';
       expect(validatePassword(longPass), equals('Password too long (max 32 characters)'));
     });
 

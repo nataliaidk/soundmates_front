@@ -7,6 +7,7 @@ import 'dart:convert';
 import '../../api/api_client.dart';
 import '../../api/token_store.dart';
 import '../../api/models.dart';
+import '../../theme/app_design_system.dart';
 import '../../widgets/app_bottom_nav.dart';
 import 'profile_data_loader.dart';
 import 'profile_tag_manager.dart';
@@ -512,8 +513,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final showNav = !_isEditing;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: isDark ? AppColors.backgroundDark : Colors.grey[50],
       appBar: _isEditing
           ? AppBar(
               title: Text(

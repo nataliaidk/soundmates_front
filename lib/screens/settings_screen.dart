@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../api/api_client.dart';
 import '../api/token_store.dart';
 import '../api/models.dart';
 import 'change_password_screen.dart';
 import '../theme/app_design_system.dart';
+import '../theme/theme_provider.dart';
 
 class SettingsScreen extends StatelessWidget {
   final ApiClient api;
@@ -12,20 +14,31 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final divider = Divider(height: 1, color: AppColors.borderLight);
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final divider = Divider(
+      height: 1, 
+      color: isDark ? AppColors.surfaceDarkGrey : AppColors.borderLight,
+    );
+    
     return Scaffold(
-      backgroundColor: AppColors.backgroundLightPurple,
+      backgroundColor: isDark 
+          ? AppColors.backgroundDark 
+          : AppColors.backgroundLightPurple,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimaryAlt),
+          icon: Icon(
+            Icons.arrow_back, 
+            color: isDark ? AppColors.textWhite : AppColors.textPrimaryAlt,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Settings',
           style: TextStyle(
-            color: AppColors.textPrimaryAlt,
+            color: isDark ? AppColors.textWhite : AppColors.textPrimaryAlt,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.5,
           ),
@@ -37,10 +50,10 @@ class SettingsScreen extends StatelessWidget {
         children: [
           divider,
           const SizedBox(height: 12),
-          // Dark Mode (coming soon)
+          // Dark Mode
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -49,13 +62,18 @@ class SettingsScreen extends StatelessWidget {
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 16,
+                        color: isDark ? AppColors.textWhite : AppColors.textPrimary,
                       ),
                     ),
-                    SizedBox(height: 4),
+                    const SizedBox(height: 4),
                     Text(
-                      'COMING SOON',
+                      themeProvider.isDarkMode 
+                          ? 'Ciemny motyw włączony' 
+                          : 'Jasny motyw włączony',
                       style: TextStyle(
-                        color: AppColors.textGrey,
+                        color: isDark 
+                            ? AppColors.textWhite70 
+                            : AppColors.textGrey,
                         fontSize: 12,
                         letterSpacing: 0.3,
                       ),
@@ -64,11 +82,9 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ),
               Switch(
-                value: false,
-                onChanged: (_) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Dark mode coming soon')),
-                  );
+                value: themeProvider.isDarkMode,
+                onChanged: (value) {
+                  themeProvider.toggleTheme();
                 },
               ),
             ],
@@ -201,13 +217,16 @@ class _SettingsItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final defaultColor = isDark ? AppColors.textWhite : AppColors.textPrimaryAlt;
+    
     return ListTile(
-      leading: Icon(icon, color: color ?? AppColors.textPrimaryAlt),
+      leading: Icon(icon, color: color ?? defaultColor),
       title: Text(
         text,
         style: TextStyle(
           fontWeight: FontWeight.w500,
-          color: color ?? AppColors.textPrimaryAlt,
+          color: color ?? defaultColor,
         ),
       ),
       trailing: trailing,

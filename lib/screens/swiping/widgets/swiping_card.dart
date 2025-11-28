@@ -351,7 +351,7 @@ class DraggableCardState extends State<DraggableCard>
                             Stack(
                               children: [
                                 // Image
-                                Container(
+                                SizedBox(
                                   height: heroHeight,
                                   width: double.infinity,
                                   child: images.isNotEmpty

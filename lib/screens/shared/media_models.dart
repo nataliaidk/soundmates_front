@@ -1,4 +1,5 @@
 /// Shared data models for media items used across different screens
+library;
 
 /// Media type enumeration
 enum MediaType { image, audio, video }

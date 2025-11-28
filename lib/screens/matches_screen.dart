@@ -32,7 +32,7 @@ class MatchesScreen extends StatefulWidget {
 class _MatchesScreenState extends State<MatchesScreen> {
   List<OtherUserProfileDto> _matches = [];
   bool _loading = true;
-  Map<String, MessageDto> _lastMessages = {};
+  final Map<String, MessageDto> _lastMessages = {};
   String? _currentUserId;
   Map<String, String> _tagNames = {};
 
@@ -186,13 +186,19 @@ class _MatchesScreenState extends State<MatchesScreen> {
         .where((m) => _lastMessages.containsKey(m.id))
         .toList();
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: AppColors.backgroundDarkAlt,
+      backgroundColor: isDark ? AppColors.backgroundDarkAlt : AppColors.backgroundLight,
       appBar: AppBar(
-        backgroundColor: AppColors.surfaceDark,
+        backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
         elevation: 0,
         automaticallyImplyLeading: false, // No back arrow on navbar screen
-        title: Text('Messages', style: AppTextStyles.appBarTitle),
+        title: Text(
+          'Messages',
+          style: AppTextStyles.appBarTitle.copyWith(
+            color: isDark ? AppColors.textWhite : AppColors.textPrimary,
+          ),
+        ),
         actions: [
           IconButton(
             icon: const Icon(
@@ -213,7 +219,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
                     Container(
                       width: 450,
                       decoration: BoxDecoration(
-                        color: AppColors.surfaceWhite,
+                        color: isDark ? AppColors.surfaceDark : AppColors.surfaceWhite,
                         borderRadius: const BorderRadius.only(
                           topRight: Radius.circular(30),
                         ),
@@ -257,9 +263,12 @@ class _MatchesScreenState extends State<MatchesScreen> {
   }
 
   Widget _buildContent(List<OtherUserProfileDto> conversations, {bool isDesktop = false}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return _loading
-        ? const Center(
-            child: CircularProgressIndicator(color: AppColors.textWhite),
+        ? Center(
+            child: CircularProgressIndicator(
+              color: isDark ? AppColors.accentPurpleLight : AppColors.accentPurple,
+            ),
           )
         : Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -269,8 +278,12 @@ class _MatchesScreenState extends State<MatchesScreen> {
                 child: Text(
                   'Recent Matches',
                   style: isDesktop 
-                      ? AppTextStyles.sectionTitle.copyWith(color: Colors.black87)
-                      : AppTextStyles.sectionTitle,
+                      ? AppTextStyles.sectionTitle.copyWith(
+                          color: isDark ? AppColors.textWhite : Colors.black87,
+                        )
+                      : AppTextStyles.sectionTitle.copyWith(
+                          color: isDark ? AppColors.textWhite : AppColors.textPrimary,
+                        ),
                 ),
               ),
               SizedBox(
@@ -292,7 +305,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
               Expanded(
                 child: Container(
                   decoration: BoxDecoration(
-                    color: AppColors.surfaceWhite,
+                    color: isDark ? AppColors.surfaceDarkAlt : AppColors.surfaceWhite,
                     borderRadius: AppBorderRadius.topLarge,
                   ),
                   child: conversations.isEmpty
@@ -303,12 +316,14 @@ class _MatchesScreenState extends State<MatchesScreen> {
                               Icon(
                                 Icons.chat_bubble_outline,
                                 size: 64,
-                                color: Colors.grey.shade400,
+                                color: isDark ? Colors.grey.shade600 : Colors.grey.shade400,
                               ),
                               const SizedBox(height: 16),
                               Text(
                                 'No conversations yet',
-                                style: AppTextStyles.emptyStateTitle,
+                                style: AppTextStyles.emptyStateTitle.copyWith(
+                                  color: isDark ? AppColors.textWhite70 : null,
+                                ),
                               ),
                             ],
                           ),
@@ -559,7 +574,6 @@ class _DesktopRightPanel extends StatefulWidget {
   final Map<String, String> tagNames;
 
   const _DesktopRightPanel({
-    super.key,
     required this.matches,
     required this.api,
     required this.tokens,
@@ -782,7 +796,7 @@ class _DesktopRightPanelState extends State<_DesktopRightPanel> {
                               Icon(Icons.location_on, size: 14, color: Colors.white70),
                               const SizedBox(width: 4),
                               Text(
-                                city!,
+                                city,
                                 style: AppTextStyles.bodyRegular.copyWith(color: Colors.white70),
                               ),
                             ],

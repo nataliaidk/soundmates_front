@@ -5,6 +5,7 @@ import '../api/api_client.dart';
 import '../api/token_store.dart';
 import '../api/models.dart';
 import '../api/event_hub_service.dart';
+import '../theme/app_design_system.dart';
 import 'dart:convert';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
@@ -418,17 +419,21 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F6FB),
+      backgroundColor: isDark ? AppColors.backgroundDark : const Color(0xFFF5F6FB),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
         elevation: 0,
         centerTitle: false,
         titleSpacing: 0,
         toolbarHeight: 72,
         shadowColor: Colors.black.withOpacity(0.05),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black87),
+          icon: Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: isDark ? AppColors.textWhite : Colors.black87,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: GestureDetector(
