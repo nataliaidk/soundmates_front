@@ -25,7 +25,7 @@ class VisitInfoTab extends StatelessWidget {
         const SizedBox(height: 10),
 
         // About Section
-        _buildSectionTitle('About'),
+        _buildSectionTitle(context, 'About'),
         const SizedBox(height: 8),
         Text(
           data.profile.description.isNotEmpty
@@ -34,7 +34,7 @@ class VisitInfoTab extends StatelessWidget {
           style: TextStyle(
             fontSize: 14,
             height: 1.45,
-            color: isDark? AppColors.textWhite : AppColors.textDarkGrey,
+            color: isDark ? AppColors.textWhite : AppColors.textDarkGrey,
           ),
         ),
         const SizedBox(height: 16),
@@ -58,7 +58,7 @@ class VisitInfoTab extends StatelessWidget {
         for (final category in orderedCategories)
           if (data.groupedTags.containsKey(category) &&
               data.groupedTags[category]!.isNotEmpty) ...[
-            _buildSectionTitle(category),
+            _buildSectionTitle(context, category),
             const SizedBox(height: 12),
             Wrap(
               spacing: 8,
@@ -69,9 +69,10 @@ class VisitInfoTab extends StatelessWidget {
             ),
             const SizedBox(height: 24),
           ],
+
         // Band Members Section
         if (data.bandMembers.isNotEmpty) ...[
-          _buildSectionTitle('Band Members'),
+          _buildSectionTitle(context, 'Band Members'),
           const SizedBox(height: 12),
           ...data.bandMembers.map((member) {
             return Padding(
@@ -80,7 +81,9 @@ class VisitInfoTab extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 20,
-                    backgroundColor: AppColors.avatarBackground,
+                    backgroundColor: isDark
+                        ? AppColors.surfaceDarkAlt
+                        : AppColors.avatarBackground,
                     child: Icon(
                       Icons.person,
                       color: AppColors.accentPurpleDark,
@@ -93,10 +96,11 @@ class VisitInfoTab extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          member.name,
-                          style: const TextStyle(
+                          '${member.name}${member.age.isNotEmpty ? ', ${member.age}' : ''}',
+                          style: TextStyle(
                             fontWeight: FontWeight.w600,
                             fontSize: 14,
+                            color: isDark ? AppColors.textWhite : Colors.black,
                           ),
                         ),
                         if (member.role.isNotEmpty)
@@ -104,7 +108,9 @@ class VisitInfoTab extends StatelessWidget {
                             member.role,
                             style: TextStyle(
                               fontSize: 12,
-                              color: isDark? AppColors.textWhite : AppColors.textSecondary,
+                              color: isDark
+                                  ? AppColors.textWhite70
+                                  : AppColors.textSecondary,
                             ),
                           ),
                       ],
@@ -120,12 +126,15 @@ class VisitInfoTab extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionTitle(String text) {
+  Widget _buildSectionTitle(BuildContext context, String text) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Text(
       text.toUpperCase(),
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 13,
-        color: AppColors.textPurpleVibrant,
+        color: isDark
+            ? AppColors.accentPurpleSoft
+            : AppColors.textPurpleVibrant,
         fontWeight: FontWeight.w700,
         letterSpacing: 1.0,
       ),
@@ -133,10 +142,11 @@ class VisitInfoTab extends StatelessWidget {
   }
 
   Widget _buildModernChip(BuildContext context, String label) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: AppColors.accentPurple,
+        color: isDark ? AppColors.accentPurpleDark : AppColors.accentPurple,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(

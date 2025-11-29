@@ -230,7 +230,7 @@ class VisitProfileLoader {
         for (final member in bandProfile.bandMembers!) {
           members.add(
             BandMemberInfo(
-              name: '${member.name}, ${member.age}',
+              name: member.name,
               role: '', // BandMemberDto only has bandRoleId, not role name
               age: member.age.toString(),
             ),

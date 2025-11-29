@@ -85,6 +85,7 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
       }
     }
   }
+
   Future<void> _navigateToChat(VisitProfileViewModel data) async {
     // Get user name and image URL from data
     final userName = data.profile.name ?? 'User';
@@ -229,7 +230,9 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
                     body: Container(
                       // Zaokrąglenie góry kontenera, aby "wjeżdżał" na zdjęcie
                       decoration: BoxDecoration(
-                        color: isDark? AppColors.surfaceDark : AppColors.surfaceWhite,
+                        color: isDark
+                            ? AppColors.surfaceDark
+                            : AppColors.surfaceWhite,
                         borderRadius: const BorderRadius.vertical(
                           top: Radius.circular(32),
                         ),
@@ -242,7 +245,9 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
                           Container(
                             padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
                             decoration: BoxDecoration(
-                              color: isDark? AppColors.surfaceDark : AppColors.surfaceWhite,
+                              color: isDark
+                                  ? AppColors.surfaceDark
+                                  : AppColors.surfaceWhite,
                               borderRadius: const BorderRadius.vertical(
                                 top: Radius.circular(32),
                               ),
@@ -266,7 +271,11 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
                                             decoration: BoxDecoration(
                                               color: _tabController.index == 0
                                                   ? AppColors.accentPurple
-                                                  : AppColors.backgroundLight,
+                                                  : (isDark
+                                                        ? AppColors
+                                                              .surfaceDarkGrey
+                                                        : AppColors
+                                                              .backgroundLight),
                                               borderRadius:
                                                   BorderRadius.circular(12),
                                             ),
@@ -278,8 +287,11 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
                                                   color:
                                                       _tabController.index == 0
                                                       ? AppColors.surfaceWhite
-                                                      : AppColors
-                                                            .textPrimaryAlt,
+                                                      : (isDark
+                                                            ? AppColors
+                                                                  .textWhite70
+                                                            : AppColors
+                                                                  .textPrimaryAlt),
                                                 ),
                                               ),
                                             ),
@@ -299,20 +311,27 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
                                             decoration: BoxDecoration(
                                               color: _tabController.index == 1
                                                   ? AppColors.accentPurple
-                                                  : AppColors.backgroundLight,
+                                                  : (isDark
+                                                        ? AppColors
+                                                              .surfaceDarkGrey
+                                                        : AppColors
+                                                              .backgroundLight),
                                               borderRadius:
                                                   BorderRadius.circular(12),
                                             ),
                                             child: Center(
                                               child: Text(
-                                                'Gallery',
+                                                'Media',
                                                 style: TextStyle(
                                                   fontWeight: FontWeight.bold,
                                                   color:
                                                       _tabController.index == 1
                                                       ? AppColors.surfaceWhite
-                                                      : AppColors
-                                                            .textPrimaryAlt,
+                                                      : (isDark
+                                                            ? AppColors
+                                                                  .textWhite70
+                                                            : AppColors
+                                                                  .textPrimaryAlt),
                                                 ),
                                               ),
                                             ),
@@ -398,7 +417,9 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
                             borderRadius: BorderRadius.circular(36),
                             child: Container(
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: isDark
+                                    ? AppColors.surfaceDark
+                                    : Colors.white,
                                 boxShadow: [
                                   BoxShadow(
                                     color: Colors.black.withOpacity(0.3),
