@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../theme/app_design_system.dart';
 
 /// Empty state widget displayed when there are no potential matches.
 /// Shows either a loading indicator or a "no matches" message with a filter button.
@@ -21,14 +22,14 @@ class SwipingEmptyState extends StatelessWidget {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFF2D1B4E), // Dark purple (matches filters screen)
-              Color(0xFF3D2C5E), // Lighter purple (matches filters cards)
+              AppColors.backgroundFilterStart,
+              AppColors.surfaceCardPurple,
             ],
           ),
         ),
         child: const Center(
           child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            valueColor: AlwaysStoppedAnimation<Color>(AppColors.surfaceWhite),
           ),
         ),
       );
@@ -40,8 +41,8 @@ class SwipingEmptyState extends StatelessWidget {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            Color(0xFF2D1B4E), // Dark purple (matches filters screen)
-            Color(0xFF3D2C5E), // Lighter purple (matches filters cards)
+            AppColors.backgroundFilterStart,
+            AppColors.surfaceCardPurple,
           ],
         ),
       ),
@@ -51,14 +52,18 @@ class SwipingEmptyState extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.search_off, size: 80, color: Colors.white70),
+              const Icon(
+                Icons.search_off,
+                size: 80,
+                color: AppColors.textWhite70,
+              ),
               const SizedBox(height: 24),
               const Text(
                 'No Potential Matches',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white,
+                  color: AppColors.textWhite,
                   letterSpacing: 0.5,
                 ),
                 textAlign: TextAlign.center,
@@ -68,7 +73,7 @@ class SwipingEmptyState extends StatelessWidget {
                 'Try adjusting your preferences to discover more artists and bands',
                 style: TextStyle(
                   fontSize: 16,
-                  color: Colors.white70,
+                  color: AppColors.textWhite70,
                   height: 1.5,
                 ),
                 textAlign: TextAlign.center,
@@ -77,8 +82,8 @@ class SwipingEmptyState extends StatelessWidget {
               ElevatedButton(
                 onPressed: onFilterTap,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: const Color(0xFF6A4C9C),
+                  backgroundColor: AppColors.surfaceWhite,
+                  foregroundColor: AppColors.textPurpleDark,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 48,
                     vertical: 16,

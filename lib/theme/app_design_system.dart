@@ -28,17 +28,28 @@ class AppColors {
   static const Color accentPurpleDark = Color(0xFF7C4DFF);
   static const Color accentPurpleMid = Color(0xFF6B4CE6);
   static const Color accentPurpleSoft = Color(0xFF9D7CE6);
+  static const Color accentPurpleVibrant = Color(0xFF9245D5);
+  static const Color accentPurpleDeep = Color(0xFF4C3F8F);
+  static const Color accentPurpleBlue = Color(0xFF5B3CF0);
   static const Color accentRed = Color(0xFFD32F2F);
+  static const Color accentPink = Color(0xFFE65080);
+  static const Color accentBlue = Color(0xFF40C9FF);
 
   // ============ Surface Colors ============
   static const Color surfaceDark = Color(0xFF2A2D3E);
   static const Color surfaceDarkAlt = Color(0xFF2A2438);
   static const Color surfaceDarkGrey = Color(0xFF4A4A6A);
+  static const Color surfaceCardPurple = Color(0xFF3D2C5E);
+  static const Color backgroundFilterStart = Color(0xFF2D1B4E);
+  static const Color backgroundFilterEnd = Color(0xFF150A32);
 
   // ============ Text Colors ============
   static const Color textPrimary = Color(0xFF1F2430);
   static const Color textPrimaryAlt = Color(0xFF1A1A1A);
   static const Color textSecondary = Color(0xFF4C4F72);
+  static const Color textPurpleDark = Color(0xFF6A4C9C);
+  static const Color textPurpleVibrant = Color(0xFF6A4DBE);
+  static const Color textDarkGrey = Color(0xFF1F1F1F);
   static const Color textPlaceholder = Color(0xFF9EA3B5);
   static const Color textWhite = Colors.white;
   static const Color textWhite70 = Colors.white70;
@@ -251,6 +262,16 @@ class AppShadows {
       ),
     ];
   }
+
+  /// Shadow for the floating swiping card
+  static List<BoxShadow> floatingCardShadow = [
+    BoxShadow(
+      color: Colors.black.withOpacity(0.3),
+      blurRadius: 60,
+      offset: const Offset(0, 30),
+      spreadRadius: 8,
+    ),
+  ];
 }
 
 class AppTextStyles {
@@ -564,7 +585,7 @@ class AppTheme {
     useMaterial3: true,
     brightness: Brightness.light,
     scaffoldBackgroundColor: AppColors.backgroundLight,
-    
+
     colorScheme: const ColorScheme.light(
       primary: AppColors.accentPurple,
       secondary: AppColors.accentPurpleLight,
@@ -668,18 +689,9 @@ class AppTheme {
           fontWeight: FontWeight.w600,
           color: AppColors.textPrimary,
         ),
-        bodyLarge: TextStyle(
-          fontSize: 16,
-          color: AppColors.textPrimary,
-        ),
-        bodyMedium: TextStyle(
-          fontSize: 14,
-          color: AppColors.textSecondary,
-        ),
-        bodySmall: TextStyle(
-          fontSize: 12,
-          color: AppColors.textPlaceholder,
-        ),
+        bodyLarge: TextStyle(fontSize: 16, color: AppColors.textPrimary),
+        bodyMedium: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+        bodySmall: TextStyle(fontSize: 12, color: AppColors.textPlaceholder),
       ),
     ),
 
@@ -695,7 +707,7 @@ class AppTheme {
     useMaterial3: true,
     brightness: Brightness.dark,
     scaffoldBackgroundColor: AppColors.backgroundDark,
-    
+
     colorScheme: const ColorScheme.dark(
       primary: AppColors.accentPurpleLight,
       secondary: AppColors.accentPurpleSoft,
@@ -753,7 +765,10 @@ class AppTheme {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppBorderRadius.radiusSmall),
-        borderSide: const BorderSide(color: AppColors.accentPurpleLight, width: 2),
+        borderSide: const BorderSide(
+          color: AppColors.accentPurpleLight,
+          width: 2,
+        ),
       ),
     ),
 
@@ -799,18 +814,9 @@ class AppTheme {
           fontWeight: FontWeight.w600,
           color: AppColors.textWhite,
         ),
-        bodyLarge: TextStyle(
-          fontSize: 16,
-          color: AppColors.textWhite,
-        ),
-        bodyMedium: TextStyle(
-          fontSize: 14,
-          color: AppColors.textWhite70,
-        ),
-        bodySmall: TextStyle(
-          fontSize: 12,
-          color: AppColors.textPlaceholder,
-        ),
+        bodyLarge: TextStyle(fontSize: 16, color: AppColors.textWhite),
+        bodyMedium: TextStyle(fontSize: 14, color: AppColors.textWhite70),
+        bodySmall: TextStyle(fontSize: 12, color: AppColors.textPlaceholder),
       ),
     ),
 
@@ -822,7 +828,7 @@ class AppTheme {
   );
 
   // ============ Helper Methods ============
-  
+
   /// Get scaffold background color based on current theme
   static Color getScaffoldBackground(BuildContext context) {
     return Theme.of(context).brightness == Brightness.dark
@@ -878,7 +884,11 @@ class AppTheme {
   }
 
   /// Get adaptive color based on theme - for grey shades
-  static Color getAdaptiveGrey(BuildContext context, {int lightShade = 100, int darkShade = 800}) {
+  static Color getAdaptiveGrey(
+    BuildContext context, {
+    int lightShade = 100,
+    int darkShade = 800,
+  }) {
     return isDark(context)
         ? Color.lerp(Colors.grey[darkShade]!, AppColors.surfaceDarkGrey, 0.5)!
         : Colors.grey[lightShade]!;

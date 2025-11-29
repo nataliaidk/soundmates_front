@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../theme/app_design_system.dart';
 
 /// Wide header widget displayed on desktop screens.
 /// Shows the "Discover" title, match headline, and current location.
@@ -25,7 +26,7 @@ class SwipingWideHeader extends StatelessWidget {
               Text(
                 'Discover',
                 style: theme.textTheme.headlineMedium?.copyWith(
-                  color: Colors.white,
+                  color: AppColors.textWhite,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.2,
                 ),
@@ -34,7 +35,7 @@ class SwipingWideHeader extends StatelessWidget {
               Text(
                 headline,
                 style: theme.textTheme.titleMedium?.copyWith(
-                  color: Colors.white.withOpacity(0.85),
+                  color: AppColors.textWhite.withOpacity(0.85),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -44,9 +45,9 @@ class SwipingWideHeader extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.08),
+            color: AppColors.surfaceWhite.withOpacity(0.08),
             borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: Colors.white.withOpacity(0.15)),
+            border: Border.all(color: AppColors.surfaceWhite.withOpacity(0.15)),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.25),
@@ -64,12 +65,12 @@ class SwipingWideHeader extends StatelessWidget {
                 decoration: const BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: LinearGradient(
-                    colors: [Color(0xFF7C4DFF), Color(0xFF40C9FF)],
+                    colors: [AppColors.accentPurpleDark, AppColors.accentBlue],
                   ),
                 ),
                 child: const Icon(
                   Icons.my_location,
-                  color: Colors.white,
+                  color: AppColors.textWhite,
                   size: 18,
                 ),
               ),
@@ -80,7 +81,7 @@ class SwipingWideHeader extends StatelessWidget {
                   Text(
                     'Your location',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.6),
+                      color: AppColors.textWhite.withOpacity(0.6),
                       fontSize: 12,
                       letterSpacing: 0.4,
                     ),
@@ -89,7 +90,7 @@ class SwipingWideHeader extends StatelessWidget {
                   Text(
                     locationLabel,
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: AppColors.textWhite,
                       fontWeight: FontWeight.w600,
                     ),
                   ),

@@ -12,9 +12,7 @@ import 'swiping/swiping_view_model.dart';
 import 'swiping/widgets/swiping_card.dart';
 import 'swiping/widgets/swiping_empty_state.dart';
 import 'swiping/widgets/swiping_wide_header.dart';
-
-const Color _filtersBackgroundStart = Color(0xFF2D1B4E);
-const Color _filtersBackgroundEnd = Color(0xFF150A32);
+import '../../theme/app_design_system.dart';
 
 class SwipingScreen extends StatefulWidget {
   final ApiClient api;
@@ -283,15 +281,8 @@ class _SwipingScreenState extends State<SwipingScreen>
                       borderRadius: BorderRadius.circular(36),
                       child: Container(
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.3),
-                              blurRadius: 60,
-                              offset: const Offset(0, 30),
-                              spreadRadius: 8,
-                            ),
-                          ],
+                          color: AppColors.surfaceWhite,
+                          boxShadow: AppShadows.floatingCardShadow,
                         ),
                         child: phoneExperience,
                       ),
@@ -303,7 +294,10 @@ class _SwipingScreenState extends State<SwipingScreen>
           return Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [_filtersBackgroundStart, _filtersBackgroundEnd],
+                colors: [
+                  AppColors.backgroundFilterStart,
+                  AppColors.backgroundFilterEnd,
+                ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -335,7 +329,9 @@ class _SwipingScreenState extends State<SwipingScreen>
                                     center: centerOne,
                                     radius: 1.2,
                                     colors: [
-                                      const Color(0xFF9C6BFF).withOpacity(0.25),
+                                      AppColors.accentPurpleLight.withOpacity(
+                                        0.25,
+                                      ),
                                       Colors.transparent,
                                     ],
                                   ),
@@ -346,9 +342,7 @@ class _SwipingScreenState extends State<SwipingScreen>
                                       center: centerTwo,
                                       radius: 1.0,
                                       colors: [
-                                        const Color(
-                                          0xFF40C9FF,
-                                        ).withOpacity(0.18),
+                                        AppColors.accentBlue.withOpacity(0.18),
                                         Colors.transparent,
                                       ],
                                     ),

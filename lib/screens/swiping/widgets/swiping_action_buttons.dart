@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../theme/app_design_system.dart';
 
 /// Round action button widget used for like/dislike/filter actions.
 /// Extracted from users_screen.dart for better code organization.
@@ -15,8 +16,8 @@ class RoundActionButton extends StatelessWidget {
     super.key,
     required this.icon,
     required this.onTap,
-    this.backgroundColor = Colors.white,
-    this.iconColor = Colors.black,
+    this.backgroundColor = AppColors.surfaceWhite,
+    this.iconColor = AppColors.textPrimaryAlt,
     this.isElevated = false,
     this.size = 56,
     this.iconSize = 24,

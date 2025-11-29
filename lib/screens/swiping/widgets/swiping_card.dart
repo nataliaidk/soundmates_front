@@ -297,7 +297,7 @@ class DraggableCardState extends State<DraggableCard>
                     builder: (context) => InstagramPostViewer(
                       items: mediaItems,
                       initialIndex: _currentImageIndex,
-                      accentColor: const Color(0xFF5B3CF0),
+                      accentColor: AppColors.accentPurpleBlue,
                     ),
                   ),
                 );
@@ -349,7 +349,7 @@ class DraggableCardState extends State<DraggableCard>
             borderRadius: BorderRadius.circular(isWide ? 32 : 0),
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.surfaceWhite,
                 borderRadius: BorderRadius.circular(isWide ? 32 : 0),
                 boxShadow: isWide
                     ? [
@@ -392,12 +392,13 @@ class DraggableCardState extends State<DraggableCard>
                                                       stackTrace,
                                                     ) {
                                                       return Container(
-                                                        color: Colors.grey[300],
+                                                        color: AppColors
+                                                            .borderLight,
                                                         child: Icon(
                                                           Icons.person,
                                                           size: 100,
-                                                          color:
-                                                              Colors.grey[500],
+                                                          color: AppColors
+                                                              .textPlaceholder,
                                                         ),
                                                       );
                                                     },
@@ -407,11 +408,11 @@ class DraggableCardState extends State<DraggableCard>
                                                     media[_currentImageIndex]['url'],
                                               )
                                       : Container(
-                                          color: Colors.grey[300],
+                                          color: AppColors.borderLight,
                                           child: Icon(
                                             Icons.person,
                                             size: 100,
-                                            color: Colors.grey[500],
+                                            color: AppColors.textPlaceholder,
                                           ),
                                         ),
                                 ),
@@ -432,10 +433,9 @@ class DraggableCardState extends State<DraggableCard>
                                             ),
                                             decoration: BoxDecoration(
                                               color: idx == _currentImageIndex
-                                                  ? Colors.white
-                                                  : Colors.white.withOpacity(
-                                                      0.5,
-                                                    ),
+                                                  ? AppColors.surfaceWhite
+                                                  : AppColors.surfaceWhite
+                                                        .withOpacity(0.5),
                                               borderRadius:
                                                   BorderRadius.circular(2),
                                             ),
@@ -454,9 +454,12 @@ class DraggableCardState extends State<DraggableCard>
                                       vertical: isWide ? 6 : 8,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.2),
+                                      color: AppColors.surfaceWhite.withOpacity(
+                                        0.2,
+                                      ),
                                       border: Border.all(
-                                        color: Colors.white.withOpacity(0.4),
+                                        color: AppColors.surfaceWhite
+                                            .withOpacity(0.4),
                                         width: 1,
                                       ),
                                       borderRadius: BorderRadius.circular(30),
@@ -464,7 +467,7 @@ class DraggableCardState extends State<DraggableCard>
                                     child: Text(
                                       widget.isBand ? 'BAND' : 'ARTIST',
                                       style: TextStyle(
-                                        color: Colors.white,
+                                        color: AppColors.textWhite,
                                         fontSize: isWide ? 11 : 12,
                                         fontWeight: FontWeight.w600,
                                         letterSpacing: 1.0,
@@ -485,13 +488,11 @@ class DraggableCardState extends State<DraggableCard>
                                         end: Alignment.bottomCenter,
                                         colors: [
                                           Colors.transparent,
-                                          const Color(
-                                            0xFF150A32,
-                                          ).withOpacity(0.2),
-                                          const Color(
-                                            0xFF150A32,
-                                          ).withOpacity(0.8),
-                                          const Color(0xFF150A32),
+                                          AppColors.backgroundFilterEnd
+                                              .withOpacity(0.2),
+                                          AppColors.backgroundFilterEnd
+                                              .withOpacity(0.8),
+                                          AppColors.backgroundFilterEnd,
                                         ],
                                         stops: const [0.0, 0.3, 0.75, 1.0],
                                       ),
@@ -532,7 +533,7 @@ class DraggableCardState extends State<DraggableCard>
                                           style: TextStyle(
                                             fontSize: isWide ? 22 : 24,
                                             fontWeight: FontWeight.w700,
-                                            color: Colors.white,
+                                            color: AppColors.textWhite,
                                             letterSpacing: 0.3,
                                             shadows: [
                                               Shadow(
@@ -561,9 +562,8 @@ class DraggableCardState extends State<DraggableCard>
                                                 .join(', ')
                                                 .toUpperCase(),
                                             style: TextStyle(
-                                              color: Colors.white.withOpacity(
-                                                0.95,
-                                              ),
+                                              color: AppColors.textWhite
+                                                  .withOpacity(0.95),
                                               fontSize: isWide ? 11 : 12,
                                               fontWeight: FontWeight.w600,
                                               letterSpacing: 1.0,
@@ -586,11 +586,11 @@ class DraggableCardState extends State<DraggableCard>
                                           children: [
                                             RoundActionButton(
                                               icon: Icons.close,
-                                              backgroundColor: Colors.white
+                                              backgroundColor: AppColors
+                                                  .surfaceWhite
                                                   .withOpacity(0.92),
-                                              iconColor: const Color(
-                                                0xFF9245D5,
-                                              ),
+                                              iconColor:
+                                                  AppColors.accentPurpleVibrant,
                                               onTap:
                                                   widget.onPrimaryDislike ??
                                                   () {},
@@ -600,11 +600,11 @@ class DraggableCardState extends State<DraggableCard>
                                             SizedBox(width: actionSpacing),
                                             RoundActionButton(
                                               icon: Icons.tune,
-                                              backgroundColor: Colors.white
+                                              backgroundColor: AppColors
+                                                  .surfaceWhite
                                                   .withOpacity(0.92),
-                                              iconColor: const Color(
-                                                0xFF4C3F8F,
-                                              ),
+                                              iconColor:
+                                                  AppColors.accentPurpleDeep,
                                               onTap:
                                                   widget.onPrimaryFilter ??
                                                   () {},
@@ -615,11 +615,10 @@ class DraggableCardState extends State<DraggableCard>
                                             SizedBox(width: actionSpacing),
                                             RoundActionButton(
                                               icon: Icons.favorite,
-                                              backgroundColor: Colors.white
+                                              backgroundColor: AppColors
+                                                  .surfaceWhite
                                                   .withOpacity(0.92),
-                                              iconColor: const Color(
-                                                0xFFE65080,
-                                              ),
+                                              iconColor: AppColors.accentPink,
                                               onTap:
                                                   widget.onPrimaryLike ?? () {},
                                               size: actionButtonSize,
@@ -649,7 +648,7 @@ class DraggableCardState extends State<DraggableCard>
                                         fontSize: isWide ? 12 : 13,
                                         letterSpacing: 1.0,
                                         fontWeight: FontWeight.w700,
-                                        color: const Color(0xFF6A4DBE),
+                                        color: AppColors.textPurpleVibrant,
                                       ),
                                     ),
                                     SizedBox(height: isWide ? 8 : 10),
@@ -658,7 +657,7 @@ class DraggableCardState extends State<DraggableCard>
                                       style: TextStyle(
                                         fontSize: isWide ? 13 : 14,
                                         height: 1.45,
-                                        color: const Color(0xFF1F1F1F),
+                                        color: AppColors.textDarkGrey,
                                       ),
                                     ),
                                   ],
@@ -726,7 +725,7 @@ class DraggableCardState extends State<DraggableCard>
                                   ),
                                   child: NativeAudioPlayer(
                                     tracks: audioTracks,
-                                    accentColor: const Color(0xFF6A4DBE),
+                                    accentColor: AppColors.textPurpleVibrant,
                                   ),
                                 );
                               },
@@ -755,7 +754,8 @@ class DraggableCardState extends State<DraggableCard>
                                               fontSize: isWide ? 12 : 13,
                                               fontWeight: FontWeight.w700,
                                               letterSpacing: 1.0,
-                                              color: const Color(0xFF6A4DBE),
+                                              color:
+                                                  AppColors.textPurpleVibrant,
                                             ),
                                           ),
                                           const SizedBox(height: 8),
@@ -790,7 +790,8 @@ class DraggableCardState extends State<DraggableCard>
                                                             : 12,
                                                         fontWeight:
                                                             FontWeight.w500,
-                                                        color: Colors.white,
+                                                        color:
+                                                            AppColors.textWhite,
                                                       ),
                                                     ),
                                                   ),
@@ -820,7 +821,7 @@ class DraggableCardState extends State<DraggableCard>
                                         fontSize: isWide ? 12 : 13,
                                         fontWeight: FontWeight.w700,
                                         letterSpacing: 1.0,
-                                        color: const Color(0xFF6A4DBE),
+                                        color: AppColors.textPurpleVibrant,
                                       ),
                                     ),
                                     const SizedBox(height: 8),
@@ -828,7 +829,7 @@ class DraggableCardState extends State<DraggableCard>
                                       widget.gender!,
                                       style: TextStyle(
                                         fontSize: isWide ? 13 : 14,
-                                        color: Colors.grey[700],
+                                        color: AppColors.textSecondary,
                                       ),
                                     ),
                                   ],
@@ -850,7 +851,7 @@ class DraggableCardState extends State<DraggableCard>
                                         fontSize: isWide ? 12 : 13,
                                         fontWeight: FontWeight.w700,
                                         letterSpacing: 1.0,
-                                        color: const Color(0xFF6A4DBE),
+                                        color: AppColors.textPurpleVibrant,
                                       ),
                                     ),
                                     const SizedBox(height: 8),
@@ -872,10 +873,11 @@ class DraggableCardState extends State<DraggableCard>
                                             CircleAvatar(
                                               radius: 20,
                                               backgroundColor:
-                                                  Colors.purple[100],
+                                                  AppColors.avatarBackground,
                                               child: Icon(
                                                 Icons.person,
-                                                color: Colors.purple[700],
+                                                color:
+                                                    AppColors.accentPurpleDark,
                                                 size: 20,
                                               ),
                                             ),
@@ -902,7 +904,8 @@ class DraggableCardState extends State<DraggableCard>
                                                         fontSize: isWide
                                                             ? 11
                                                             : 12,
-                                                        color: Colors.grey[600],
+                                                        color: AppColors
+                                                            .textSecondary,
                                                       ),
                                                     ),
                                                 ],
@@ -926,11 +929,11 @@ class DraggableCardState extends State<DraggableCard>
                         child: Container(
                           decoration: BoxDecoration(
                             color: likeOpacity > 0
-                                ? Colors.green.withOpacity(
+                                ? AppColors.statusOnline.withOpacity(
                                     (isWide ? 0.06 : 0.10) * likeOpacity + 0.04,
                                   )
                                 : nopeOpacity > 0
-                                ? Colors.redAccent.withOpacity(
+                                ? AppColors.accentRed.withOpacity(
                                     (isWide ? 0.06 : 0.10) * nopeOpacity + 0.04,
                                   )
                                 : Colors.transparent,
@@ -952,8 +955,11 @@ class DraggableCardState extends State<DraggableCard>
                               vertical: isWide ? 8 : 10,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.85),
-                              border: Border.all(color: Colors.green, width: 4),
+                              color: AppColors.surfaceWhite.withOpacity(0.85),
+                              border: Border.all(
+                                color: AppColors.statusOnline,
+                                width: 4,
+                              ),
                               borderRadius: BorderRadius.circular(12),
                               boxShadow: const [
                                 BoxShadow(
@@ -966,7 +972,7 @@ class DraggableCardState extends State<DraggableCard>
                             child: Text(
                               'LIKE',
                               style: TextStyle(
-                                color: Colors.green,
+                                color: AppColors.statusOnline,
                                 fontSize: isWide ? 30 : 38,
                                 fontWeight: FontWeight.w900,
                                 letterSpacing: 3,
@@ -990,9 +996,9 @@ class DraggableCardState extends State<DraggableCard>
                               vertical: isWide ? 8 : 10,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.85),
+                              color: AppColors.surfaceWhite.withOpacity(0.85),
                               border: Border.all(
-                                color: Colors.redAccent,
+                                color: AppColors.accentRed,
                                 width: 4,
                               ),
                               borderRadius: BorderRadius.circular(12),
@@ -1007,7 +1013,7 @@ class DraggableCardState extends State<DraggableCard>
                             child: Text(
                               'NOPE',
                               style: TextStyle(
-                                color: Colors.redAccent,
+                                color: AppColors.accentRed,
                                 fontSize: isWide ? 30 : 38,
                                 fontWeight: FontWeight.w900,
                                 letterSpacing: 3,
