@@ -486,7 +486,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           width: 8,
                           height: 8,
                           decoration: BoxDecoration(
-                            color: _isOnlineRecently ? const Color(0xFF40C057) : Colors.grey.shade400,
+                            color: _isOnlineRecently ? const Color(0xFF40C057) : AppTheme.getAdaptiveGrey(context, lightShade: 400, darkShade: 600),
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -494,7 +494,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         Text(
                           _isOnlineRecently ? 'Online now' : _formatLastActive(),
                           style: TextStyle(
-                            color: Colors.grey.shade600,
+                            color: AppTheme.getAdaptiveGrey(context, lightShade: 600, darkShade: 400),
                             fontSize: 12,
                           ),
                         ),
@@ -535,14 +535,14 @@ class _ChatScreenState extends State<ChatScreen> {
                                   Icon(
                                     Icons.chat_bubble_outline,
                                     size: 64,
-                                    color: Colors.grey.shade300,
+                                    color: AppTheme.getAdaptiveGrey(context, lightShade: 300, darkShade: 700),
                                   ),
                                   const SizedBox(height: 16),
                                   Text(
                                     'No messages yet',
                                     style: TextStyle(
                                       fontSize: 18,
-                                      color: Colors.grey.shade500,
+                                      color: AppTheme.getAdaptiveGrey(context, lightShade: 500, darkShade: 500),
                                     ),
                                   ),
                                 ],
@@ -596,21 +596,21 @@ class _ChatScreenState extends State<ChatScreen> {
                         ),
                         categoryViewConfig: CategoryViewConfig(
                           initCategory: Category.RECENT,
-                          backgroundColor: Colors.white,
+                          backgroundColor: AppTheme.getAdaptiveSurface(context),
                           indicatorColor: const Color(0xFF6B4CE6),
-                          iconColor: Colors.grey,
+                          iconColor: AppTheme.getAdaptiveGrey(context, lightShade: 600, darkShade: 400),
                           iconColorSelected: const Color(0xFF6B4CE6),
-                          dividerColor: Colors.grey.shade200,
+                          dividerColor: AppTheme.getAdaptiveGrey(context, lightShade: 200, darkShade: 800),
                           categoryIcons: const CategoryIcons(),
                           recentTabBehavior: RecentTabBehavior.RECENT,
                         ),
                         bottomActionBarConfig: BottomActionBarConfig(
-                          backgroundColor: Colors.white,
-                          buttonColor: Colors.grey.shade200,
+                          backgroundColor: AppTheme.getAdaptiveSurface(context),
+                          buttonColor: AppTheme.getAdaptiveGrey(context, lightShade: 200, darkShade: 800),
                           buttonIconColor: const Color(0xFF6B4CE6),
                         ),
                         searchViewConfig: SearchViewConfig(
-                          backgroundColor: Colors.white,
+                          backgroundColor: AppTheme.getAdaptiveSurface(context),
                           buttonIconColor: const Color(0xFF6B4CE6),
                           hintText: 'Search emoji',
                         ),
@@ -636,7 +636,7 @@ class _ChatScreenState extends State<ChatScreen> {
             IconButton(
               icon: Icon(
                 _showEmojiPicker ? Icons.keyboard : Icons.emoji_emotions_outlined,
-                color: Colors.grey.shade600,
+                color: AppTheme.getAdaptiveGrey(context, lightShade: 600, darkShade: 400),
               ),
               onPressed: () {
                 setState(() {
@@ -663,6 +663,11 @@ class _ChatScreenState extends State<ChatScreen> {
                       hintText: 'Type a message...',
                       hintStyle: TextStyle(color: Color(0xFF9EA3B5)),
                       border: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      errorBorder: InputBorder.none,
+                      disabledBorder: InputBorder.none,
+                      filled: false,
                       isCollapsed: true,
                     ),
                     style: const TextStyle(color: Color(0xFF1F2430)),
@@ -721,6 +726,7 @@ class _MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isMe = currentUserId != null && message.senderId == currentUserId;
     final timestamp = message.timestamp.toLocal();
     final timeLabel = DateFormat('h:mm a').format(timestamp);
@@ -756,7 +762,7 @@ class _MessageBubble extends StatelessWidget {
                 radius: 16,
                 backgroundImage:
                 userImageUrl != null ? NetworkImage(userImageUrl!) : null,
-                backgroundColor: Colors.grey.shade300,
+                backgroundColor: AppTheme.getAdaptiveGrey(context, lightShade: 300, darkShade: 700),
               ),
             ),
             const SizedBox(width: 8),
@@ -769,7 +775,7 @@ class _MessageBubble extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
                   decoration: BoxDecoration(
                     gradient: isMe ? bubbleGradient : null,
-                    color: isMe ? null : Colors.white,
+                    color: isMe ? null : (isDark ? AppColors.surfaceDark : Colors.white),
                     borderRadius: BorderRadius.only(
                       topLeft: const Radius.circular(24),
                       topRight: const Radius.circular(24),
@@ -787,7 +793,7 @@ class _MessageBubble extends StatelessWidget {
                   child: Text(
                     message.content,
                     style: TextStyle(
-                      color: isMe ? Colors.white : const Color(0xFF1F2430),
+                      color: isMe ? Colors.white : (isDark ? AppColors.textWhite : const Color(0xFF1F2430)),
                       fontSize: 15,
                       height: 1.4,
                     ),
@@ -805,7 +811,7 @@ class _MessageBubble extends StatelessWidget {
                             timeLabel,
                             style: TextStyle(
                               fontSize: 11,
-                              color: Colors.grey.shade600,
+                              color: AppTheme.getAdaptiveGrey(context, lightShade: 600, darkShade: 400),
                               letterSpacing: 0.2,
                             ),
                           ),
@@ -822,7 +828,7 @@ class _MessageBubble extends StatelessWidget {
                             message.isSeen ? 'Seen' : 'Sent',
                             style: TextStyle(
                               fontSize: 11,
-                              color: Colors.grey.shade600,
+                              color: AppTheme.getAdaptiveGrey(context, lightShade: 600, darkShade: 400),
                             ),
                           ),
                         ],

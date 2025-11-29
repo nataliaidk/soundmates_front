@@ -68,8 +68,8 @@ class SettingsScreen extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       themeProvider.isDarkMode 
-                          ? 'Ciemny motyw włączony' 
-                          : 'Jasny motyw włączony',
+                          ? 'Dark mode enabled' 
+                          : 'Light mode enabled',
                       style: TextStyle(
                         color: isDark 
                             ? AppColors.textWhite70 
@@ -106,6 +106,7 @@ class SettingsScreen extends StatelessWidget {
           _SettingsItem(
             icon: Icons.account_circle_outlined,
             text: 'Account',
+            trailing: const Icon(Icons.chevron_right),
             onTap: () {
               // Navigate to profile edit step 1
               Navigator.pushNamed(context, '/profile/edit');

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 /// Centralized Design System for SoundMates
 ///
@@ -640,43 +641,45 @@ class AppTheme {
       }),
     ),
 
-    textTheme: const TextTheme(
-      displayLarge: TextStyle(
-        fontSize: 32,
-        fontWeight: FontWeight.bold,
-        color: AppColors.textPrimary,
-      ),
-      displayMedium: TextStyle(
-        fontSize: 28,
-        fontWeight: FontWeight.bold,
-        color: AppColors.textPrimary,
-      ),
-      headlineMedium: TextStyle(
-        fontSize: 24,
-        fontWeight: FontWeight.bold,
-        color: AppColors.textPrimary,
-      ),
-      titleLarge: TextStyle(
-        fontSize: 20,
-        fontWeight: FontWeight.w600,
-        color: AppColors.textPrimary,
-      ),
-      titleMedium: TextStyle(
-        fontSize: 16,
-        fontWeight: FontWeight.w600,
-        color: AppColors.textPrimary,
-      ),
-      bodyLarge: TextStyle(
-        fontSize: 16,
-        color: AppColors.textPrimary,
-      ),
-      bodyMedium: TextStyle(
-        fontSize: 14,
-        color: AppColors.textSecondary,
-      ),
-      bodySmall: TextStyle(
-        fontSize: 12,
-        color: AppColors.textPlaceholder,
+    textTheme: GoogleFonts.poppinsTextTheme(
+      const TextTheme(
+        displayLarge: TextStyle(
+          fontSize: 32,
+          fontWeight: FontWeight.bold,
+          color: AppColors.textPrimary,
+        ),
+        displayMedium: TextStyle(
+          fontSize: 28,
+          fontWeight: FontWeight.bold,
+          color: AppColors.textPrimary,
+        ),
+        headlineMedium: TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.bold,
+          color: AppColors.textPrimary,
+        ),
+        titleLarge: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          color: AppColors.textPrimary,
+        ),
+        titleMedium: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          color: AppColors.textPrimary,
+        ),
+        bodyLarge: TextStyle(
+          fontSize: 16,
+          color: AppColors.textPrimary,
+        ),
+        bodyMedium: TextStyle(
+          fontSize: 14,
+          color: AppColors.textSecondary,
+        ),
+        bodySmall: TextStyle(
+          fontSize: 12,
+          color: AppColors.textPlaceholder,
+        ),
       ),
     ),
 
@@ -769,43 +772,45 @@ class AppTheme {
       }),
     ),
 
-    textTheme: const TextTheme(
-      displayLarge: TextStyle(
-        fontSize: 32,
-        fontWeight: FontWeight.bold,
-        color: AppColors.textWhite,
-      ),
-      displayMedium: TextStyle(
-        fontSize: 28,
-        fontWeight: FontWeight.bold,
-        color: AppColors.textWhite,
-      ),
-      headlineMedium: TextStyle(
-        fontSize: 24,
-        fontWeight: FontWeight.bold,
-        color: AppColors.textWhite,
-      ),
-      titleLarge: TextStyle(
-        fontSize: 20,
-        fontWeight: FontWeight.w600,
-        color: AppColors.textWhite,
-      ),
-      titleMedium: TextStyle(
-        fontSize: 16,
-        fontWeight: FontWeight.w600,
-        color: AppColors.textWhite,
-      ),
-      bodyLarge: TextStyle(
-        fontSize: 16,
-        color: AppColors.textWhite,
-      ),
-      bodyMedium: TextStyle(
-        fontSize: 14,
-        color: AppColors.textWhite70,
-      ),
-      bodySmall: TextStyle(
-        fontSize: 12,
-        color: AppColors.textPlaceholder,
+    textTheme: GoogleFonts.poppinsTextTheme(
+      const TextTheme(
+        displayLarge: TextStyle(
+          fontSize: 32,
+          fontWeight: FontWeight.bold,
+          color: AppColors.textWhite,
+        ),
+        displayMedium: TextStyle(
+          fontSize: 28,
+          fontWeight: FontWeight.bold,
+          color: AppColors.textWhite,
+        ),
+        headlineMedium: TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.bold,
+          color: AppColors.textWhite,
+        ),
+        titleLarge: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          color: AppColors.textWhite,
+        ),
+        titleMedium: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          color: AppColors.textWhite,
+        ),
+        bodyLarge: TextStyle(
+          fontSize: 16,
+          color: AppColors.textWhite,
+        ),
+        bodyMedium: TextStyle(
+          fontSize: 14,
+          color: AppColors.textWhite70,
+        ),
+        bodySmall: TextStyle(
+          fontSize: 12,
+          color: AppColors.textPlaceholder,
+        ),
       ),
     ),
 
@@ -870,5 +875,22 @@ class AppTheme {
   /// Check if current theme is dark
   static bool isDark(BuildContext context) {
     return Theme.of(context).brightness == Brightness.dark;
+  }
+
+  /// Get adaptive color based on theme - for grey shades
+  static Color getAdaptiveGrey(BuildContext context, {int lightShade = 100, int darkShade = 800}) {
+    return isDark(context)
+        ? Color.lerp(Colors.grey[darkShade]!, AppColors.surfaceDarkGrey, 0.5)!
+        : Colors.grey[lightShade]!;
+  }
+
+  /// Get adaptive white/dark surface color
+  static Color getAdaptiveSurface(BuildContext context) {
+    return isDark(context) ? AppColors.surfaceDark : Colors.white;
+  }
+
+  /// Get adaptive black/white text color
+  static Color getAdaptiveText(BuildContext context) {
+    return isDark(context) ? AppColors.textWhite : Colors.black;
   }
 }
