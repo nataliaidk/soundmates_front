@@ -16,6 +16,8 @@ import 'widgets/visit_profile_header.dart';
 import 'widgets/visit_info_tab.dart';
 import 'widgets/visit_media_tab.dart';
 import '../../theme/app_design_system.dart';
+import '../../widgets/app_bottom_nav.dart';
+import '../../widgets/app_side_nav.dart';
 
 class VisitProfileScreen extends StatefulWidget {
   final ApiClient api;
@@ -173,26 +175,39 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
                   defaultTargetPlatform == TargetPlatform.iOS ||
                   defaultTargetPlatform == TargetPlatform.android;
 
-              // Calculate base phone dimensions from available height to check if we can frame it
-              // We use 95% of height as the target phone height
+              // Calculate base phone dimensions
               final double basePhoneHeight = constraints.maxHeight * 0.95;
               final double basePhoneWidth = basePhoneHeight * (9 / 16);
 
-              // Framed mode activates if:
-              // 1. Not on mobile
-              // 2. Screen width is wider than the calculated phone width
+              // Framed mode
+              final bool isLandscape =
+                  constraints.maxWidth > constraints.maxHeight;
               final bool isFramed =
-                  !isMobile && constraints.maxWidth > basePhoneWidth;
+                  !isMobile &&
+                  isLandscape &&
+                  constraints.maxWidth > basePhoneWidth;
 
+              // Navigation visibility
+              final bool showSideNav = isFramed && isLandscape;
+              final bool showBottomNav =
+                  !isFramed || (isFramed && !isLandscape);
               final bool showWideHeader =
                   isFramed && constraints.maxWidth > 1100;
 
-              // Calculate final dimensions for the framed phone
-              // No nav reservations needed for this screen
-              final double maxH = constraints.maxHeight * 0.95;
-              final double hFromW = constraints.maxWidth * (16 / 9);
+              // Calculate final dimensions
+              double availableWidth = constraints.maxWidth;
+              double availableHeight = constraints.maxHeight;
 
-              // Take the smaller height to satisfy all constraints
+              if (showSideNav) {
+                availableWidth -= 200;
+              }
+
+              if (showBottomNav && isFramed) {
+                availableHeight -= 100;
+              }
+
+              final double maxH = availableHeight * 0.95;
+              final double hFromW = availableWidth * (16 / 9);
               final double phoneHeight = (hFromW < maxH) ? hFromW : maxH;
               final double phoneWidth = phoneHeight * (9 / 16);
 
@@ -470,7 +485,37 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
                           ),
                         ),
                       ),
-                    framedPhone,
+
+                    // Main Content with Navigation
+                    Positioned.fill(
+                      child: Row(
+                        children: [
+                          if (showSideNav)
+                            const AppSideNav(current: SideNavItem.home),
+
+                          Expanded(
+                            child: Column(
+                              children: [
+                                Expanded(child: framedPhone),
+                                if (showBottomNav && isFramed)
+                                  const AppBottomNav(
+                                    current: BottomNavItem.home,
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Mobile Bottom Nav Overlay
+                    if (showBottomNav && !isFramed)
+                      const Positioned(
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        child: AppBottomNav(current: BottomNavItem.home),
+                      ),
                   ],
                 ),
               );
