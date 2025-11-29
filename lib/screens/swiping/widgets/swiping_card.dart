@@ -9,6 +9,7 @@ import '../../shared/native_audio_player.dart';
 import '../../shared/instagram_post_viewer.dart';
 import '../../shared/media_models.dart';
 import '../../shared/video_thumbnail.dart';
+import '../../../theme/app_design_system.dart';
 
 /// Draggable user card widget with swipe functionality.
 /// Displays user profile information and handles swipe gestures for like/dislike actions.
@@ -774,18 +775,12 @@ class DraggableCardState extends State<DraggableCard>
                                                               : 10,
                                                         ),
                                                     decoration: BoxDecoration(
-                                                      color: Colors
-                                                          .deepPurple
-                                                          .shade50,
+                                                      color: AppColors
+                                                          .accentPurple,
                                                       borderRadius:
                                                           BorderRadius.circular(
                                                             20,
                                                           ),
-                                                      border: Border.all(
-                                                        color: Colors
-                                                            .deepPurple
-                                                            .shade200,
-                                                      ),
                                                     ),
                                                     child: Text(
                                                       tagName,
@@ -795,9 +790,7 @@ class DraggableCardState extends State<DraggableCard>
                                                             : 12,
                                                         fontWeight:
                                                             FontWeight.w500,
-                                                        color: Colors
-                                                            .deepPurple
-                                                            .shade700,
+                                                        color: Colors.white,
                                                       ),
                                                     ),
                                                   ),

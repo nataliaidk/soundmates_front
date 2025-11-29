@@ -241,9 +241,9 @@ class _SwipingScreenState extends State<SwipingScreen>
           final double basePhoneWidth = basePhoneHeight * (9 / 16);
 
           // Framed mode
-          final bool isFramed =
-              !isMobile && constraints.maxWidth > basePhoneWidth;
           final bool isLandscape = constraints.maxWidth > constraints.maxHeight;
+          final bool isFramed =
+              !isMobile && isLandscape && constraints.maxWidth > basePhoneWidth;
 
           // Navigation visibility
           final bool showSideNav = isFramed && isLandscape;
@@ -260,7 +260,9 @@ class _SwipingScreenState extends State<SwipingScreen>
             availableWidth -= 200;
           }
 
-          if (showBottomNav) {
+          // For framed screens: navbar gets its own space (subtract height)
+          // For non-framed: navbar floats over card (don't subtract)
+          if (showBottomNav && isFramed) {
             availableHeight -= 100;
           }
 
@@ -306,9 +308,11 @@ class _SwipingScreenState extends State<SwipingScreen>
                 end: Alignment.bottomRight,
               ),
             ),
-            child: Column(
+            child: Stack(
               children: [
-                Expanded(
+                // Main content area
+                Positioned.fill(
+                  bottom: (showBottomNav && isFramed) ? 80 : 0,
                   child: Stack(
                     children: [
                       // Ambient gradient background
@@ -407,14 +411,19 @@ class _SwipingScreenState extends State<SwipingScreen>
                 ),
                 // Bottom navigation
                 if (showBottomNav)
-                  SafeArea(
-                    top: false,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 28,
-                        vertical: 12,
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    child: SafeArea(
+                      top: false,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 28,
+                          vertical: 12,
+                        ),
+                        child: AppBottomNav(current: BottomNavItem.home),
                       ),
-                      child: AppBottomNav(current: BottomNavItem.home),
                     ),
                   ),
               ],
