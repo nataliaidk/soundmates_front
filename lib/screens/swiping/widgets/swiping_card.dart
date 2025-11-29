@@ -118,7 +118,8 @@ class DraggableCardState extends State<DraggableCard>
         if (sample is Map) {
           final url = sample['fileUrl']?.toString();
           if (url != null && url.isNotEmpty) {
-            final isVideo = url.toLowerCase().endsWith('.mp4') ||
+            final isVideo =
+                url.toLowerCase().endsWith('.mp4') ||
                 url.toLowerCase().endsWith('.mov');
             String absoluteUrl = url;
             if (!url.startsWith('http://') && !url.startsWith('https://')) {
@@ -280,11 +281,13 @@ class DraggableCardState extends State<DraggableCard>
                 final mediaItems = media
                     .map(
                       (item) => MediaItem(
-                    url: item['url'],
-                    type: item['type'] == 'video' ? MediaType.video : MediaType.image,
-                    fileName: item['url'].split('/').last,
-                  ),
-                )
+                        url: item['url'],
+                        type: item['type'] == 'video'
+                            ? MediaType.video
+                            : MediaType.image,
+                        fileName: item['url'].split('/').last,
+                      ),
+                    )
                     .toList();
 
                 Navigator.push(
@@ -376,33 +379,40 @@ class DraggableCardState extends State<DraggableCard>
                                   height: heroHeight,
                                   width: double.infinity,
                                   child: media.isNotEmpty
-                                      ? media[_currentImageIndex]['type'] == 'image'
-                                      ? Image.network(
-                                    media[_currentImageIndex]['url'],
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return Container(
-                                        color: Colors.grey[300],
-                                        child: Icon(
-                                          Icons.person,
-                                          size: 100,
-                                          color: Colors.grey[500],
-                                        ),
-                                      );
-                                    },
-                                  )
-                                      : VideoThumbnail(
-                                          videoUrl: media[_currentImageIndex]['url'],
-                                          autoplay: true,
-                                        )
+                                      ? media[_currentImageIndex]['type'] ==
+                                                'image'
+                                            ? Image.network(
+                                                media[_currentImageIndex]['url'],
+                                                fit: BoxFit.cover,
+                                                errorBuilder:
+                                                    (
+                                                      context,
+                                                      error,
+                                                      stackTrace,
+                                                    ) {
+                                                      return Container(
+                                                        color: Colors.grey[300],
+                                                        child: Icon(
+                                                          Icons.person,
+                                                          size: 100,
+                                                          color:
+                                                              Colors.grey[500],
+                                                        ),
+                                                      );
+                                                    },
+                                              )
+                                            : VideoThumbnail(
+                                                videoUrl:
+                                                    media[_currentImageIndex]['url'],
+                                              )
                                       : Container(
-                                    color: Colors.grey[300],
-                                    child: Icon(
-                                      Icons.person,
-                                      size: 100,
-                                      color: Colors.grey[500],
-                                    ),
-                                  ),
+                                          color: Colors.grey[300],
+                                          child: Icon(
+                                            Icons.person,
+                                            size: 100,
+                                            color: Colors.grey[500],
+                                          ),
+                                        ),
                                 ),
                                 // Image indicators
                                 if (media.length > 1)
@@ -658,35 +668,47 @@ class DraggableCardState extends State<DraggableCard>
                               builder: (context) {
                                 // Extract audio tracks from userData
                                 final List<AudioTrack> audioTracks = [];
+                                int audioIndex = 0; // Track audio file index
                                 if (widget.userData['musicSamples'] is List) {
                                   for (final sample
                                       in (widget.userData['musicSamples']
                                           as List)) {
                                     if (sample is Map) {
-                                      final title =
-                                          sample['title']?.toString() ??
-                                          'Untitled';
                                       final url = sample['fileUrl']?.toString();
                                       if (url != null && url.isNotEmpty) {
-                                        // Normalize to absolute URL if needed
-                                        String absoluteUrl = url;
-                                        if (!url.startsWith('http://') &&
-                                            !url.startsWith('https://')) {
-                                          absoluteUrl =
-                                              Uri.parse(widget.api.baseUrl)
-                                                  .resolve(
-                                                    url.startsWith('/')
-                                                        ? url.substring(1)
-                                                        : url,
-                                                  )
-                                                  .toString();
+                                        // Check if this is an audio file (not video)
+                                        final fileName = url.split('/').last;
+                                        final lowerName = fileName
+                                            .toLowerCase();
+                                        final isAudio =
+                                            lowerName.endsWith('.mp3') ||
+                                            lowerName.endsWith('.wav') ||
+                                            lowerName.endsWith('.m4a');
+
+                                        // Only add audio files to the player
+                                        if (isAudio) {
+                                          audioIndex++; // Increment for audio files only
+                                          // Normalize to absolute URL if needed
+                                          String absoluteUrl = url;
+                                          if (!url.startsWith('http://') &&
+                                              !url.startsWith('https://')) {
+                                            absoluteUrl =
+                                                Uri.parse(widget.api.baseUrl)
+                                                    .resolve(
+                                                      url.startsWith('/')
+                                                          ? url.substring(1)
+                                                          : url,
+                                                    )
+                                                    .toString();
+                                          }
+                                          audioTracks.add(
+                                            AudioTrack(
+                                              title:
+                                                  '${widget.name} Audio $audioIndex',
+                                              fileUrl: absoluteUrl,
+                                            ),
+                                          );
                                         }
-                                        audioTracks.add(
-                                          AudioTrack(
-                                            title: title,
-                                            fileUrl: absoluteUrl,
-                                          ),
-                                        );
                                       }
                                     }
                                   }

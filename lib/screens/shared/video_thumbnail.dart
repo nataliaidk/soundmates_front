@@ -29,7 +29,8 @@ class _VideoThumbnailState extends State<VideoThumbnail> {
   @override
   void didUpdateWidget(covariant VideoThumbnail oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.videoUrl != widget.videoUrl || oldWidget.autoplay != widget.autoplay) {
+    if (oldWidget.videoUrl != widget.videoUrl ||
+        oldWidget.autoplay != widget.autoplay) {
       _disposeController();
       _initializeVideo();
     }
@@ -41,7 +42,9 @@ class _VideoThumbnailState extends State<VideoThumbnail> {
       _hasError = false;
     });
     try {
-      _controller = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
+      _controller = VideoPlayerController.networkUrl(
+        Uri.parse(widget.videoUrl),
+      );
       await _controller!.initialize();
       if (widget.autoplay) {
         await _controller!.play();
@@ -93,13 +96,29 @@ class _VideoThumbnailState extends State<VideoThumbnail> {
         ),
       );
     }
-    return FittedBox(
-      fit: BoxFit.cover,
-      child: SizedBox(
-        width: _controller!.value.size.width,
-        height: _controller!.value.size.height,
-        child: VideoPlayer(_controller!),
-      ),
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Positioned.fill(
+          child: FittedBox(
+            fit: BoxFit.cover,
+            child: SizedBox(
+              width: _controller!.value.size.width,
+              height: _controller!.value.size.height,
+              child: VideoPlayer(_controller!),
+            ),
+          ),
+        ),
+        // Play button overlay
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.3),
+            shape: BoxShape.circle,
+          ),
+          padding: const EdgeInsets.all(16),
+          child: const Icon(Icons.play_arrow, color: Colors.white, size: 48),
+        ),
+      ],
     );
   }
 }
