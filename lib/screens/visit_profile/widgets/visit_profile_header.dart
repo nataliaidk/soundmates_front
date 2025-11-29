@@ -1,5 +1,4 @@
 import 'dart:ui';
-import 'dart:math';
 import 'package:flutter/material.dart';
 import '../../../api/models.dart';
 import '../visit_profile_model.dart';
@@ -60,6 +59,7 @@ class _VisitProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
     final progress = shrinkOffset / _maxExtent;
     final fadeOpacity = (1.0 - (progress * 1.5)).clamp(0.0, 1.0);
     final isCollapsed = shrinkOffset > _maxExtent - _minExtent - 20;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Stack(
       fit: StackFit.expand,
@@ -69,10 +69,10 @@ class _VisitProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
           Image.network(
             profilePicUrl,
             fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(color: Colors.grey[800]),
+            errorBuilder: (_, __, ___) => Container(color: isDark ? AppColors.surfaceDarkGrey : Colors.grey[800]),
           )
         else
-          Container(color: Colors.grey[800]),
+          Container(color: isDark ? AppColors.surfaceDarkGrey : Colors.grey[800]),
 
         // 2. Gradient Overlay
         DecoratedBox(
@@ -80,14 +80,22 @@ class _VisitProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [
-                Colors.black.withOpacity(0.0),
-                Colors.black.withOpacity(0.1),
-                Colors.black.withOpacity(0.5),
-                Colors.black.withOpacity(0.85),
-                Colors.black.withOpacity(0.95),
-              ],
-              stops: const [0.0, 0.3, 0.6, 0.85, 1.0],
+              colors: isDark
+                ? [
+                    Colors.black.withAlpha(0),
+                    Colors.black.withAlpha(25),
+                    Colors.black.withAlpha(128),
+                    Colors.black.withAlpha(216),
+                    Colors.black.withAlpha(242),
+                  ]
+                : [
+                    Colors.black.withAlpha(0),
+                    Colors.black.withAlpha(25),
+                    Colors.black.withAlpha(128),
+                    Colors.black.withAlpha(216),
+                    Colors.black.withAlpha(242),
+                  ],
+              stops: [0.0, 0.3, 0.6, 0.85, 1.0],
             ),
           ),
         ),
@@ -95,13 +103,13 @@ class _VisitProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
         // 3. Collapsed Background (fades in)
         if (isCollapsed)
           Container(
-            color: AppColors.backgroundDark,
+            color: isDark ? AppColors.surfaceDark : AppColors.backgroundDark,
             alignment: Alignment.center,
             padding: const EdgeInsets.only(top: 20),
             child: Text(
               data.profile.name ?? 'User',
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: isDark ? AppColors.textWhite : Colors.white,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
@@ -130,6 +138,7 @@ class _VisitProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
                           icon: Icons.auto_awesome,
                           text: "Matched",
                           color: AppColors.accentPurple,
+                          isDark: isDark,
                         ),
                       if (isMatched) const SizedBox(height: 12),
 
@@ -139,8 +148,8 @@ class _VisitProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
                         children: [
                           Text(
                             data.profile.name ?? 'Unknown',
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: isDark ? AppColors.textWhite : Colors.white,
                               fontSize: 32,
                               fontWeight: FontWeight.bold,
                               letterSpacing: -0.5,
@@ -159,7 +168,7 @@ class _VisitProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
                             Text(
                               '${(data.profile as OtherUserProfileArtistDto).calculatedAge ?? ''}',
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.9),
+                                color: isDark ? AppColors.textWhite70 : Colors.white.withAlpha(230),
                                 fontSize: 32,
                                 fontWeight: FontWeight.w300,
                                 height: 1.2,
@@ -183,13 +192,13 @@ class _VisitProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
                         Text(
                           data.locationString.toUpperCase(),
                           style: TextStyle(
-                            color: AppColors.textWhite.withOpacity(0.95),
+                            color: isDark ? AppColors.textWhite.withAlpha(242) : AppColors.textWhite.withAlpha(242),
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             letterSpacing: 1.0,
                             shadows: [
                               Shadow(
-                                color: Colors.black.withOpacity(0.5),
+                                color: Colors.black.withAlpha(128),
                                 blurRadius: 8,
                                 offset: const Offset(0, 1),
                               ),
@@ -216,6 +225,7 @@ class _VisitProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
                           color: AppColors.accentRed,
                           isPrimary: false,
                           onTap: onUnmatch,
+                          isDark: isDark,
                         ),
                         const SizedBox(height: 12),
                         _ActionButton(
@@ -224,6 +234,7 @@ class _VisitProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
                           color: AppColors.accentPurple,
                           isPrimary: true,
                           onTap: onMessage,
+                          isDark: isDark,
                         ),
                       ],
                     ),
@@ -239,6 +250,7 @@ class _VisitProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
           child: _GlassmorphicButton(
             icon: Icons.arrow_back,
             onTap: () => Navigator.of(context).pop(),
+            isDark: isDark,
           ),
         ),
       ],
@@ -265,8 +277,9 @@ class _VisitProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
 class _GlassmorphicButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
+  final bool isDark;
 
-  const _GlassmorphicButton({required this.icon, required this.onTap});
+  const _GlassmorphicButton({required this.icon, required this.onTap, this.isDark = false});
 
   @override
   Widget build(BuildContext context) {
@@ -280,14 +293,14 @@ class _GlassmorphicButton extends StatelessWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: isDark ? AppColors.surfaceDark.withAlpha(51) : Colors.white.withAlpha(51),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: Colors.white.withOpacity(0.3),
+                color: isDark ? AppColors.surfaceDark.withAlpha(102) : Colors.white.withAlpha(77),
                 width: 1,
               ),
             ),
-            child: Icon(icon, color: Colors.white, size: 22),
+            child: Icon(icon, color: isDark ? AppColors.textWhite : Colors.white, size: 22),
           ),
         ),
       ),
@@ -299,11 +312,13 @@ class _GlassmorphicBadge extends StatelessWidget {
   final IconData icon;
   final String text;
   final Color color;
+  final bool isDark;
 
   const _GlassmorphicBadge({
     required this.icon,
     required this.text,
     required this.color,
+    this.isDark = false,
   });
 
   @override
@@ -315,12 +330,12 @@ class _GlassmorphicBadge extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.3),
+            color: isDark ? color.withAlpha(77) : color.withAlpha(77),
             borderRadius: BorderRadius.circular(30),
-            border: Border.all(color: color.withOpacity(0.5), width: 1),
+            border: Border.all(color: isDark ? color.withAlpha(128) : color.withAlpha(128), width: 1),
             boxShadow: [
               BoxShadow(
-                color: color.withOpacity(0.3),
+                color: isDark ? color.withAlpha(77) : color.withAlpha(77),
                 blurRadius: 12,
                 offset: const Offset(0, 4),
               ),
@@ -329,61 +344,14 @@ class _GlassmorphicBadge extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, color: Colors.white, size: 12),
+              Icon(icon, color: isDark ? AppColors.textWhite : Colors.white, size: 12),
               const SizedBox(width: 6),
               Text(
                 text,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: isDark ? AppColors.textWhite : Colors.white,
                   fontWeight: FontWeight.bold,
                   fontSize: 11,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _GlassmorphicLocationBadge extends StatelessWidget {
-  final String location;
-
-  const _GlassmorphicLocationBadge({required this.location});
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.15),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.location_on,
-                color: Colors.white.withOpacity(0.9),
-                size: 14,
-              ),
-              const SizedBox(width: 4),
-              Flexible(
-                child: Text(
-                  location,
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.95),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -400,6 +368,7 @@ class _ActionButton extends StatelessWidget {
   final Color color;
   final bool isPrimary;
   final VoidCallback onTap;
+  final bool isDark;
 
   const _ActionButton({
     required this.text,
@@ -407,58 +376,34 @@ class _ActionButton extends StatelessWidget {
     required this.color,
     required this.isPrimary,
     required this.onTap,
+    this.isDark = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      // Kontener odpowiada TYLKO za Cień i Kształt zewnętrzny
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(30),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-          BoxShadow(
-            color: color.withOpacity(0.4),
-            blurRadius: 16,
-            spreadRadius: isPrimary ? 2 : 0,
-          ),
-        ],
-      ),
-      // Material odpowiada za Kolor tła i Przycinanie (Clipping)
-      child: Material(
-        color: color,
-        borderRadius: BorderRadius.circular(30),
-        clipBehavior: Clip.antiAlias, // <--- TO JEST KLUCZOWA POPRAWKA
-        child: InkWell(
-          onTap: onTap,
-          // Ważne: Nie ustawiaj borderRadius w InkWell, jeśli Material już przycina
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: isPrimary ? 20 : 16,
-              vertical: isPrimary ? 12 : 10,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, color: Colors.white, size: isPrimary ? 20 : 16),
-                const SizedBox(width: 8),
-                Text(
-                  text,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: isPrimary ? 14 : 13,
-                  ),
-                ),
-              ],
-            ),
-          ),
+    return ElevatedButton.icon(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: isPrimary
+            ? (isDark ? color.withAlpha(204) : color)
+            : (isDark ? AppColors.surfaceDark.withAlpha(128) : Colors.white),
+        foregroundColor: isPrimary
+            ? (isDark ? AppColors.textWhite : Colors.white)
+            : (isDark ? AppColors.textWhite : color),
+        elevation: 0,
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: isPrimary
+              ? BorderSide.none
+              : BorderSide(color: isDark ? color.withAlpha(128) : color, width: 1.5),
         ),
       ),
+      icon: Icon(icon, size: 18),
+      label: Text(
+        text,
+        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+      ),
+      onPressed: onTap,
     );
   }
 }

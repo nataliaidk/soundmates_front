@@ -71,7 +71,7 @@ class VisitProfileLoader {
       // Tu używamy nowych nazw klas z modelu:
       final galleryItems = _prepareGalleryItems(profile);
       final audioTracks = _prepareAudioTracks(profile);
-
+      final bandMembers = _prepareBandMembers(profile);
       String? profilePicUrl;
       if (profile.profilePictures.isNotEmpty) {
         profilePicUrl = profile.profilePictures.first.getAbsoluteUrl(
@@ -86,6 +86,7 @@ class VisitProfileLoader {
         groupedTags: groupedTags,
         galleryItems: galleryItems,
         audioTracks: audioTracks,
+        bandMembers: bandMembers,
       );
     } catch (e) {
       throw Exception('Failed to load profile data: $e');
@@ -215,5 +216,29 @@ class VisitProfileLoader {
     }
 
     return tracks;
+  }
+
+  // Zwraca listę BandMemberInfo (zgodnie z modelem)
+  List<BandMemberInfo> _prepareBandMembers(OtherUserProfileDto profile) {
+    final List<BandMemberInfo> members = [];
+
+    // Check if profile is a band and has band members
+    if (profile is OtherUserProfileBandDto) {
+      final bandProfile = profile as OtherUserProfileBandDto;
+      if (bandProfile.bandMembers != null &&
+          bandProfile.bandMembers!.isNotEmpty) {
+        for (final member in bandProfile.bandMembers!) {
+          members.add(
+            BandMemberInfo(
+              name: '${member.name}, ${member.age}',
+              role: '', // BandMemberDto only has bandRoleId, not role name
+              age: member.age.toString(),
+            ),
+          );
+        }
+      }
+    }
+
+    return members;
   }
 }

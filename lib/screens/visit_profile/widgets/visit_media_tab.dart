@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:video_player/video_player.dart';
 import '../visit_profile_model.dart';
 import '../../shared/media_models.dart';
 import '../../shared/instagram_post_viewer.dart';
@@ -14,20 +13,21 @@ class VisitMediaTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     if (items.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               Icons.photo_library_outlined,
               size: 64,
-              color: AppColors.textGrey,
+              color: isDark ? AppColors.textWhite70 : AppColors.textGrey,
             ),
             SizedBox(height: 16),
             Text(
               'No media shared yet',
-              style: TextStyle(color: AppColors.textGrey, fontSize: 16),
+              style: TextStyle(color: isDark ? AppColors.textWhite70 : AppColors.textGrey, fontSize: 16),
             ),
           ],
         ),
@@ -61,27 +61,19 @@ class VisitMediaTab extends StatelessWidget {
                   break;
               }
               return MediaItem(
-                type: type,
                 url: item.url,
-                fileName: item.fileName,
+                type: type,
+                fileName: item.url.split('/').last,
               );
             }).toList();
-
             Navigator.push(
               context,
-              PageRouteBuilder(
-                opaque: true,
-                barrierColor: Colors.black,
-                pageBuilder: (context, animation, secondaryAnimation) {
-                  return FadeTransition(
-                    opacity: animation,
-                    child: InstagramPostViewer(
-                      items: mediaItems,
-                      initialIndex: index,
-                      accentColor: Theme.of(context).primaryColor,
-                    ),
-                  );
-                },
+              MaterialPageRoute(
+                builder: (context) => InstagramPostViewer(
+                  items: mediaItems,
+                  initialIndex: index,
+                  accentColor: AppColors.accentPurpleBlue,
+                ),
               ),
             );
           },
@@ -108,7 +100,7 @@ class _MediaGridItem extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withAlpha(25),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -139,8 +131,8 @@ class _MediaGridItem extends StatelessWidget {
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        accentColor.withOpacity(0.7),
-                        accentColor.withOpacity(0.4),
+                        accentColor.withAlpha(179),
+                        accentColor.withAlpha(102),
                       ],
                     ),
                   ),
@@ -152,7 +144,7 @@ class _MediaGridItem extends StatelessWidget {
                         left: 10,
                         child: Icon(
                           Icons.music_note,
-                          color: Colors.white.withOpacity(0.3),
+                          color: Colors.white.withAlpha(77),
                           size: 24,
                         ),
                       ),
@@ -161,7 +153,7 @@ class _MediaGridItem extends StatelessWidget {
                         right: 10,
                         child: Icon(
                           Icons.music_note,
-                          color: Colors.white.withOpacity(0.3),
+                          color: Colors.white.withAlpha(77),
                           size: 24,
                         ),
                       ),
@@ -186,8 +178,8 @@ class _MediaGridItem extends StatelessWidget {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          Colors.black.withOpacity(0.0),
-                          Colors.black.withOpacity(0.2),
+                          Colors.black.withAlpha(0),
+                          Colors.black.withAlpha(51),
                         ],
                       ),
                     ),
@@ -208,4 +200,3 @@ class _MediaGridItem extends StatelessWidget {
     );
   }
 }
-

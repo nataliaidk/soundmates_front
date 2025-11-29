@@ -85,7 +85,6 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
       }
     }
   }
-
   Future<void> _navigateToChat(VisitProfileViewModel data) async {
     // Get user name and image URL from data
     final userName = data.profile.name ?? 'User';
@@ -115,6 +114,7 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return FutureBuilder<VisitProfileViewModel>(
       future: _dataFuture,
       builder: (context, snapshot) {
@@ -229,7 +229,7 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
                     body: Container(
                       // Zaokrąglenie góry kontenera, aby "wjeżdżał" na zdjęcie
                       decoration: BoxDecoration(
-                        color: AppColors.surfaceWhite,
+                        color: isDark? AppColors.surfaceDark : AppColors.surfaceWhite,
                         borderRadius: const BorderRadius.vertical(
                           top: Radius.circular(32),
                         ),
@@ -242,7 +242,7 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
                           Container(
                             padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
                             decoration: BoxDecoration(
-                              color: AppColors.surfaceWhite,
+                              color: isDark? AppColors.surfaceDark : AppColors.surfaceWhite,
                               borderRadius: const BorderRadius.vertical(
                                 top: Radius.circular(32),
                               ),

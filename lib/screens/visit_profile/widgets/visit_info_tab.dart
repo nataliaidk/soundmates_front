@@ -10,6 +10,8 @@ class VisitInfoTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     final orderedCategories = [
       'Instruments',
       'Genres',
@@ -32,7 +34,7 @@ class VisitInfoTab extends StatelessWidget {
           style: TextStyle(
             fontSize: 14,
             height: 1.45,
-            color: AppColors.textDarkGrey,
+            color: isDark? AppColors.textWhite : AppColors.textDarkGrey,
           ),
         ),
         const SizedBox(height: 16),
@@ -67,6 +69,53 @@ class VisitInfoTab extends StatelessWidget {
             ),
             const SizedBox(height: 24),
           ],
+        // Band Members Section
+        if (data.bandMembers.isNotEmpty) ...[
+          _buildSectionTitle('Band Members'),
+          const SizedBox(height: 12),
+          ...data.bandMembers.map((member) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 20,
+                    backgroundColor: AppColors.avatarBackground,
+                    child: Icon(
+                      Icons.person,
+                      color: AppColors.accentPurpleDark,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          member.name,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                        if (member.role.isNotEmpty)
+                          Text(
+                            member.role,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: isDark? AppColors.textWhite : AppColors.textSecondary,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+          const SizedBox(height: 24),
+        ],
       ],
     );
   }

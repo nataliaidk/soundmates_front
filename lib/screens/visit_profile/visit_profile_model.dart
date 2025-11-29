@@ -9,6 +9,7 @@ class VisitProfileViewModel {
   final Map<String, List<String>> groupedTags;
   final List<VisitProfileMediaItem> galleryItems;
   final List<VisitProfileAudioTrack> audioTracks;
+  final List<BandMemberInfo> bandMembers;
 
   VisitProfileViewModel({
     required this.profile,
@@ -17,6 +18,7 @@ class VisitProfileViewModel {
     required this.groupedTags,
     required this.galleryItems,
     required this.audioTracks,
+    required this.bandMembers,
   });
 }
 
@@ -54,4 +56,13 @@ class VisitProfileAudioTrack {
     required this.coverUrl,
     required this.fileUrl,
   });
+}
+
+/// Class for band member information
+class BandMemberInfo {
+  final String name;
+  final String role;
+  final String age;
+
+  BandMemberInfo({required this.name, required this.role, required this.age});
 }
