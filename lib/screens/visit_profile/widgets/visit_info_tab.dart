@@ -63,7 +63,7 @@ class VisitInfoTab extends StatelessWidget {
               spacing: 8,
               runSpacing: 8,
               children: data.groupedTags[category]!
-                  .map((tag) => _buildModernChip(tag))
+                  .map((tag) => _buildModernChip(context, tag))
                   .toList(),
             ),
             const SizedBox(height: 24),
@@ -84,16 +84,17 @@ class VisitInfoTab extends StatelessWidget {
     );
   }
 
-  Widget _buildModernChip(String label) {
+  Widget _buildModernChip(BuildContext context, String label) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.getAdaptiveSurface(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: AppTheme.getAdaptiveGrey(context, lightShade: 200, darkShade: 800)),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFE0E0E0).withOpacity(0.5),
+            color: (isDark ? Colors.black : const Color(0xFFE0E0E0)).withOpacity(isDark ? 0.3 : 0.5),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -101,8 +102,8 @@ class VisitInfoTab extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: const TextStyle(
-          color: AppColors.textPrimaryAlt,
+        style: TextStyle(
+          color: AppTheme.getAdaptiveText(context),
           fontWeight: FontWeight.w600,
           fontSize: 13,
         ),
