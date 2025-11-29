@@ -14,35 +14,101 @@ class SwipingEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Center(
-          child: isLoading
-              ? const CircularProgressIndicator()
-              : const Text(
-                  'No potential matches.\nTry adjusting your preferences.',
-                  textAlign: TextAlign.center,
-                ),
+    if (isLoading) {
+      return Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFF2D1B4E), // Dark purple (matches filters screen)
+              Color(0xFF3D2C5E), // Lighter purple (matches filters cards)
+            ],
+          ),
         ),
-        if (!isLoading)
-          Positioned(
-            top: 16,
-            right: 16,
-            child: SafeArea(
-              bottom: false,
-              child: Material(
-                color: Colors.white.withOpacity(0.92),
-                shape: const CircleBorder(),
-                elevation: 6,
-                child: IconButton(
-                  tooltip: 'Adjust filters',
-                  icon: const Icon(Icons.tune, color: Color(0xFF5B3CF0)),
-                  onPressed: onFilterTap,
+        child: const Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color(0xFF2D1B4E), // Dark purple (matches filters screen)
+            Color(0xFF3D2C5E), // Lighter purple (matches filters cards)
+          ],
+        ),
+      ),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 40),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.search_off, size: 80, color: Colors.white70),
+              const SizedBox(height: 24),
+              const Text(
+                'No Potential Matches',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                  letterSpacing: 0.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Try adjusting your preferences to discover more artists and bands',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.white70,
+                  height: 1.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 40),
+              ElevatedButton(
+                onPressed: onFilterTap,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: const Color(0xFF6A4C9C),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 48,
+                    vertical: 16,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  elevation: 8,
+                  shadowColor: Colors.black.withOpacity(0.3),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.tune, size: 20),
+                    SizedBox(width: 12),
+                    Text(
+                      'Open Filters',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
+            ],
           ),
-      ],
+        ),
+      ),
     );
   }
 }
