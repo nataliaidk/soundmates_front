@@ -32,13 +32,13 @@ class AppSideNav extends StatelessWidget {
           : (item == SideNavItem.profile ? 'Profile' : 'Messages'),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        customBorder: const CircleBorder(),
         child: Container(
           width: size,
           height: size,
           decoration: BoxDecoration(
             color: _backgroundColor(item),
-            borderRadius: BorderRadius.circular(16),
+            shape: BoxShape.circle,
           ),
           child: Icon(icon, color: _iconColor(item), size: iconSize),
         ),

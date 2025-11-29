@@ -447,9 +447,9 @@ class _RecentMatchCard extends StatelessWidget {
               match.name ?? 'User',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: isDesktop 
-                  ? AppTextStyles.recentMatchName.copyWith(color: AppTheme.getAdaptiveText(context))
-                  : AppTextStyles.recentMatchName,
+              style: AppTextStyles.recentMatchName.copyWith(
+                color: AppTheme.getTextColor(context),
+              ),
             ),
           ],
         ),
@@ -535,7 +535,12 @@ class _MatchListItem extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(match.name ?? 'User', style: AppTextStyles.bodyMedium),
+                  Text(
+                    match.name ?? 'User',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppTheme.getTextColor(context),
+                    ),
+                  ),
                   const SizedBox(height: 4),
                   Row(
                     children: [

@@ -86,6 +86,9 @@ class ProfileEditStep1 extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final borderSide = isDark 
+        ? BorderSide.none 
+        : BorderSide(color: AppTheme.getAdaptiveGrey(context, lightShade: 300, darkShade: 700));
     
     return Column(
       children: [
@@ -96,10 +99,18 @@ class ProfileEditStep1 extends StatelessWidget {
             labelText: 'Name',
             hintText: 'How do they call you?',
             filled: true,
-            fillColor: isDark ? AppColors.surfaceDarkAlt : AppColors.accentPurpleSoft,
+            fillColor: isDark ? AppColors.surfaceDarkAlt : AppColors.surfaceWhite,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(30),
-              borderSide: BorderSide.none,
+              borderSide: borderSide,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(30),
+              borderSide: borderSide,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(30),
+              borderSide: borderSide.copyWith(color: AppColors.accentPurple),
             ),
             contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
           ),
@@ -197,8 +208,9 @@ class ProfileEditStep1 extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
                 decoration: BoxDecoration(
-                  color: isDark ? AppColors.surfaceDarkAlt : AppColors.accentPurpleSoft,
+                  color: isDark ? AppColors.surfaceDarkAlt : AppColors.surfaceWhite,
                   borderRadius: BorderRadius.circular(30),
+                  border: isDark ? null : Border.all(color: AppTheme.getAdaptiveGrey(context, lightShade: 300, darkShade: 700)),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -238,8 +250,9 @@ class ProfileEditStep1 extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
                 decoration: BoxDecoration(
-                  color: isDark ? AppColors.surfaceDarkAlt : AppColors.accentPurpleSoft,
+                  color: isDark ? AppColors.surfaceDarkAlt : AppColors.surfaceWhite,
                   borderRadius: BorderRadius.circular(30),
+                  border: isDark ? null : Border.all(color: AppTheme.getAdaptiveGrey(context, lightShade: 300, darkShade: 700)),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -299,8 +312,9 @@ class ProfileEditStep1 extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
               decoration: BoxDecoration(
-                color: isDark ? AppColors.surfaceDarkAlt : AppColors.accentPurpleSoft,
+                color: isDark ? AppColors.surfaceDarkAlt : AppColors.surfaceWhite,
                 borderRadius: BorderRadius.circular(30),
+                border: isDark ? null : Border.all(color: AppTheme.getAdaptiveGrey(context, lightShade: 300, darkShade: 700)),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -334,31 +348,33 @@ class ProfileEditStep1 extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           // Gender dropdown
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
-            decoration: BoxDecoration(
-              color: isDark ? AppColors.surfaceDarkAlt : AppColors.accentPurpleSoft,
-              borderRadius: BorderRadius.circular(30),
-            ),
-            child: DropdownButtonFormField<String>(
-              initialValue: selectedGender?.id,
-              decoration: InputDecoration(
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.zero,
-                labelText: 'Gender',
-                labelStyle: TextStyle(
-                  color: AppTheme.getAdaptiveGrey(context, lightShade: 600, darkShade: 400),
-                  fontSize: 12,
-                ),
+          DropdownButtonFormField<String>(
+            value: selectedGender?.id,
+            decoration: InputDecoration(
+              labelText: 'Gender',
+              filled: true,
+              fillColor: isDark ? AppColors.surfaceDarkAlt : AppColors.surfaceWhite,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(30),
+                borderSide: borderSide,
               ),
-              items: genders
-                  .map((g) => DropdownMenuItem<String>(
-                        value: g.id,
-                        child: Text(g.name),
-                      ))
-                  .toList(),
-              onChanged: onGenderChanged,
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(30),
+                borderSide: borderSide,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(30),
+                borderSide: borderSide.copyWith(color: AppColors.accentPurple),
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
             ),
+            items: genders
+                .map((g) => DropdownMenuItem<String>(
+                      value: g.id,
+                      child: Text(g.name),
+                    ))
+                .toList(),
+            onChanged: onGenderChanged,
           ),
         ],
         const SizedBox(height: 24),

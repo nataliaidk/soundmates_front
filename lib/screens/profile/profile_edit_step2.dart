@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../api/models.dart';
+import '../../theme/app_design_system.dart';
 
 /// Step 2 of profile editing: Tags, Description, Band Members, Profile Photo
 class ProfileEditStep2 extends StatelessWidget {
@@ -70,7 +71,8 @@ class ProfileEditStep2 extends StatelessWidget {
     }
   }
 
-  Widget _buildTags() {
+  Widget _buildTags(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     if (tagOptions.isEmpty) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -164,13 +166,13 @@ class ProfileEditStep2 extends StatelessWidget {
                                   final value = option['value'];
                                   return Chip(
                                     label: Text(label),
-                                    backgroundColor: Colors.white,
+                                    backgroundColor: AppColors.accentPurple,
                                     labelStyle: TextStyle(
-                                      color: accentColor,
+                                      color: Colors.white,
                                       fontWeight: FontWeight.w600,
                                     ),
                                     deleteIcon: const Icon(Icons.close, size: 18),
-                                    deleteIconColor: accentColor,
+                                    deleteIconColor: Colors.white,
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                     onDeleted: () => onRemoveTag(cat, value),
                                   );
@@ -352,7 +354,7 @@ class ProfileEditStep2 extends StatelessWidget {
           ),
           maxLines: 4,
         ),
-        _buildTags(),
+        _buildTags(context),
         if (isBand) _buildBandMembersSection(context),
         const SizedBox(height: 24),
         

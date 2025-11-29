@@ -348,16 +348,13 @@ class _ProfileViewTabsState extends State<ProfileViewTabs> {
                                 vertical: 10,
                               ),
                               decoration: BoxDecoration(
-                                color: isDark ? AppColors.surfaceDarkAlt : AppColors.accentPurpleSoft,
+                                color: AppColors.accentPurple,
                                 borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: isDark ? AppColors.accentPurple.withOpacity(0.5) : AppColors.accentPurple.withOpacity(0.3),
-                                ),
                               ),
                               child: Text(
                                 tag,
                                 style: TextStyle(
-                                  color: isDark ? AppColors.accentPurple : AppColors.accentPurple.withOpacity(0.9),
+                                  color: Colors.white,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),

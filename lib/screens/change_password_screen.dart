@@ -105,61 +105,139 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           color: isDark ? AppColors.textWhite : null,
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              TextFormField(
-                controller: _oldCtrl,
-                obscureText: _obscureOld,
-                decoration: InputDecoration(
-                  labelText: 'Current password',
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscureOld ? Icons.visibility : Icons.visibility_off,
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 500),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  TextFormField(
+                    controller: _oldCtrl,
+                    obscureText: _obscureOld,
+                    decoration: InputDecoration(
+                      labelText: 'Current password',
+                      prefixIcon: const Icon(
+                        Icons.lock_outline,
+                        color: AppColors.accentPurpleMid,
+                      ),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscureOld ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                          color: AppColors.textGrey,
+                        ),
+                        onPressed: () => setState(() => _obscureOld = !_obscureOld),
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: AppColors.borderLight),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: AppColors.borderLight),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(
+                          color: AppColors.accentPurpleMid,
+                          width: 2,
+                        ),
+                      ),
+                      filled: true,
+                      fillColor: isDark ? AppColors.surfaceDarkAlt : AppColors.backgroundLight,
                     ),
-                    onPressed: () => setState(() => _obscureOld = !_obscureOld),
+                    validator: _validateOld,
                   ),
-                ),
-                validator: _validateOld,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _newCtrl,
-                obscureText: _obscureNew,
-                decoration: InputDecoration(
-                  labelText: 'New password',
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscureNew ? Icons.visibility : Icons.visibility_off,
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _newCtrl,
+                    obscureText: _obscureNew,
+                    decoration: InputDecoration(
+                      labelText: 'New password',
+                      prefixIcon: const Icon(
+                        Icons.lock_outline,
+                        color: AppColors.accentPurpleMid,
+                      ),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscureNew ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                          color: AppColors.textGrey,
+                        ),
+                        onPressed: () => setState(() => _obscureNew = !_obscureNew),
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: AppColors.borderLight),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: AppColors.borderLight),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(
+                          color: AppColors.accentPurpleMid,
+                          width: 2,
+                        ),
+                      ),
+                      filled: true,
+                      fillColor: isDark ? AppColors.surfaceDarkAlt : AppColors.backgroundLight,
                     ),
-                    onPressed: () => setState(() => _obscureNew = !_obscureNew),
+                    validator: _validateNew,
                   ),
-                ),
-                validator: _validateNew,
+                  const SizedBox(height: 32),
+                  if (_status.isNotEmpty) ...[
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.surfaceDarkAlt : AppColors.backgroundLight,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppColors.borderLight),
+                      ),
+                      child: Text(
+                        _status,
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                  ElevatedButton(
+                    onPressed: _submitting ? null : _submit,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.accentPurpleMid,
+                      foregroundColor: AppColors.textWhite,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: _submitting
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text(
+                            'Change password',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 20),
-              if (_status.isNotEmpty) ...[
-                Text(
-                  _status,
-                  style: const TextStyle(color: AppColors.textGrey),
-                ),
-                const SizedBox(height: 8),
-              ],
-              ElevatedButton(
-                onPressed: _submitting ? null : _submit,
-                child: _submitting
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Change password'),
-              ),
-            ],
+            ),
           ),
         ),
       ),

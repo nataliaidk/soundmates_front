@@ -69,12 +69,12 @@ class _LoginScreenState extends State<LoginScreen> {
                         logoPath: dotenv.env['LOGO_PATH'] ?? 'default/path/to/logo.png',
                       ),
                       const SizedBox(height: 10),
-                      const Text(
+                      Text(
                         'Welcome Back',
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.textBlack87,
+                          color: isDark ? Colors.white : AppColors.textBlack87,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -124,7 +124,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             ),
                             filled: true,
-                            fillColor: AppColors.backgroundLight,
+                            fillColor: isDark ? AppColors.surfaceDarkAlt : AppColors.backgroundLight,
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -164,7 +164,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             ),
                             filled: true,
-                            fillColor: AppColors.backgroundLight,
+                            fillColor: isDark ? AppColors.surfaceDarkAlt : AppColors.backgroundLight,
                           ),
                         ),
                         const SizedBox(height: 32),
