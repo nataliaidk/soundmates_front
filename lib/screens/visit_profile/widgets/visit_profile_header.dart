@@ -174,35 +174,27 @@ class _VisitProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
                             ),
                           ],
                           const SizedBox(width: 8),
-                          // Online Status
-                          Container(
-                            margin: const EdgeInsets.only(top: 4),
-                            width: 10,
-                            height: 10,
-                            decoration: BoxDecoration(
-                              color: Colors.greenAccent,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Colors.black,
-                                width: 1.5,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.greenAccent.withOpacity(0.5),
-                                  blurRadius: 6,
-                                  spreadRadius: 1,
-                                ),
-                              ],
-                            ),
-                          ),
                         ],
                       ),
 
-                      // Location Badge
+                      // Location Text
                       if (data.locationString.isNotEmpty) ...[
-                        const SizedBox(height: 8),
-                        _GlassmorphicLocationBadge(
-                          location: data.locationString,
+                        const SizedBox(height: 4),
+                        Text(
+                          data.locationString.toUpperCase(),
+                          style: TextStyle(
+                            color: AppColors.textWhite.withOpacity(0.95),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 1.0,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black.withOpacity(0.5),
+                                blurRadius: 8,
+                                offset: const Offset(0, 1),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ],

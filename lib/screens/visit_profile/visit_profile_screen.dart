@@ -354,39 +354,30 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
                     ),
                   ),
 
-                  // 2. Badge Dystansu (Prawy górny róg)
+                  // 2. BAND/ARTIST Badge (Top right corner)
                   Positioned(
                     top: MediaQuery.of(context).padding.top + 16,
                     right: 16,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(20),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 8,
-                          ),
-                          color: Colors.black.withOpacity(0.2),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.near_me,
-                                color: Colors.white,
-                                size: 14,
-                              ),
-                              SizedBox(width: 6),
-                              Text(
-                                "2.5 km", // Placeholder z oryginału
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.4),
+                          width: 1,
+                        ),
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      child: Text(
+                        isBand ? 'BAND' : 'ARTIST',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 1.0,
                         ),
                       ),
                     ),

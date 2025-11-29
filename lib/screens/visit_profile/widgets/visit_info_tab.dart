@@ -30,10 +30,9 @@ class VisitInfoTab extends StatelessWidget {
               ? data.profile.description
               : "Looking for someone to jam with occasionally and for some touring opportunity!",
           style: TextStyle(
-            fontSize: 16,
-            height: 1.6,
-            color: Colors.grey[800],
-            fontWeight: FontWeight.w400,
+            fontSize: 14,
+            height: 1.45,
+            color: AppColors.textDarkGrey,
           ),
         ),
         const SizedBox(height: 16),
@@ -75,37 +74,28 @@ class VisitInfoTab extends StatelessWidget {
   Widget _buildSectionTitle(String text) {
     return Text(
       text.toUpperCase(),
-      style: TextStyle(
-        fontSize: 12,
-        color: Colors.grey[500],
-        fontWeight: FontWeight.w800,
-        letterSpacing: 1.2,
+      style: const TextStyle(
+        fontSize: 13,
+        color: AppColors.textPurpleVibrant,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 1.0,
       ),
     );
   }
 
   Widget _buildModernChip(BuildContext context, String label) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: AppTheme.getAdaptiveSurface(context),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.getAdaptiveGrey(context, lightShade: 200, darkShade: 800)),
-        boxShadow: [
-          BoxShadow(
-            color: (isDark ? Colors.black : const Color(0xFFE0E0E0)).withOpacity(isDark ? 0.3 : 0.5),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        color: AppColors.accentPurple,
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
         label,
-        style: TextStyle(
-          color: AppTheme.getAdaptiveText(context),
-          fontWeight: FontWeight.w600,
-          fontSize: 13,
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w500,
+          fontSize: 12,
         ),
       ),
     );
