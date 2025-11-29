@@ -216,17 +216,22 @@ class _MatchesScreenState extends State<MatchesScreen> {
               children: [
                 Row(
                   children: [
-                    Container(
-                      width: 450,
-                      decoration: BoxDecoration(
-                        color: isDark ? AppColors.surfaceDark : AppColors.surfaceWhite,
-                        borderRadius: const BorderRadius.only(
-                          topRight: Radius.circular(30),
+                    Expanded(
+                      flex: 62,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+                          border: Border(
+                            right: BorderSide(
+                              color: isDark ? Colors.white10 : Colors.grey.shade200,
+                            ),
+                          ),
                         ),
+                        child: _buildContent(conversations, isDesktop: true),
                       ),
-                      child: _buildContent(conversations, isDesktop: true),
                     ),
                     Expanded(
+                      flex: 38,
                       child: _DesktopRightPanel(
                         matches: _matches,
                         api: widget.api,
@@ -239,7 +244,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
                 ),
                 const Positioned(
                   left: 0,
-                  width: 450,
+                  right: 0,
                   bottom: 18,
                   child: AppBottomNav(current: BottomNavItem.messages),
                 ),
@@ -287,7 +292,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
                 ),
               ),
               SizedBox(
-                height: 110,
+                height: 90,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -393,8 +398,8 @@ class _RecentMatchCard extends StatelessWidget {
             Stack(
               children: [
                 Container(
-                  width: 70,
-                  height: 70,
+                  width: 60,
+                  height: 60,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: AppGradients.profilePictureBorderGradient,
@@ -437,7 +442,7 @@ class _RecentMatchCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 4),
             Text(
               match.name ?? 'User',
               maxLines: 1,
@@ -712,7 +717,9 @@ class _DesktopRightPanelState extends State<_DesktopRightPanel> {
                   ),
                   // Glass Card
                   Container(
-                    width: 360, // Slightly smaller width
+                    constraints: const BoxConstraints(maxWidth: 360),
+                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                    width: double.infinity,
                     padding: const EdgeInsets.all(24), // Slightly smaller padding
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.08),
