@@ -40,7 +40,7 @@ Future<BandMemberDto?> showBandMemberDialog({
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<BandRoleDto>(
-                value: selectedRole,
+                initialValue: selectedRole,
                 decoration: const InputDecoration(
                   labelText: 'Role',
                   border: OutlineInputBorder(),
