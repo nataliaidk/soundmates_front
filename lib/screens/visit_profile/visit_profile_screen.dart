@@ -221,18 +221,61 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
                           data: data,
                           isMatched: _isMatched,
                           onUnmatch: () {
-                            // Show dialog that unmatch is not available
                             showDialog(
                               context: context,
                               builder: (context) => AlertDialog(
-                                title: const Text('Unmatch'),
+                                title: Text('Unmatch $userName?'),
                                 content: const Text(
-                                  'Unmatch feature is not available yet.',
+                                  'Are you sure you want to unmatch? You won\'t be able to text with this user anymore.',
                                 ),
                                 actions: [
                                   TextButton(
                                     onPressed: () => Navigator.pop(context),
-                                    child: const Text('OK'),
+                                    child: const Text('Cancel'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () async {
+                                      // Close dialog first
+                                      Navigator.pop(context);
+
+                                      try {
+                                        final response = await widget.api
+                                            .unmatch(widget.userId);
+                                        if (response.statusCode == 200) {
+                                          if (mounted) {
+                                            Navigator.pop(
+                                              context,
+                                            ); // Return to previous screen
+                                          }
+                                        } else {
+                                          if (mounted) {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  'Failed to unmatch: ${response.statusCode}',
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                        }
+                                      } catch (e) {
+                                        if (mounted) {
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            SnackBar(
+                                              content: Text('Error: $e'),
+                                            ),
+                                          );
+                                        }
+                                      }
+                                    },
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: Colors.red,
+                                    ),
+                                    child: const Text('Unmatch'),
                                   ),
                                 ],
                               ),

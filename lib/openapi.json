@@ -688,6 +688,69 @@
         }
       }
     },
+    "/matching/match/exists/{userId}": {
+      "get": {
+        "tags": [
+          "Matching"
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/matching/unmatch/{userId}": {
+      "delete": {
+        "tags": [
+          "Matching"
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/messages/preview": {
       "get": {
         "tags": [
@@ -818,6 +881,29 @@
           },
           "required": true
         },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/messages/view-conversation/{userId}": {
+      "post": {
+        "tags": [
+          "Messages"
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -1327,7 +1413,8 @@
           "content",
           "timestamp",
           "senderId",
-          "receiverId"
+          "receiverId",
+          "isSeen"
         ],
         "type": "object",
         "properties": {
@@ -1345,6 +1432,9 @@
           "receiverId": {
             "type": "string",
             "format": "uuid"
+          },
+          "isSeen": {
+            "type": "boolean"
           }
         }
       },
@@ -1637,11 +1727,11 @@
           },
           "musicSamples": {
             "type": "array",
-            "items": { }
+            "items": {}
           },
           "profilePictures": {
             "type": "array",
-            "items": { }
+            "items": {}
           }
         }
       },
@@ -1769,11 +1859,11 @@
           },
           "musicSamples": {
             "type": "array",
-            "items": { }
+            "items": {}
           },
           "profilePictures": {
             "type": "array",
-            "items": { }
+            "items": {}
           }
         }
       },
@@ -1932,11 +2022,11 @@
           },
           "musicSamples": {
             "type": "array",
-            "items": { }
+            "items": {}
           },
           "profilePictures": {
             "type": "array",
-            "items": { }
+            "items": {}
           }
         }
       },

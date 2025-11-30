@@ -47,6 +47,8 @@ class _ChatScreenState extends State<ChatScreen> {
   String? _currentUserId;
   bool _showEmojiPicker = false;
   void Function(dynamic)? _hubMessageListener;
+  bool _isMatched = false;
+  bool _checkingMatch = true;
 
   @override
   void initState() {
@@ -68,10 +70,42 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Future<void> _initialize() async {
     await _loadCurrentUserId();
+    await _checkMatchStatus();
     await _loadMessages();
     await _markConversationAsViewed();
     await _ensureSignalRConnection();
     _setupSignalRCallback();
+  }
+
+  Future<void> _checkMatchStatus() async {
+    try {
+      print('🔍 Checking match status with ${widget.userId}...');
+      final resp = await widget.api.checkMatchExists(widget.userId);
+      if (resp.statusCode == 200) {
+        final isMatched = jsonDecode(resp.body) as bool;
+        if (mounted) {
+          setState(() {
+            _isMatched = isMatched;
+            _checkingMatch = false;
+          });
+          print('✅ Match status: $_isMatched');
+        }
+      } else {
+        print('⚠️ Failed to check match status: ${resp.statusCode}');
+        if (mounted) {
+          setState(() {
+            _checkingMatch = false;
+          });
+        }
+      }
+    } catch (e) {
+      print('❌ Error checking match status: $e');
+      if (mounted) {
+        setState(() {
+          _checkingMatch = false;
+        });
+      }
+    }
   }
 
   Future<void> _markConversationAsViewed() async {
@@ -123,10 +157,10 @@ class _ChatScreenState extends State<ChatScreen> {
     eventHub.onConversationSeen = (payload) {
       try {
         print("👁️ ConversationSeen callback in chat: $payload");
-        
+
         if (payload is Map<String, dynamic>) {
           final userId = payload['userId']?.toString();
-          
+
           // If this is notification about our conversation being seen by the other user
           if (userId == _currentUserId) {
             print("✅ Our messages were seen - updating message status");
@@ -173,7 +207,7 @@ class _ChatScreenState extends State<ChatScreen> {
           // 2. Current user (we sent a message - for optimistic UI update)
           if (senderId == widget.userId || senderId == _currentUserId) {
             print("✅ Message is for this chat - updating list");
-            
+
             try {
               final msg = MessageDto.fromJson(messageData);
               if (mounted) {
@@ -185,11 +219,11 @@ class _ChatScreenState extends State<ChatScreen> {
                     // But if _sendMessage handled it, we might have the real ID already.
                     // If we don't have the real ID yet, we might add a duplicate.
                     // However, usually _sendMessage response is faster.
-                    
+
                     // If it's from the other user, just add it.
                     _messages.add(msg);
                     _scrollToBottom();
-                    
+
                     // If message is from the other user, mark as viewed
                     if (senderId == widget.userId) {
                       _markConversationAsViewed();
@@ -274,15 +308,21 @@ class _ChatScreenState extends State<ChatScreen> {
     }
 
     try {
-      final offset = isLoadMore ? _messages.where((m) => !m.id.startsWith('temp-')).length : 0;
-      final resp = await widget.api.getMessages(widget.userId, limit: 50, offset: offset);
+      final offset = isLoadMore
+          ? _messages.where((m) => !m.id.startsWith('temp-')).length
+          : 0;
+      final resp = await widget.api.getMessages(
+        widget.userId,
+        limit: 50,
+        offset: offset,
+      );
       print("📥 API response: ${resp.statusCode}");
-      
+
       if (resp.statusCode == 200) {
         final decoded = jsonDecode(resp.body);
         final list = decoded is List ? decoded : [];
         final newMessages = <MessageDto>[];
-        
+
         for (final item in list) {
           try {
             final msg = MessageDto.fromJson(item);
@@ -301,12 +341,18 @@ class _ChatScreenState extends State<ChatScreen> {
             if (isLoadMore) {
               // Filter out duplicates if any
               final existingIds = _messages.map((m) => m.id).toSet();
-              final uniqueNew = newMessages.where((m) => !existingIds.contains(m.id)).toList();
-              
+              final uniqueNew = newMessages
+                  .where((m) => !existingIds.contains(m.id))
+                  .toList();
+
               // Insert before temp messages
-              final tempMessages = _messages.where((m) => m.id.startsWith('temp-')).toList();
-              final realMessages = _messages.where((m) => !m.id.startsWith('temp-')).toList();
-              
+              final tempMessages = _messages
+                  .where((m) => m.id.startsWith('temp-'))
+                  .toList();
+              final realMessages = _messages
+                  .where((m) => !m.id.startsWith('temp-'))
+                  .toList();
+
               _messages = [...realMessages, ...uniqueNew, ...tempMessages];
               _loadingMore = false;
             } else {
@@ -315,7 +361,9 @@ class _ChatScreenState extends State<ChatScreen> {
               // Scroll to bottom on initial load
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (_scrollController.hasClients) {
-                  _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+                  _scrollController.jumpTo(
+                    _scrollController.position.maxScrollExtent,
+                  );
                 }
               });
             }
@@ -324,8 +372,10 @@ class _ChatScreenState extends State<ChatScreen> {
       } else {
         if (mounted) {
           setState(() {
-            if (isLoadMore) _loadingMore = false;
-            else _loading = false;
+            if (isLoadMore)
+              _loadingMore = false;
+            else
+              _loading = false;
           });
         }
       }
@@ -333,8 +383,10 @@ class _ChatScreenState extends State<ChatScreen> {
       print('Error loading messages: $e');
       if (mounted) {
         setState(() {
-          if (isLoadMore) _loadingMore = false;
-          else _loading = false;
+          if (isLoadMore)
+            _loadingMore = false;
+          else
+            _loading = false;
         });
       }
     }
@@ -353,8 +405,6 @@ class _ChatScreenState extends State<ChatScreen> {
       });
     }
   }
-
-
 
   Future<void> _sendMessage() async {
     final text = _messageController.text.trim();
@@ -386,11 +436,13 @@ class _ChatScreenState extends State<ChatScreen> {
           if (resp.body.isNotEmpty) {
             final json = jsonDecode(resp.body);
             final newMessage = MessageDto.fromJson(json);
-            
+
             if (mounted) {
               setState(() {
                 // Replace the temp message with the real one
-                final index = _messages.indexWhere((m) => m.id == tempMessage.id);
+                final index = _messages.indexWhere(
+                  (m) => m.id == tempMessage.id,
+                );
                 if (index != -1) {
                   _messages[index] = newMessage;
                 } else {
@@ -426,9 +478,9 @@ class _ChatScreenState extends State<ChatScreen> {
         setState(() {
           _messages.removeWhere((m) => m.id == tempMessage.id);
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error sending message')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Error sending message')));
       }
     }
   }
@@ -580,7 +632,9 @@ class _ChatScreenState extends State<ChatScreen> {
                                   child: SizedBox(
                                     width: 24,
                                     height: 24,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
                                   ),
                                 ),
                               );
@@ -675,101 +729,201 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Widget _buildMessageInput() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: SafeArea(
-        child: Row(
-          children: [
-            IconButton(
-              icon: Icon(
-                _showEmojiPicker
-                    ? Icons.keyboard
-                    : Icons.emoji_emotions_outlined,
-                color: AppTheme.getAdaptiveGrey(
-                  context,
-                  lightShade: 600,
-                  darkShade: 400,
+    final isBlocked = !_isMatched && !_checkingMatch;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Show warning banner when not matched
+        if (isBlocked)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? AppColors.surfaceDarkAlt.withOpacity(0.7)
+                  : AppColors.surfaceWhite.withOpacity(0.9),
+              border: Border(
+                top: BorderSide(
+                  color: AppTheme.getAdaptiveGrey(
+                    context,
+                    lightShade: 300,
+                    darkShade: 700,
+                  ),
+                  width: 1,
                 ),
               ),
-              onPressed: () {
-                setState(() {
-                  _showEmojiPicker = !_showEmojiPicker;
-                });
-              },
             ),
-            Expanded(
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 8),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? AppColors.surfaceDark
-                      : AppColors.surfaceWhite,
-                  borderRadius: BorderRadius.circular(28),
-                  border: Border.all(
-                    color: isDark
-                        ? AppColors.surfaceDark
-                        : AppColors.surfaceWhite,
+            child: Row(
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  size: 20,
+                  color: AppTheme.getAdaptiveGrey(
+                    context,
+                    lightShade: 600,
+                    darkShade: 400,
                   ),
                 ),
-                child: CallbackShortcuts(
-                  bindings: {
-                    const SingleActivator(LogicalKeyboardKey.enter): () =>
-                        _sendMessage(),
-                  },
-                  child: TextField(
-                    controller: _messageController,
-                    decoration: const InputDecoration(
-                      hintText: 'Type a message...',
-                      hintStyle: TextStyle(color: AppColors.textGrey),
-                      border: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      errorBorder: InputBorder.none,
-                      disabledBorder: InputBorder.none,
-                      filled: false,
-                      isCollapsed: true,
-                    ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    "You can't send messages because you're no longer matched with this user",
                     style: TextStyle(
-                      color: isDark
-                          ? AppColors.textWhite
-                          : AppColors.textPrimary,
+                      color: AppTheme.getAdaptiveGrey(
+                        context,
+                        lightShade: 600,
+                        darkShade: 400,
+                      ),
+                      fontSize: 14,
                     ),
-                    textCapitalization: TextCapitalization.sentences,
-                    minLines: 1,
-                    maxLines: 4,
-                    textInputAction: TextInputAction.send,
-                    onSubmitted: (_) => _sendMessage(),
                   ),
                 ),
-              ),
+              ],
             ),
-            GestureDetector(
-              onTap: _sendMessage,
-              child: Container(
-                width: 44,
-                height: 44,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: [
-                      AppColors.accentPurple,
-                      AppColors.accentPurpleBlue,
-                    ],
+          ),
+        // Message input row
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: SafeArea(
+            child: Row(
+              children: [
+                IconButton(
+                  icon: Icon(
+                    _showEmojiPicker
+                        ? Icons.keyboard
+                        : Icons.emoji_emotions_outlined,
+                    color: isBlocked
+                        ? AppTheme.getAdaptiveGrey(
+                            context,
+                            lightShade: 400,
+                            darkShade: 700,
+                          )
+                        : AppTheme.getAdaptiveGrey(
+                            context,
+                            lightShade: 600,
+                            darkShade: 400,
+                          ),
+                  ),
+                  onPressed: isBlocked
+                      ? null
+                      : () {
+                          setState(() {
+                            _showEmojiPicker = !_showEmojiPicker;
+                          });
+                        },
+                ),
+                Expanded(
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isBlocked
+                          ? (isDark
+                                ? AppColors.surfaceDarkAlt.withOpacity(0.5)
+                                : AppColors.surfaceWhite.withOpacity(0.5))
+                          : (isDark
+                                ? AppColors.surfaceDark
+                                : AppColors.surfaceWhite),
+                      borderRadius: BorderRadius.circular(28),
+                      border: Border.all(
+                        color: isDark
+                            ? AppColors.surfaceDark
+                            : AppColors.surfaceWhite,
+                      ),
+                    ),
+                    child: CallbackShortcuts(
+                      bindings: {
+                        const SingleActivator(LogicalKeyboardKey.enter): () =>
+                            isBlocked ? null : _sendMessage(),
+                      },
+                      child: TextField(
+                        controller: _messageController,
+                        enabled: !isBlocked,
+                        decoration: InputDecoration(
+                          hintText: isBlocked
+                              ? "Can't send messages"
+                              : 'Type a message...',
+                          hintStyle: TextStyle(
+                            color: isBlocked
+                                ? AppTheme.getAdaptiveGrey(
+                                    context,
+                                    lightShade: 400,
+                                    darkShade: 700,
+                                  )
+                                : AppColors.textGrey,
+                          ),
+                          border: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          errorBorder: InputBorder.none,
+                          disabledBorder: InputBorder.none,
+                          filled: false,
+                          isCollapsed: true,
+                        ),
+                        style: TextStyle(
+                          color: isDark
+                              ? AppColors.textWhite
+                              : AppColors.textPrimary,
+                        ),
+                        textCapitalization: TextCapitalization.sentences,
+                        minLines: 1,
+                        maxLines: 4,
+                        textInputAction: TextInputAction.send,
+                        onSubmitted: isBlocked ? null : (_) => _sendMessage(),
+                      ),
+                    ),
                   ),
                 ),
-                child: const Icon(
-                  Icons.send_rounded,
-                  color: AppColors.textWhite,
+                GestureDetector(
+                  onTap: isBlocked ? null : _sendMessage,
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: isBlocked
+                          ? LinearGradient(
+                              colors: [
+                                AppTheme.getAdaptiveGrey(
+                                  context,
+                                  lightShade: 300,
+                                  darkShade: 800,
+                                ),
+                                AppTheme.getAdaptiveGrey(
+                                  context,
+                                  lightShade: 400,
+                                  darkShade: 700,
+                                ),
+                              ],
+                            )
+                          : const LinearGradient(
+                              colors: [
+                                AppColors.accentPurple,
+                                AppColors.accentPurpleBlue,
+                              ],
+                            ),
+                    ),
+                    child: Icon(
+                      Icons.send_rounded,
+                      color: isBlocked
+                          ? AppTheme.getAdaptiveGrey(
+                              context,
+                              lightShade: 500,
+                              darkShade: 600,
+                            )
+                          : AppColors.textWhite,
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 }
