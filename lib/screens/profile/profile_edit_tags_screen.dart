@@ -380,6 +380,7 @@ class _ProfileEditTagsScreenState extends State<ProfileEditTagsScreen> {
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               border: Border.all(color: AppColors.accentPurple, width: 3),
+                              color: isDark ? null : Colors.white,
                             ),
                             child: CircleAvatar(
                               radius: 60,
@@ -390,7 +391,7 @@ class _ProfileEditTagsScreenState extends State<ProfileEditTagsScreen> {
                                       ? NetworkImage(_profilePictures.first.getAbsoluteUrl(widget.api.baseUrl))
                                       : null),
                               child: _pickedProfilePhoto?.bytes == null && _profilePictures.isEmpty
-                                  ? Icon(Icons.person, size: 60, color: AppColors.accentPurple.withOpacity(0.5))
+                                  ? Icon(Icons.person, size: 60, color: AppColors.accentPurple)
                                   : null,
                             ),
                           ),
@@ -454,12 +455,26 @@ class _ProfileEditTagsScreenState extends State<ProfileEditTagsScreen> {
                     validator: (value) => validateDescription(value ?? ''),
                     decoration: InputDecoration(
                       labelText: 'Description',
+                      labelStyle: TextStyle(
+                        color: isDark ? AppColors.textWhite : AppColors.accentPurple,
+                      ),
                       helperText: '${_desc.text.length}/500 characters',
+                      helperStyle: TextStyle(
+                        color: isDark ? AppColors.textWhite.withOpacity(0.7) : AppColors.accentPurple.withOpacity(0.7),
+                      ),
                       filled: true,
-                      fillColor: isDark ? AppColors.surfaceDarkAlt : AppColors.accentPurpleSoft,
+                      fillColor: isDark ? AppColors.surfaceDarkAlt : Colors.white,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(20),
-                        borderSide: BorderSide.none,
+                        borderSide: isDark ? BorderSide.none : BorderSide(color: AppColors.accentPurple, width: 1.5),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: isDark ? BorderSide.none : BorderSide(color: AppColors.accentPurple, width: 1.5),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide(color: AppColors.accentPurple, width: 2),
                       ),
                       errorBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(20),
@@ -509,8 +524,9 @@ class _ProfileEditTagsScreenState extends State<ProfileEditTagsScreen> {
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
                               decoration: BoxDecoration(
-                                color: isDark ? AppColors.surfaceDarkAlt : AppColors.accentPurpleSoft,
+                                color: isDark ? AppColors.surfaceDarkAlt : Colors.white,
                                 borderRadius: BorderRadius.circular(30),
+                                border: isDark ? null : Border.all(color: AppColors.accentPurple, width: 1.5),
                               ),
                               child: Row(
                                 children: [
@@ -519,9 +535,15 @@ class _ProfileEditTagsScreenState extends State<ProfileEditTagsScreen> {
                                       selectedSet.isEmpty
                                           ? '(none selected)'
                                           : '${selectedSet.length} selected',
+                                      style: TextStyle(
+                                        color: isDark ? AppColors.textWhite : AppColors.accentPurple,
+                                      ),
                                     ),
                                   ),
-                                  const Icon(Icons.arrow_drop_down),
+                                  Icon(
+                                    Icons.arrow_drop_down,
+                                    color: isDark ? AppColors.textWhite : AppColors.accentPurple,
+                                  ),
                                 ],
                               ),
                             ),
@@ -538,8 +560,14 @@ class _ProfileEditTagsScreenState extends State<ProfileEditTagsScreen> {
                                 );
                                 final label = found['label']?.toString() ?? val.toString();
                                 return Chip(
-                                  label: Text(label),
-                                  backgroundColor: isDark ? AppColors.surfaceDarkAlt : AppColors.accentPurpleSoft,
+                                  label: Text(
+                                    label,
+                                    style: TextStyle(
+                                      color: isDark ? AppColors.textWhite : AppColors.accentPurple,
+                                    ),
+                                  ),
+                                  backgroundColor: isDark ? AppColors.surfaceDarkAlt : Colors.white,
+                                  side: isDark ? null : BorderSide(color: AppColors.accentPurple, width: 1.5),
                                   deleteIconColor: AppColors.accentPurple,
                                   onDeleted: () {
                                     setState(() {
@@ -571,13 +599,23 @@ class _ProfileEditTagsScreenState extends State<ProfileEditTagsScreen> {
                       ..._bandMembers.map((m) => Container(
                             margin: const EdgeInsets.only(bottom: 12),
                             decoration: BoxDecoration(
-                              color: isDark ? AppColors.surfaceDarkAlt : AppColors.accentPurpleSoft,
+                              color: isDark ? AppColors.surfaceDarkAlt : Colors.white,
                               borderRadius: BorderRadius.circular(16),
+                              border: isDark ? null : Border.all(color: AppColors.accentPurple, width: 1.5),
                             ),
                             child: ListTile(
-                              title: Text('${m.name} (${m.age} y/o)'),
+                              title: Text(
+                                '${m.name} (${m.age} y/o)',
+                                style: TextStyle(
+                                  color: isDark ? AppColors.textWhite : AppColors.accentPurple,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                               subtitle: Text(
                                 'Role: ${_bandRoleName(m.bandRoleId)} • Order: ${m.displayOrder}',
+                                style: TextStyle(
+                                  color: isDark ? AppColors.textWhite.withOpacity(0.7) : AppColors.accentPurple.withOpacity(0.7),
+                                ),
                               ),
                               trailing: Row(
                                 mainAxisSize: MainAxisSize.min,

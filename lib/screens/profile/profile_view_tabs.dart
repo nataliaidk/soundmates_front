@@ -96,7 +96,7 @@ class _ProfileViewTabsState extends State<ProfileViewTabs> {
                         radius: 60,
                         backgroundColor: isDark
                             ? AppColors.surfaceDark
-                            : AppColors.accentPurpleSoft,
+                            : const Color.fromARGB(255, 216, 211, 225),
                         backgroundImage: avatarUrl != null
                             ? NetworkImage(avatarUrl)
                             : null,

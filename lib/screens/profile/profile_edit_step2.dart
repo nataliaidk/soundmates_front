@@ -106,8 +106,8 @@ class _ProfileEditStep2State extends State<ProfileEditStep2> {
 
     final categories = widget.tagOptions.keys.toList();
     final accentColor = AppColors.accentPurple;
-    final containerColor = isDark ? AppColors.surfaceDarkAlt : AppColors.accentPurpleSoft;
-    final borderColor = isDark ? AppColors.accentPurple.withOpacity(0.3) : AppColors.accentPurple.withOpacity(0.2);
+    final containerColor = isDark ? AppColors.surfaceDarkAlt : Colors.white;
+    final borderColor = isDark ? AppColors.accentPurple.withOpacity(0.3) : AppColors.accentPurple;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -160,8 +160,9 @@ class _ProfileEditStep2State extends State<ProfileEditStep2> {
                             ? Text(
                                 'Tap to select',
                                 style: TextStyle(
-                                  color: isDark ? AppColors.accentPurple.withOpacity(0.7) : AppColors.accentPurple.withOpacity(0.5),
+                                  color: isDark ? AppColors.accentPurple.withOpacity(0.7) : AppColors.accentPurple,
                                   fontSize: 15,
+                                  fontWeight: isDark ? FontWeight.normal : FontWeight.w600,
                                 ),
                               )
                             : Wrap(
@@ -225,18 +226,24 @@ class _ProfileEditStep2State extends State<ProfileEditStep2> {
           ...widget.bandMembers.map((m) => Container(
                 margin: const EdgeInsets.only(bottom: 8),
                 decoration: BoxDecoration(
-                  color: isDark ? AppColors.surfaceDarkAlt : AppColors.accentPurpleSoft,
+                  color: isDark ? AppColors.surfaceDarkAlt : Colors.white,
                   borderRadius: BorderRadius.circular(16),
+                  border: isDark ? null : Border.all(color: AppColors.accentPurple, width: 1.5),
                 ),
                 child: ListTile(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   title: Text(
                     '${m.name} (${m.age} y/o)',
-                    style: const TextStyle(fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? AppColors.textWhite : AppColors.accentPurple,
+                    ),
                   ),
                   subtitle: Text(
                     _bandRoleName(m.bandRoleId),
-                    style: TextStyle(color: AppTheme.getAdaptiveGrey(context, lightShade: 700, darkShade: 300)),
+                    style: TextStyle(
+                      color: isDark ? AppTheme.getAdaptiveGrey(context, lightShade: 700, darkShade: 300) : AppColors.accentPurple.withOpacity(0.7),
+                    ),
                   ),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -290,6 +297,7 @@ class _ProfileEditStep2State extends State<ProfileEditStep2> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(color: AppColors.accentPurple, width: 3),
+                    color: isDark ? null : Colors.white,
                   ),
                   child: CircleAvatar(
                     radius: 60,
@@ -298,7 +306,7 @@ class _ProfileEditStep2State extends State<ProfileEditStep2> {
                         ? MemoryImage(widget.pickedProfilePhoto!.bytes!)
                         : null,
                     child: widget.pickedProfilePhoto?.bytes == null
-                        ? Icon(Icons.person, size: 60, color: AppColors.accentPurple.withOpacity(0.5))
+                        ? Icon(Icons.person, size: 60, color: AppColors.accentPurple)
                         : null,
                   ),
                 ),
@@ -353,15 +361,35 @@ class _ProfileEditStep2State extends State<ProfileEditStep2> {
               controller: widget.descController,
               autovalidateMode: AutovalidateMode.onUserInteraction,
               validator: (value) => validateDescription(value ?? ''),
+              style: TextStyle(
+                color: isDark ? AppColors.textWhite : AppColors.accentPurple,
+              ),
               decoration: InputDecoration(
                 labelText: 'Description',
+                labelStyle: TextStyle(
+                  color: isDark ? AppColors.textWhite : AppColors.accentPurple,
+                ),
                 hintText: 'Tell us about yourself...',
+                hintStyle: TextStyle(
+                  color: isDark ? AppColors.textWhite.withOpacity(0.5) : AppColors.accentPurple.withOpacity(0.5),
+                ),
                 helperText: '${widget.descController.text.length}/500 characters',
+                helperStyle: TextStyle(
+                  color: isDark ? AppColors.textWhite.withOpacity(0.7) : AppColors.accentPurple.withOpacity(0.7),
+                ),
                 filled: true,
-                fillColor: isDark ? AppColors.surfaceDarkAlt : AppColors.accentPurpleSoft,
+                fillColor: isDark ? AppColors.surfaceDarkAlt : Colors.white,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(20),
-                  borderSide: BorderSide.none,
+                  borderSide: isDark ? BorderSide.none : BorderSide(color: AppColors.accentPurple, width: 1.5),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  borderSide: isDark ? BorderSide.none : BorderSide(color: AppColors.accentPurple, width: 1.5),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  borderSide: BorderSide(color: AppColors.accentPurple, width: 2),
                 ),
                 errorBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(20),

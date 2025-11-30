@@ -86,9 +86,6 @@ class ProfileEditStep1 extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final borderSide = isDark 
-        ? BorderSide.none 
-        : BorderSide(color: AppTheme.getAdaptiveGrey(context, lightShade: 300, darkShade: 700));
     
     return Column(
       children: [
@@ -99,20 +96,26 @@ class ProfileEditStep1 extends StatelessWidget {
           validator: (value) => validateName(value ?? ''),
           decoration: InputDecoration(
             labelText: 'Name',
+            labelStyle: TextStyle(
+              color: isDark ? AppColors.textWhite : AppColors.accentPurple,
+            ),
             hintText: 'How do they call you?',
+            hintStyle: TextStyle(
+              color: isDark ? AppColors.textWhite.withOpacity(0.5) : AppColors.accentPurple.withOpacity(0.5),
+            ),
             filled: true,
-            fillColor: isDark ? AppColors.surfaceDarkAlt : AppColors.surfaceWhite,
+            fillColor: isDark ? AppColors.surfaceDarkAlt : Colors.white,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(30),
-              borderSide: borderSide,
+              borderSide: isDark ? BorderSide.none : BorderSide(color: AppColors.accentPurple, width: 1.5),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(30),
-              borderSide: borderSide,
+              borderSide: isDark ? BorderSide.none : BorderSide(color: AppColors.accentPurple, width: 1.5),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(30),
-              borderSide: borderSide.copyWith(color: AppColors.accentPurple),
+              borderSide: BorderSide(color: AppColors.accentPurple, width: 2),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(30),
@@ -218,12 +221,13 @@ class ProfileEditStep1 extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
                 decoration: BoxDecoration(
-                  color: isDark ? AppColors.surfaceDarkAlt : AppColors.surfaceWhite,
+                  color: isDark ? AppColors.surfaceDarkAlt : Colors.white,
                   borderRadius: BorderRadius.circular(30),
                   border: Border.all(
                     color: selectedCountry == null
                         ? (isDark ? const Color(0xFFE57373) : Colors.red.shade300)
-                        : (isDark ? Colors.transparent : AppTheme.getAdaptiveGrey(context, lightShade: 300, darkShade: 700)),
+                        : (isDark ? Colors.transparent : AppColors.accentPurple),
+                    width: selectedCountry == null ? 1.5 : (isDark ? 0 : 1.5),
                   ),
                 ),
                 child: Row(
@@ -235,7 +239,7 @@ class ProfileEditStep1 extends StatelessWidget {
                         Text(
                           'Country',
                           style: TextStyle(
-                            color: AppTheme.getAdaptiveGrey(context, lightShade: 600, darkShade: 400),
+                            color: isDark ? AppTheme.getAdaptiveGrey(context, lightShade: 600, darkShade: 400) : AppColors.accentPurple.withOpacity(0.7),
                             fontSize: 12,
                           ),
                         ),
@@ -245,8 +249,11 @@ class ProfileEditStep1 extends StatelessWidget {
                               ? selectedCountry!.name
                               : 'Select country',
                           style: TextStyle(
-                            color: selectedCountry == null ? AppTheme.getAdaptiveGrey(context, lightShade: 500, darkShade: 500) : AppTheme.getAdaptiveText(context),
+                            color: selectedCountry == null 
+                                ? (isDark ? AppTheme.getAdaptiveGrey(context, lightShade: 500, darkShade: 500) : AppColors.accentPurple.withOpacity(0.5))
+                                : (isDark ? AppTheme.getAdaptiveText(context) : AppColors.accentPurple),
                             fontSize: 16,
+                            fontWeight: isDark ? FontWeight.normal : FontWeight.w600,
                           ),
                         ),
                       ],
@@ -264,12 +271,13 @@ class ProfileEditStep1 extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
                 decoration: BoxDecoration(
-                  color: isDark ? AppColors.surfaceDarkAlt : AppColors.surfaceWhite,
+                  color: isDark ? AppColors.surfaceDarkAlt : Colors.white,
                   borderRadius: BorderRadius.circular(30),
                   border: Border.all(
                     color: selectedCity == null && selectedCountry != null
                         ? (isDark ? const Color(0xFFE57373) : Colors.red.shade300)
-                        : (isDark ? Colors.transparent : AppTheme.getAdaptiveGrey(context, lightShade: 300, darkShade: 700)),
+                        : (isDark ? Colors.transparent : AppColors.accentPurple),
+                    width: (selectedCity == null && selectedCountry != null) ? 1.5 : (isDark ? 0 : 1.5),
                   ),
                 ),
                 child: Row(
@@ -282,7 +290,7 @@ class ProfileEditStep1 extends StatelessWidget {
                           Text(
                             'City',
                             style: TextStyle(
-                              color: AppTheme.getAdaptiveGrey(context, lightShade: 600, darkShade: 400),
+                              color: isDark ? AppTheme.getAdaptiveGrey(context, lightShade: 600, darkShade: 400) : AppColors.accentPurple.withOpacity(0.7),
                               fontSize: 12,
                             ),
                           ),
@@ -296,8 +304,11 @@ class ProfileEditStep1 extends StatelessWidget {
                                         ? 'Loading cities...'
                                         : (cities.isEmpty ? 'No cities available' : 'Select city'))),
                             style: TextStyle(
-                              color: selectedCity == null ? AppTheme.getAdaptiveGrey(context, lightShade: 500, darkShade: 500) : AppTheme.getAdaptiveText(context),
+                              color: selectedCity == null 
+                                  ? (isDark ? AppTheme.getAdaptiveGrey(context, lightShade: 500, darkShade: 500) : AppColors.accentPurple.withOpacity(0.5))
+                                  : (isDark ? AppTheme.getAdaptiveText(context) : AppColors.accentPurple),
                               fontSize: 16,
+                              fontWeight: isDark ? FontWeight.normal : FontWeight.w600,
                             ),
                           ),
                         ],
@@ -330,12 +341,13 @@ class ProfileEditStep1 extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
               decoration: BoxDecoration(
-                color: isDark ? AppColors.surfaceDarkAlt : AppColors.surfaceWhite,
+                color: isDark ? AppColors.surfaceDarkAlt : Colors.white,
                 borderRadius: BorderRadius.circular(30),
                 border: Border.all(
                   color: birthDate == null
                       ? (isDark ? const Color(0xFFE57373) : Colors.red.shade300)
-                      : (isDark ? Colors.transparent : AppTheme.getAdaptiveGrey(context, lightShade: 300, darkShade: 700)),
+                      : (isDark ? Colors.transparent : AppColors.accentPurple),
+                  width: birthDate == null ? 1.5 : (isDark ? 0 : 1.5),
                 ),
               ),
               child: Row(
@@ -347,7 +359,7 @@ class ProfileEditStep1 extends StatelessWidget {
                       Text(
                         'Date of birth',
                         style: TextStyle(
-                          color: AppTheme.getAdaptiveGrey(context, lightShade: 600, darkShade: 400),
+                          color: isDark ? AppTheme.getAdaptiveGrey(context, lightShade: 600, darkShade: 400) : AppColors.accentPurple.withOpacity(0.7),
                           fontSize: 12,
                         ),
                       ),
@@ -357,8 +369,11 @@ class ProfileEditStep1 extends StatelessWidget {
                             ? 'dd/mm/yyyy'
                             : '${birthDate!.day.toString().padLeft(2, '0')}/${birthDate!.month.toString().padLeft(2, '0')}/${birthDate!.year}',
                         style: TextStyle(
-                          color: birthDate == null ? AppTheme.getAdaptiveGrey(context, lightShade: 500, darkShade: 500) : AppTheme.getAdaptiveText(context),
+                          color: birthDate == null 
+                              ? (isDark ? AppTheme.getAdaptiveGrey(context, lightShade: 500, darkShade: 500) : AppColors.accentPurple.withOpacity(0.5))
+                              : (isDark ? AppTheme.getAdaptiveText(context) : AppColors.accentPurple),
                           fontSize: 16,
+                          fontWeight: isDark ? FontWeight.normal : FontWeight.w600,
                         ),
                       ),
                     ],
@@ -374,21 +389,30 @@ class ProfileEditStep1 extends StatelessWidget {
             value: selectedGender?.id,
             validator: (value) => value == null ? 'Gender is required for artists' : null,
             autovalidateMode: AutovalidateMode.onUserInteraction,
+            style: TextStyle(
+              color: isDark ? AppColors.textWhite : AppColors.accentPurple,
+              fontSize: 16,
+              fontWeight: isDark ? FontWeight.normal : FontWeight.w600,
+            ),
+            dropdownColor: isDark ? AppColors.surfaceDarkAlt : Colors.white,
             decoration: InputDecoration(
               labelText: 'Gender',
+              labelStyle: TextStyle(
+                color: isDark ? AppColors.textWhite : AppColors.accentPurple,
+              ),
               filled: true,
-              fillColor: isDark ? AppColors.surfaceDarkAlt : AppColors.surfaceWhite,
+              fillColor: isDark ? AppColors.surfaceDarkAlt : Colors.white,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(30),
-                borderSide: borderSide,
+                borderSide: isDark ? BorderSide.none : BorderSide(color: AppColors.accentPurple, width: 1.5),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(30),
-                borderSide: borderSide,
+                borderSide: isDark ? BorderSide.none : BorderSide(color: AppColors.accentPurple, width: 1.5),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(30),
-                borderSide: borderSide.copyWith(color: AppColors.accentPurple),
+                borderSide: BorderSide(color: AppColors.accentPurple, width: 2),
               ),
               errorBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(30),
