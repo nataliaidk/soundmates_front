@@ -444,12 +444,12 @@ class DraggableCardState extends State<DraggableCard>
                                             decoration: BoxDecoration(
                                               color: idx == _currentImageIndex
                                                   ? (isDark
-                                                        ? AppColors.surfaceDark
+                                                        ? AppColors.textWhite
                                                         : AppColors
                                                               .surfaceWhite)
                                                   : (isDark
-                                                        ? AppColors.surfaceDark
-                                                              .withAlpha(128)
+                                                        ? AppColors.textWhite
+                                                              .withAlpha(77)
                                                         : AppColors.surfaceWhite
                                                               .withAlpha(128)),
                                               borderRadius:

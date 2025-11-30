@@ -201,17 +201,22 @@ class VisitProfileLoader {
 
       for (int i = 0; i < profile.musicSamples!.length; i++) {
         final sample = profile.musicSamples![i];
-        final index = i + 1; // 1-based indexing
+        final fileUrl = sample.getAbsoluteUrl(api.baseUrl);
 
-        tracks.add(
-          VisitProfileAudioTrack(
-            index: index,
-            title: '$userName audio $index',
-            artist: userName,
-            coverUrl: coverUrl,
-            fileUrl: sample.getAbsoluteUrl(api.baseUrl),
-          ),
-        );
+        // Only include mp3 files in audio tracks
+        if (fileUrl.toLowerCase().endsWith('.mp3')) {
+          final index = tracks.length + 1; // 1-based indexing for actual tracks
+
+          tracks.add(
+            VisitProfileAudioTrack(
+              index: index,
+              title: '$userName audio $index',
+              artist: userName,
+              coverUrl: coverUrl,
+              fileUrl: fileUrl,
+            ),
+          );
+        }
       }
     }
 
