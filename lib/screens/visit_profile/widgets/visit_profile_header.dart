@@ -69,10 +69,14 @@ class _VisitProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
           Image.network(
             profilePicUrl,
             fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(color: isDark ? AppColors.surfaceDarkGrey : Colors.grey[800]),
+            errorBuilder: (_, __, ___) => Container(
+              color: isDark ? AppColors.surfaceDarkGrey : Colors.grey[800],
+            ),
           )
         else
-          Container(color: isDark ? AppColors.surfaceDarkGrey : Colors.grey[800]),
+          Container(
+            color: isDark ? AppColors.surfaceDarkGrey : Colors.grey[800],
+          ),
 
         // 2. Gradient Overlay
         DecoratedBox(
@@ -81,20 +85,20 @@ class _VisitProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: isDark
-                ? [
-                    Colors.black.withAlpha(0),
-                    Colors.black.withAlpha(25),
-                    Colors.black.withAlpha(128),
-                    Colors.black.withAlpha(216),
-                    Colors.black.withAlpha(242),
-                  ]
-                : [
-                    Colors.black.withAlpha(0),
-                    Colors.black.withAlpha(25),
-                    Colors.black.withAlpha(128),
-                    Colors.black.withAlpha(216),
-                    Colors.black.withAlpha(242),
-                  ],
+                  ? [
+                      Colors.black.withAlpha(0),
+                      Colors.black.withAlpha(25),
+                      Colors.black.withAlpha(128),
+                      Colors.black.withAlpha(216),
+                      Colors.black.withAlpha(242),
+                    ]
+                  : [
+                      Colors.black.withAlpha(0),
+                      Colors.black.withAlpha(25),
+                      Colors.black.withAlpha(128),
+                      Colors.black.withAlpha(216),
+                      Colors.black.withAlpha(242),
+                    ],
               stops: [0.0, 0.3, 0.6, 0.85, 1.0],
             ),
           ),
@@ -149,15 +153,15 @@ class _VisitProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
                           Text(
                             data.profile.name ?? 'Unknown',
                             style: TextStyle(
-                              color: isDark ? AppColors.textWhite : Colors.white,
-                              fontSize: 32,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: -0.5,
+                              color: AppColors.textWhite.withAlpha(242),
+                              fontSize: 24,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.3,
                               height: 1.2,
                               shadows: [
                                 Shadow(
-                                  color: Colors.black54,
-                                  blurRadius: 8,
+                                  color: Colors.black.withAlpha(128),
+                                  blurRadius: 12,
                                   offset: Offset(0, 2),
                                 ),
                               ],
@@ -168,14 +172,15 @@ class _VisitProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
                             Text(
                               '${(data.profile as OtherUserProfileArtistDto).calculatedAge ?? ''}',
                               style: TextStyle(
-                                color: isDark ? AppColors.textWhite70 : Colors.white.withAlpha(230),
-                                fontSize: 32,
+                                color: AppColors.textWhite.withAlpha(242),
+                                fontSize: 24,
                                 fontWeight: FontWeight.w300,
+                                letterSpacing: 0.3,
                                 height: 1.2,
-                                shadows: const [
+                                shadows: [
                                   Shadow(
-                                    color: Colors.black54,
-                                    blurRadius: 8,
+                                    color: Colors.black.withAlpha(128),
+                                    blurRadius: 12,
                                     offset: Offset(0, 2),
                                   ),
                                 ],
@@ -192,7 +197,9 @@ class _VisitProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
                         Text(
                           data.locationString.toUpperCase(),
                           style: TextStyle(
-                            color: isDark ? AppColors.textWhite.withAlpha(242) : AppColors.textWhite.withAlpha(242),
+                            color: isDark
+                                ? AppColors.textWhite.withAlpha(242)
+                                : AppColors.textWhite.withAlpha(242),
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             letterSpacing: 1.0,
@@ -242,17 +249,6 @@ class _VisitProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
               ],
             ),
           ),
-
-        // 5. Back Button (Always visible, top left)
-        Positioned(
-          top: MediaQuery.of(context).padding.top + 8,
-          left: 8,
-          child: _GlassmorphicButton(
-            icon: Icons.arrow_back,
-            onTap: () => Navigator.of(context).pop(),
-            isDark: isDark,
-          ),
-        ),
       ],
     );
   }
@@ -273,40 +269,6 @@ class _VisitProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
 }
 
 // --- Helper Widgets ---
-
-class _GlassmorphicButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-  final bool isDark;
-
-  const _GlassmorphicButton({required this.icon, required this.onTap, this.isDark = false});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: isDark ? AppColors.surfaceDark.withAlpha(51) : Colors.white.withAlpha(51),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isDark ? AppColors.surfaceDark.withAlpha(102) : Colors.white.withAlpha(77),
-                width: 1,
-              ),
-            ),
-            child: Icon(icon, color: isDark ? AppColors.textWhite : Colors.white, size: 22),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class _GlassmorphicBadge extends StatelessWidget {
   final IconData icon;
@@ -332,7 +294,10 @@ class _GlassmorphicBadge extends StatelessWidget {
           decoration: BoxDecoration(
             color: isDark ? color.withAlpha(77) : color.withAlpha(77),
             borderRadius: BorderRadius.circular(30),
-            border: Border.all(color: isDark ? color.withAlpha(128) : color.withAlpha(128), width: 1),
+            border: Border.all(
+              color: isDark ? color.withAlpha(128) : color.withAlpha(128),
+              width: 1,
+            ),
             boxShadow: [
               BoxShadow(
                 color: isDark ? color.withAlpha(77) : color.withAlpha(77),
@@ -344,7 +309,11 @@ class _GlassmorphicBadge extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, color: isDark ? AppColors.textWhite : Colors.white, size: 12),
+              Icon(
+                icon,
+                color: isDark ? AppColors.textWhite : Colors.white,
+                size: 12,
+              ),
               const SizedBox(width: 6),
               Text(
                 text,
@@ -395,7 +364,10 @@ class _ActionButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           side: isPrimary
               ? BorderSide.none
-              : BorderSide(color: isDark ? color.withAlpha(128) : color, width: 1.5),
+              : BorderSide(
+                  color: isDark ? color.withAlpha(128) : color,
+                  width: 1.5,
+                ),
         ),
       ),
       icon: Icon(icon, size: 18),

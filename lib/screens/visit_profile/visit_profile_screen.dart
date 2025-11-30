@@ -188,25 +188,17 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
                   isLandscape &&
                   constraints.maxWidth > basePhoneWidth;
 
-              // Navigation visibility
-              final bool showSideNav = isFramed && isLandscape;
-              final bool showBottomNav =
-                  !isFramed || (isFramed && !isLandscape);
+              // Navigation visibility - removed for visit profile screen
+              final bool showSideNav = false;
+              final bool showBottomNav = false;
               final bool showWideHeader =
                   isFramed && constraints.maxWidth > 1100;
 
-              // Calculate final dimensions
+              // Calculate final dimensions - use FULL screen for centering
               double availableWidth = constraints.maxWidth;
               double availableHeight = constraints.maxHeight;
 
-              if (showSideNav) {
-                availableWidth -= 200;
-              }
-
-              if (showBottomNav && isFramed) {
-                availableHeight -= 100;
-              }
-
+              // Don't subtract bottom nav height - we want to center on full screen
               final double maxH = availableHeight * 0.95;
               final double hFromW = availableWidth * (16 / 9);
               final double phoneHeight = (hFromW < maxH) ? hFromW : maxH;
@@ -478,30 +470,32 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
 
               final Widget framedPhone = isFramed
                   ? Center(
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          maxHeight: phoneHeight,
-                          maxWidth: phoneWidth,
-                        ),
-                        child: AspectRatio(
-                          aspectRatio: 9 / 16,
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(36),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: isDark
-                                    ? AppColors.surfaceDark
-                                    : Colors.white,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.3),
-                                    blurRadius: 60,
-                                    offset: const Offset(0, 30),
-                                    spreadRadius: 8,
-                                  ),
-                                ],
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxHeight: phoneHeight,
+                            maxWidth: phoneWidth,
+                          ),
+                          child: AspectRatio(
+                            aspectRatio: 9 / 16,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(36),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? AppColors.surfaceDark
+                                      : Colors.white,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.3),
+                                      blurRadius: 60,
+                                      offset: const Offset(0, 30),
+                                      spreadRadius: 8,
+                                    ),
+                                  ],
+                                ),
+                                child: profileContent,
                               ),
-                              child: profileContent,
                             ),
                           ),
                         ),
@@ -543,21 +537,15 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
                         ),
                       ),
 
-                    // Main Content with Navigation
+                    // Main Content with Navigation - use Stack for absolute centering
                     Positioned.fill(
                       child: Row(
                         children: [
-                          if (showSideNav)
-                            const AppSideNav(current: SideNavItem.home),
-
                           Expanded(
-                            child: Column(
+                            child: Stack(
                               children: [
-                                Expanded(child: framedPhone),
-                                if (showBottomNav && isFramed)
-                                  const AppBottomNav(
-                                    current: BottomNavItem.home,
-                                  ),
+                                // Centered phone card
+                                Center(child: framedPhone),
                               ],
                             ),
                           ),
@@ -605,7 +593,7 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
               ),
               const SizedBox(height: 8),
               Text(
-                'View full $profileType',
+                'Is this your Soundmate?',
                 style: theme.textTheme.titleMedium?.copyWith(
                   color: Colors.white.withOpacity(0.85),
                   fontWeight: FontWeight.w500,

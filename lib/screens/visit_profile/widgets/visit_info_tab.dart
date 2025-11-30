@@ -25,18 +25,18 @@ class VisitInfoTab extends StatelessWidget {
         const SizedBox(height: 10),
 
         // About Section
-        _buildSectionTitle(context, 'About'),
-        const SizedBox(height: 8),
-        Text(
-          data.profile.description.isNotEmpty
-              ? data.profile.description
-              : "Looking for someone to jam with occasionally and for some touring opportunity!",
-          style: TextStyle(
-            fontSize: 14,
-            height: 1.45,
-            color: isDark ? AppColors.textWhite : AppColors.textDarkGrey,
+        if (data.profile.description.isNotEmpty) ...[
+          _buildSectionTitle(context, 'About'),
+          const SizedBox(height: 8),
+          Text(
+            data.profile.description,
+            style: TextStyle(
+              fontSize: 14,
+              height: 1.45,
+              color: isDark ? AppColors.textWhite : AppColors.textDarkGrey,
+            ),
           ),
-        ),
+        ],
         const SizedBox(height: 16),
 
         // Native Audio Player
