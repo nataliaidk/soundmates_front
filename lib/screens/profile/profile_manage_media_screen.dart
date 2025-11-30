@@ -329,11 +329,7 @@ class _ProfileManageMediaScreenState extends State<ProfileManageMediaScreen> {
         pageBuilder: (context, animation, secondaryAnimation) {
           return FadeTransition(
             opacity: animation,
-            child: InstagramPostViewer(
-              items: mediaItems,
-              initialIndex: index,
-              accentColor: Theme.of(context).primaryColor,
-            ),
+            child: InstagramPostViewer(items: mediaItems, initialIndex: index),
           );
         },
       ),
@@ -378,9 +374,7 @@ class _ProfileManageMediaScreenState extends State<ProfileManageMediaScreen> {
         backgroundColor: isDark ? AppColors.surfaceDark : null,
         title: Text(
           'Manage Media',
-          style: TextStyle(
-            color: isDark ? AppColors.textWhite : null,
-          ),
+          style: TextStyle(color: isDark ? AppColors.textWhite : null),
         ),
         leading: IconButton(
           icon: Icon(

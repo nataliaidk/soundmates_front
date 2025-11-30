@@ -5,7 +5,6 @@ import '../../shared/instagram_post_viewer.dart';
 import '../../shared/video_thumbnail.dart';
 import '../../../theme/app_design_system.dart';
 
-
 class VisitMediaTab extends StatelessWidget {
   final List<VisitProfileMediaItem> items;
 
@@ -27,7 +26,10 @@ class VisitMediaTab extends StatelessWidget {
             SizedBox(height: 16),
             Text(
               'No media shared yet',
-              style: TextStyle(color: isDark ? AppColors.textWhite70 : AppColors.textGrey, fontSize: 16),
+              style: TextStyle(
+                color: isDark ? AppColors.textWhite70 : AppColors.textGrey,
+                fontSize: 16,
+              ),
             ),
           ],
         ),
@@ -69,11 +71,8 @@ class VisitMediaTab extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => InstagramPostViewer(
-                  items: mediaItems,
-                  initialIndex: index,
-                  accentColor: AppColors.accentPurpleBlue,
-                ),
+                builder: (context) =>
+                    InstagramPostViewer(items: mediaItems, initialIndex: index),
               ),
             );
           },

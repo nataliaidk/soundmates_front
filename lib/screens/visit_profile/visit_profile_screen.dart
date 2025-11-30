@@ -248,8 +248,10 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
                         color: isDark
                             ? AppColors.surfaceDark
                             : AppColors.surfaceWhite,
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(32),
+                        borderRadius: BorderRadius.vertical(
+                          top: isFramed
+                              ? const Radius.circular(32)
+                              : Radius.zero,
                         ),
                       ),
                       // Lekki margines ujemny w oryginale, tu zerujemy dla czystości,
@@ -263,8 +265,10 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
                               color: isDark
                                   ? AppColors.surfaceDark
                                   : AppColors.surfaceWhite,
-                              borderRadius: const BorderRadius.vertical(
-                                top: Radius.circular(32),
+                              borderRadius: BorderRadius.vertical(
+                                top: isFramed
+                                    ? const Radius.circular(32)
+                                    : Radius.zero,
                               ),
                             ),
                             child: Column(

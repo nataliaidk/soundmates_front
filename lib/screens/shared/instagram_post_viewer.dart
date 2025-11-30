@@ -10,13 +10,12 @@ import '../../theme/app_design_system.dart';
 class InstagramPostViewer extends StatefulWidget {
   final List<MediaItem> items;
   final int initialIndex;
-  final Color accentColor;
+  final Color accentColor = AppColors.accentPurpleBlue;
 
   const InstagramPostViewer({
     super.key,
     required this.items,
     required this.initialIndex,
-    required this.accentColor,
   });
 
   @override
@@ -59,6 +58,7 @@ class _InstagramPostViewerState extends State<InstagramPostViewer> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return KeyboardListener(
       focusNode: _focusNode,
       autofocus: true,
@@ -72,7 +72,9 @@ class _InstagramPostViewerState extends State<InstagramPostViewer> {
         }
       },
       child: Scaffold(
-        backgroundColor: AppColors.surfaceWhite,
+        backgroundColor: isDark
+            ? AppColors.surfaceDark
+            : AppColors.surfaceWhite,
         body: Column(
           children: [
             // Top Bar (like Instagram)
@@ -81,39 +83,47 @@ class _InstagramPostViewerState extends State<InstagramPostViewer> {
               child: Container(
                 height: 56,
                 padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Row(
+                child: Stack(
                   children: [
-                    IconButton(
-                      icon: const Icon(
-                        Icons.close,
-                        color: AppColors.textBlack87,
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: IconButton(
+                        icon: Icon(
+                          Icons.close,
+                          color: isDark
+                              ? AppColors.textWhite
+                              : AppColors.textBlack87,
+                        ),
+                        onPressed: () => Navigator.pop(context),
                       ),
-                      onPressed: () => Navigator.pop(context),
                     ),
-                    const Spacer(),
-                    // Progress dots
-                    Expanded(
-                      flex: 3,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: List.generate(
-                          widget.items.length,
-                          (index) => Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 2),
-                            height: 3,
-                            width: 32,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(2),
-                              color: index == _currentIndex
-                                  ? widget.accentColor
-                                  : AppColors.borderLight,
+                    Align(
+                      alignment: Alignment.center,
+                      child: FractionallySizedBox(
+                        widthFactor: 0.6,
+                        child: Row(
+                          children: List.generate(
+                            widget.items.length,
+                            (index) => Expanded(
+                              child: Container(
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 2,
+                                ),
+                                height: 3,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(2),
+                                  color: index == _currentIndex
+                                      ? widget.accentColor
+                                      : (isDark
+                                            ? AppColors.surfaceDarkGrey
+                                            : AppColors.borderLight),
+                                ),
+                              ),
                             ),
                           ),
                         ),
                       ),
                     ),
-                    const Spacer(),
-                    const SizedBox(width: 48), // Balance the back button
                   ],
                 ),
               ),
@@ -284,15 +294,17 @@ class _MediaPostContentState extends State<_MediaPostContent> {
   }
 
   Widget _buildImageView() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.only(bottom: 48.0),
+      color: isDark ? AppColors.surfaceDark : Colors.white,
       child: PhotoView(
         imageProvider: NetworkImage(widget.item.url),
         minScale: PhotoViewComputedScale.contained,
         maxScale: PhotoViewComputedScale.covered * 2,
         initialScale: PhotoViewComputedScale.contained,
-        backgroundDecoration: const BoxDecoration(color: Colors.white),
+        backgroundDecoration: BoxDecoration(
+          color: isDark ? AppColors.surfaceDark : Colors.white,
+        ),
         errorBuilder: (context, error, stackTrace) {
           return const Center(
             child: Icon(
@@ -307,10 +319,11 @@ class _MediaPostContentState extends State<_MediaPostContent> {
   }
 
   Widget _buildVideoView() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     if (_hasError) {
       return Container(
-        color: Colors.white,
-        child: const Center(
+        color: isDark ? AppColors.surfaceDark : Colors.white,
+        child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -318,7 +331,9 @@ class _MediaPostContentState extends State<_MediaPostContent> {
               SizedBox(height: 16),
               Text(
                 'Failed to load video',
-                style: TextStyle(color: AppColors.textBlack87),
+                style: TextStyle(
+                  color: isDark ? AppColors.textWhite : AppColors.textBlack87,
+                ),
               ),
             ],
           ),
@@ -328,7 +343,7 @@ class _MediaPostContentState extends State<_MediaPostContent> {
 
     if (!_isInitialized || _videoController == null) {
       return Container(
-        color: Colors.white,
+        color: isDark ? AppColors.surfaceDark : Colors.white,
         child: const Center(
           child: CircularProgressIndicator(color: AppColors.textGrey),
         ),
@@ -336,7 +351,7 @@ class _MediaPostContentState extends State<_MediaPostContent> {
     }
 
     return Container(
-      color: Colors.white,
+      color: isDark ? AppColors.surfaceDark : Colors.white,
       child: Stack(
         alignment: Alignment.center,
         children: [
@@ -386,10 +401,11 @@ class _MediaPostContentState extends State<_MediaPostContent> {
   }
 
   Widget _buildAudioView() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     if (_hasError) {
       return Container(
-        color: Colors.white,
-        child: const Center(
+        color: isDark ? AppColors.surfaceDark : Colors.white,
+        child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -397,7 +413,9 @@ class _MediaPostContentState extends State<_MediaPostContent> {
               SizedBox(height: 16),
               Text(
                 'Failed to load audio',
-                style: TextStyle(color: AppColors.textBlack87),
+                style: TextStyle(
+                  color: isDark ? AppColors.textWhite : AppColors.textBlack87,
+                ),
               ),
             ],
           ),
@@ -407,7 +425,7 @@ class _MediaPostContentState extends State<_MediaPostContent> {
 
     if (!_isInitialized || _audioPlayer == null) {
       return Container(
-        color: Colors.white,
+        color: isDark ? AppColors.surfaceDark : Colors.white,
         child: const Center(
           child: CircularProgressIndicator(color: AppColors.textGrey),
         ),
@@ -415,7 +433,7 @@ class _MediaPostContentState extends State<_MediaPostContent> {
     }
 
     return Container(
-      color: Colors.white,
+      color: isDark ? AppColors.surfaceDark : Colors.white,
       child: Center(
         child: Padding(
           padding: const EdgeInsets.all(32.0),
@@ -477,15 +495,19 @@ class _MediaPostContentState extends State<_MediaPostContent> {
                           children: [
                             Text(
                               _formatDuration(position),
-                              style: const TextStyle(
-                                color: Colors.black54,
+                              style: TextStyle(
+                                color: isDark
+                                    ? AppColors.textWhite70
+                                    : Colors.black54,
                                 fontSize: 12,
                               ),
                             ),
                             Text(
                               _formatDuration(duration),
-                              style: const TextStyle(
-                                color: Colors.black54,
+                              style: TextStyle(
+                                color: isDark
+                                    ? AppColors.textWhite70
+                                    : Colors.black54,
                                 fontSize: 12,
                               ),
                             ),
@@ -510,9 +532,11 @@ class _MediaPostContentState extends State<_MediaPostContent> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       IconButton(
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.replay_10,
-                          color: AppColors.textBlack87,
+                          color: isDark
+                              ? AppColors.textWhite
+                              : AppColors.textBlack87,
                           size: 32,
                         ),
                         onPressed: () {
@@ -559,9 +583,11 @@ class _MediaPostContentState extends State<_MediaPostContent> {
                       ),
                       const SizedBox(width: 24),
                       IconButton(
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.forward_10,
-                          color: AppColors.textBlack87,
+                          color: isDark
+                              ? AppColors.textWhite
+                              : AppColors.textBlack87,
                           size: 32,
                         ),
                         onPressed: () {

@@ -109,16 +109,25 @@ class _NativeAudioPlayerState extends State<NativeAudioPlayer> {
     final currentTrack = widget.tracks[_currentTrackIndex];
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppTheme.getAdaptiveSurface(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.getAdaptiveGrey(context, lightShade: 200, darkShade: 800), width: 1),
+        border: Border.all(
+          color: AppTheme.getAdaptiveGrey(
+            context,
+            lightShade: 200,
+            darkShade: 800,
+          ),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: (isDark ? Colors.black : Colors.black).withOpacity(isDark ? 0.3 : 0.05),
+            color: (isDark ? Colors.black : Colors.black).withOpacity(
+              isDark ? 0.3 : 0.05,
+            ),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -130,10 +139,10 @@ class _NativeAudioPlayerState extends State<NativeAudioPlayer> {
           // Track Title
           Text(
             currentTrack.title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF1A1A1A),
+              color: isDark ? AppColors.textWhite : const Color(0xFF1A1A1A),
             ),
           ),
           const SizedBox(height: 16),
@@ -155,7 +164,11 @@ class _NativeAudioPlayerState extends State<NativeAudioPlayer> {
                     borderRadius: BorderRadius.circular(4),
                     child: LinearProgressIndicator(
                       value: progress.clamp(0.0, 1.0),
-                      backgroundColor: AppTheme.getAdaptiveGrey(context, lightShade: 200, darkShade: 800),
+                      backgroundColor: AppTheme.getAdaptiveGrey(
+                        context,
+                        lightShade: 200,
+                        darkShade: 800,
+                      ),
                       valueColor: AlwaysStoppedAnimation<Color>(
                         widget.accentColor,
                       ),
@@ -169,11 +182,25 @@ class _NativeAudioPlayerState extends State<NativeAudioPlayer> {
                     children: [
                       Text(
                         _formatDuration(position),
-                        style: TextStyle(color: AppTheme.getAdaptiveGrey(context, lightShade: 600, darkShade: 400), fontSize: 12),
+                        style: TextStyle(
+                          color: AppTheme.getAdaptiveGrey(
+                            context,
+                            lightShade: 600,
+                            darkShade: 400,
+                          ),
+                          fontSize: 12,
+                        ),
                       ),
                       Text(
                         _formatDuration(duration),
-                        style: TextStyle(color: AppTheme.getAdaptiveGrey(context, lightShade: 600, darkShade: 400), fontSize: 12),
+                        style: TextStyle(
+                          color: AppTheme.getAdaptiveGrey(
+                            context,
+                            lightShade: 600,
+                            darkShade: 400,
+                          ),
+                          fontSize: 12,
+                        ),
                       ),
                     ],
                   ),
@@ -200,7 +227,11 @@ class _NativeAudioPlayerState extends State<NativeAudioPlayer> {
                       Icons.skip_previous,
                       color: _currentTrackIndex > 0
                           ? AppTheme.getAdaptiveText(context)
-                          : AppTheme.getAdaptiveGrey(context, lightShade: 400, darkShade: 600),
+                          : AppTheme.getAdaptiveGrey(
+                              context,
+                              lightShade: 400,
+                              darkShade: 600,
+                            ),
                       size: 32,
                     ),
                     onPressed: _currentTrackIndex > 0 ? _playPrevious : null,
@@ -257,7 +288,11 @@ class _NativeAudioPlayerState extends State<NativeAudioPlayer> {
                       Icons.skip_next,
                       color: _currentTrackIndex < widget.tracks.length - 1
                           ? AppTheme.getAdaptiveText(context)
-                          : AppTheme.getAdaptiveGrey(context, lightShade: 400, darkShade: 600),
+                          : AppTheme.getAdaptiveGrey(
+                              context,
+                              lightShade: 400,
+                              darkShade: 600,
+                            ),
                       size: 32,
                     ),
                     onPressed: _currentTrackIndex < widget.tracks.length - 1
@@ -279,7 +314,14 @@ class _NativeAudioPlayerState extends State<NativeAudioPlayer> {
       decoration: BoxDecoration(
         color: AppTheme.getAdaptiveSurface(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.getAdaptiveGrey(context, lightShade: 200, darkShade: 800), width: 1),
+        border: Border.all(
+          color: AppTheme.getAdaptiveGrey(
+            context,
+            lightShade: 200,
+            darkShade: 800,
+          ),
+          width: 1,
+        ),
       ),
       child: Center(
         child: CircularProgressIndicator(color: widget.accentColor),
@@ -293,7 +335,14 @@ class _NativeAudioPlayerState extends State<NativeAudioPlayer> {
       decoration: BoxDecoration(
         color: AppTheme.getAdaptiveSurface(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.getAdaptiveGrey(context, lightShade: 200, darkShade: 800), width: 1),
+        border: Border.all(
+          color: AppTheme.getAdaptiveGrey(
+            context,
+            lightShade: 200,
+            darkShade: 800,
+          ),
+          width: 1,
+        ),
       ),
       child: Column(
         children: [
@@ -301,7 +350,13 @@ class _NativeAudioPlayerState extends State<NativeAudioPlayer> {
           const SizedBox(height: 16),
           Text(
             'Failed to load audio',
-            style: TextStyle(color: AppTheme.getAdaptiveGrey(context, lightShade: 700, darkShade: 300)),
+            style: TextStyle(
+              color: AppTheme.getAdaptiveGrey(
+                context,
+                lightShade: 700,
+                darkShade: 300,
+              ),
+            ),
           ),
         ],
       ),

@@ -64,7 +64,7 @@ class _ProfileViewTabsState extends State<ProfileViewTabs> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return SingleChildScrollView(
       padding: const EdgeInsets.only(bottom: 100), // Space for navbar
       child: Column(
@@ -94,7 +94,9 @@ class _ProfileViewTabsState extends State<ProfileViewTabs> {
                       ),
                       child: CircleAvatar(
                         radius: 60,
-                        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.accentPurpleSoft,
+                        backgroundColor: isDark
+                            ? AppColors.surfaceDark
+                            : AppColors.accentPurpleSoft,
                         backgroundImage: avatarUrl != null
                             ? NetworkImage(avatarUrl)
                             : null,
@@ -102,7 +104,11 @@ class _ProfileViewTabsState extends State<ProfileViewTabs> {
                             ? Icon(
                                 Icons.person,
                                 size: 60,
-                                color: AppTheme.getAdaptiveGrey(context, lightShade: 600, darkShade: 400),
+                                color: AppTheme.getAdaptiveGrey(
+                                  context,
+                                  lightShade: 600,
+                                  darkShade: 400,
+                                ),
                               )
                             : null,
                       ),
@@ -133,7 +139,11 @@ class _ProfileViewTabsState extends State<ProfileViewTabs> {
                             Icon(
                               Icons.location_on,
                               size: 16,
-                              color: AppTheme.getAdaptiveGrey(context, lightShade: 600, darkShade: 400),
+                              color: AppTheme.getAdaptiveGrey(
+                                context,
+                                lightShade: 600,
+                                darkShade: 400,
+                              ),
                             ),
                             const SizedBox(width: 4),
                             Expanded(
@@ -144,7 +154,11 @@ class _ProfileViewTabsState extends State<ProfileViewTabs> {
                                 ].join(', '),
                                 style: TextStyle(
                                   fontSize: 14,
-                                  color: AppTheme.getAdaptiveGrey(context, lightShade: 600, darkShade: 400),
+                                  color: AppTheme.getAdaptiveGrey(
+                                    context,
+                                    lightShade: 600,
+                                    darkShade: 400,
+                                  ),
                                 ),
                               ),
                             ),
@@ -187,7 +201,11 @@ class _ProfileViewTabsState extends State<ProfileViewTabs> {
                       decoration: BoxDecoration(
                         color: _selectedTab == 0
                             ? AppColors.accentPurple
-                            : AppTheme.getAdaptiveGrey(context, lightShade: 200, darkShade: 800),
+                            : AppTheme.getAdaptiveGrey(
+                                context,
+                                lightShade: 200,
+                                darkShade: 800,
+                              ),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Center(
@@ -213,7 +231,11 @@ class _ProfileViewTabsState extends State<ProfileViewTabs> {
                       decoration: BoxDecoration(
                         color: _selectedTab == 1
                             ? AppColors.accentPurple
-                            : AppTheme.getAdaptiveGrey(context, lightShade: 200, darkShade: 800),
+                            : AppTheme.getAdaptiveGrey(
+                                context,
+                                lightShade: 200,
+                                darkShade: 800,
+                              ),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Center(
@@ -244,7 +266,9 @@ class _ProfileViewTabsState extends State<ProfileViewTabs> {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: (isDark ? Colors.black : Colors.black).withOpacity(isDark ? 0.3 : 0.05),
+                    color: (isDark ? Colors.black : Colors.black).withOpacity(
+                      isDark ? 0.3 : 0.05,
+                    ),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -263,7 +287,7 @@ class _ProfileViewTabsState extends State<ProfileViewTabs> {
 
   Widget _buildYourInfoTab() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     // Get all categories with tags and sort alphabetically
     final allCategories =
         widget.tagGroups.keys
@@ -286,7 +310,11 @@ class _ProfileViewTabsState extends State<ProfileViewTabs> {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.getAdaptiveGrey(context, lightShade: 600, darkShade: 400),
+                    color: AppTheme.getAdaptiveGrey(
+                      context,
+                      lightShade: 600,
+                      darkShade: 400,
+                    ),
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -295,7 +323,11 @@ class _ProfileViewTabsState extends State<ProfileViewTabs> {
                   widget.description,
                   style: TextStyle(
                     fontSize: 15,
-                    color: AppTheme.getAdaptiveGrey(context, lightShade: 800, darkShade: 200),
+                    color: AppTheme.getAdaptiveGrey(
+                      context,
+                      lightShade: 800,
+                      darkShade: 200,
+                    ),
                     height: 1.5,
                   ),
                 ),
@@ -321,7 +353,14 @@ class _ProfileViewTabsState extends State<ProfileViewTabs> {
               if (widget.tagGroups.isEmpty)
                 Text(
                   'No tags added yet',
-                  style: TextStyle(fontSize: 14, color: AppTheme.getAdaptiveGrey(context, lightShade: 500, darkShade: 500)),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppTheme.getAdaptiveGrey(
+                      context,
+                      lightShade: 500,
+                      darkShade: 500,
+                    ),
+                  ),
                 )
               else
                 for (final category in allCategories)
@@ -332,7 +371,11 @@ class _ProfileViewTabsState extends State<ProfileViewTabs> {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: AppTheme.getAdaptiveGrey(context, lightShade: 600, darkShade: 400),
+                        color: AppTheme.getAdaptiveGrey(
+                          context,
+                          lightShade: 600,
+                          darkShade: 400,
+                        ),
                         letterSpacing: 0.5,
                       ),
                     ),
@@ -372,7 +415,11 @@ class _ProfileViewTabsState extends State<ProfileViewTabs> {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.getAdaptiveGrey(context, lightShade: 600, darkShade: 400),
+                    color: AppTheme.getAdaptiveGrey(
+                      context,
+                      lightShade: 600,
+                      darkShade: 400,
+                    ),
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -386,7 +433,9 @@ class _ProfileViewTabsState extends State<ProfileViewTabs> {
                           width: 48,
                           height: 48,
                           decoration: BoxDecoration(
-                            color: isDark ? AppColors.surfaceDarkAlt : AppColors.accentPurpleSoft,
+                            color: isDark
+                                ? AppColors.surfaceDarkAlt
+                                : AppColors.accentPurpleSoft,
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
@@ -411,7 +460,11 @@ class _ProfileViewTabsState extends State<ProfileViewTabs> {
                               Text(
                                 '${_bandRoleName(m.bandRoleId)} • ${m.age} y/o',
                                 style: TextStyle(
-                                  color: AppTheme.getAdaptiveGrey(context, lightShade: 600, darkShade: 400),
+                                  color: AppTheme.getAdaptiveGrey(
+                                    context,
+                                    lightShade: 600,
+                                    darkShade: 400,
+                                  ),
                                   fontSize: 13,
                                 ),
                               ),
@@ -432,7 +485,7 @@ class _ProfileViewTabsState extends State<ProfileViewTabs> {
 
   Widget _buildMultimediaTab() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     // Combine all media into one list for grid display
     final List<_MediaItem> allMedia = [];
 
@@ -466,7 +519,11 @@ class _ProfileViewTabsState extends State<ProfileViewTabs> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppTheme.getAdaptiveGrey(context, lightShade: 100, darkShade: 850),
+            color: AppTheme.getAdaptiveGrey(
+              context,
+              lightShade: 100,
+              darkShade: 850,
+            ),
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(16),
               topRight: Radius.circular(16),
@@ -514,12 +571,22 @@ class _ProfileViewTabsState extends State<ProfileViewTabs> {
                         Icon(
                           Icons.photo_library,
                           size: 64,
-                          color: AppTheme.getAdaptiveGrey(context, lightShade: 400, darkShade: 600),
+                          color: AppTheme.getAdaptiveGrey(
+                            context,
+                            lightShade: 400,
+                            darkShade: 600,
+                          ),
                         ),
                         const SizedBox(height: 12),
                         Text(
                           'No media yet',
-                          style: TextStyle(color: AppTheme.getAdaptiveGrey(context, lightShade: 600, darkShade: 400)),
+                          style: TextStyle(
+                            color: AppTheme.getAdaptiveGrey(
+                              context,
+                              lightShade: 600,
+                              darkShade: 400,
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -545,7 +612,13 @@ class _ProfileViewTabsState extends State<ProfileViewTabs> {
                         decoration: BoxDecoration(
                           color: AppTheme.getAdaptiveSurface(context),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppTheme.getAdaptiveGrey(context, lightShade: 300, darkShade: 700)),
+                          border: Border.all(
+                            color: AppTheme.getAdaptiveGrey(
+                              context,
+                              lightShade: 300,
+                              darkShade: 700,
+                            ),
+                          ),
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(12),
@@ -561,7 +634,11 @@ class _ProfileViewTabsState extends State<ProfileViewTabs> {
                                     return Center(
                                       child: Icon(
                                         Icons.error,
-                                        color: AppTheme.getAdaptiveGrey(context, lightShade: 400, darkShade: 600),
+                                        color: AppTheme.getAdaptiveGrey(
+                                          context,
+                                          lightShade: 400,
+                                          darkShade: 600,
+                                        ),
                                       ),
                                     );
                                   },
@@ -572,7 +649,9 @@ class _ProfileViewTabsState extends State<ProfileViewTabs> {
                               else
                                 // Audio files
                                 Container(
-                                  color: isDark ? AppColors.surfaceDarkAlt : AppColors.accentPurpleSoft,
+                                  color: isDark
+                                      ? AppColors.surfaceDarkAlt
+                                      : AppColors.accentPurpleSoft,
                                   child: Center(
                                     child: Icon(
                                       Icons.audiotrack,
@@ -724,11 +803,7 @@ class _ProfileViewTabsState extends State<ProfileViewTabs> {
         pageBuilder: (context, animation, secondaryAnimation) {
           return FadeTransition(
             opacity: animation,
-            child: InstagramPostViewer(
-              items: mediaItems,
-              initialIndex: index,
-              accentColor: Theme.of(context).primaryColor,
-            ),
+            child: InstagramPostViewer(items: mediaItems, initialIndex: index),
           );
         },
       ),

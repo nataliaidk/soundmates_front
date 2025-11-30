@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
+import '../../theme/app_design_system.dart';
 
 class VideoThumbnail extends StatefulWidget {
   final String videoUrl;
@@ -78,15 +79,16 @@ class _VideoThumbnailState extends State<VideoThumbnail> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     if (_hasError) {
       return Container(
-        color: Colors.grey[300],
+        color: isDark ? AppColors.surfaceDarkAlt : Colors.grey[300],
         child: const Icon(Icons.videocam_off, color: Colors.grey, size: 32),
       );
     }
     if (!_initialized || _controller == null) {
       return Container(
-        color: Colors.grey[200],
+        color: isDark ? AppColors.surfaceDark : Colors.grey[200],
         child: const Center(
           child: SizedBox(
             width: 20,
