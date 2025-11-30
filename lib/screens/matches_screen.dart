@@ -221,28 +221,32 @@ class _MatchesScreenState extends State<MatchesScreen> {
         .toList();
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDesktop = MediaQuery.of(context).size.width > 900;
+
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDarkAlt : AppColors.backgroundLight,
-      appBar: AppBar(
-        backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
-        elevation: 0,
-        automaticallyImplyLeading: false, // No back arrow on navbar screen
-        title: Text(
-          'Messages',
-          style: AppTextStyles.appBarTitle.copyWith(
-            color: isDark ? AppColors.textWhite : AppColors.textPrimary,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(
-              Icons.settings_outlined,
-              color: AppColors.textWhite,
+      backgroundColor: isDark ? AppColors.backgroundDarkAlt : AppColors.surfaceDark,
+      appBar: isDesktop 
+          ? null 
+          : AppBar(
+              backgroundColor: AppColors.surfaceDark,
+              elevation: 0,
+              automaticallyImplyLeading: false, // No back arrow on navbar screen
+              title: Text(
+                'Messages',
+                style: AppTextStyles.appBarTitle.copyWith(
+                  color: AppColors.textWhite,
+                ),
+              ),
+              actions: [
+                IconButton(
+                  icon: const Icon(
+                    Icons.settings_outlined,
+                    color: AppColors.textWhite,
+                  ),
+                  onPressed: () => Navigator.pushNamed(context, '/settings'),
+                ),
+              ],
             ),
-            onPressed: () => Navigator.pushNamed(context, '/settings'),
-          ),
-        ],
-      ),
       body: LayoutBuilder(
         builder: (context, constraints) {
           if (constraints.maxWidth > 900) {
@@ -254,12 +258,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
                       flex: 62,
                       child: Container(
                         decoration: BoxDecoration(
-                          color: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
-                          border: Border(
-                            right: BorderSide(
-                              color: isDark ? Colors.white10 : Colors.grey.shade200,
-                            ),
-                          ),
+                          color: isDark ? AppColors.backgroundDark : AppColors.surfaceDark,
                         ),
                         child: _buildContent(conversations, isDesktop: true),
                       ),
@@ -305,7 +304,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return _loading
         ? Container(
-            color: isDark ? AppColors.backgroundDarkAlt : AppColors.backgroundLight,
+            color: isDark ? AppColors.backgroundDarkAlt : AppColors.surfaceDark,
             child: const PulsingLogoLoader(
               message: 'Loading your matches...',
               size: 140,
@@ -314,19 +313,29 @@ class _MatchesScreenState extends State<MatchesScreen> {
         : Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  'Recent Matches',
-                  style: isDesktop 
-                      ? AppTextStyles.sectionTitle.copyWith(
-                          color: isDark ? AppColors.textWhite : Colors.black87,
-                        )
-                      : AppTextStyles.sectionTitle.copyWith(
-                          color: isDark ? AppColors.textWhite : AppColors.textPrimary,
+              if (isDesktop)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Messages',
+                        style: AppTextStyles.appBarTitle.copyWith(
+                          color: AppColors.textWhite,
                         ),
+                      ),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.settings_outlined,
+                          color: AppColors.textWhite,
+                        ),
+                        onPressed: () => Navigator.pushNamed(context, '/settings'),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+              const SizedBox(height: 16),
               SizedBox(
                 height: 90,
                 child: ListView.builder(
@@ -484,7 +493,7 @@ class _RecentMatchCard extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: AppTextStyles.recentMatchName.copyWith(
-                color: AppTheme.getTextColor(context),
+                color: AppColors.textWhite,
               ),
             ),
           ],
@@ -535,6 +544,7 @@ class _MatchListItem extends StatelessWidget {
         : '';
 
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: () async {
         await Navigator.push(
           context,

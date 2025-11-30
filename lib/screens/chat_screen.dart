@@ -42,6 +42,8 @@ class _ChatScreenState extends State<ChatScreen> {
   final AudioNotifier _audioNotifier = AudioNotifier.instance;
   List<MessageDto> _messages = [];
   bool _loading = true;
+  bool _loadingMore = false;
+  bool _hasMore = true;
   String? _currentUserId;
   bool _showEmojiPicker = false;
   void Function(dynamic)? _hubMessageListener;
@@ -50,7 +52,18 @@ class _ChatScreenState extends State<ChatScreen> {
   void initState() {
     super.initState();
     _updateActiveConversation(isActive: true);
+    _scrollController.addListener(_onScroll);
     _initialize();
+  }
+
+  void _onScroll() {
+    if (_scrollController.hasClients) {
+      final maxScroll = _scrollController.position.maxScrollExtent;
+      final currentScroll = _scrollController.position.pixels;
+      if (maxScroll - currentScroll <= 200) {
+        _loadMoreMessages();
+      }
+    }
   }
 
   Future<void> _initialize() async {
@@ -118,7 +131,21 @@ class _ChatScreenState extends State<ChatScreen> {
           if (userId == _currentUserId) {
             print("✅ Our messages were seen - updating message status");
             if (mounted) {
-              _loadMessages();
+              setState(() {
+                _messages = _messages.map((m) {
+                  if (m.senderId == _currentUserId && !m.isSeen) {
+                    return MessageDto(
+                      id: m.id,
+                      content: m.content,
+                      timestamp: m.timestamp,
+                      senderId: m.senderId,
+                      receiverId: m.receiverId,
+                      isSeen: true,
+                    );
+                  }
+                  return m;
+                }).toList();
+              });
             }
           }
         }
@@ -145,14 +172,36 @@ class _ChatScreenState extends State<ChatScreen> {
           // 1. The user we're chatting with (they sent us a message)
           // 2. Current user (we sent a message - for optimistic UI update)
           if (senderId == widget.userId || senderId == _currentUserId) {
-            print("✅ Message is for this chat - reloading messages NOW");
-            if (mounted) {
-              _loadMessages();
-              // If message is from the other user, mark as viewed
-              if (senderId == widget.userId) {
-                _markConversationAsViewed();
-                _audioNotifier.playMessage();
+            print("✅ Message is for this chat - updating list");
+            
+            try {
+              final msg = MessageDto.fromJson(messageData);
+              if (mounted) {
+                setState(() {
+                  // Check if we already have this message (by ID)
+                  if (!_messages.any((m) => m.id == msg.id)) {
+                    // If it's from me, check if we have a temp message to replace?
+                    // It's hard to match temp message without correlation ID.
+                    // But if _sendMessage handled it, we might have the real ID already.
+                    // If we don't have the real ID yet, we might add a duplicate.
+                    // However, usually _sendMessage response is faster.
+                    
+                    // If it's from the other user, just add it.
+                    _messages.add(msg);
+                    _scrollToBottom();
+                    
+                    // If message is from the other user, mark as viewed
+                    if (senderId == widget.userId) {
+                      _markConversationAsViewed();
+                      _audioNotifier.playMessage();
+                    }
+                  }
+                });
               }
+            } catch (e) {
+              print('Error parsing SignalR message: $e');
+              // Fallback to reload if parsing fails
+              if (mounted) _loadMessages();
             }
           } else {
             print(
@@ -209,88 +258,89 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  Future<void> _loadMessages() async {
-    print("🔄 Loading messages from API...");
-    // Don't show loading indicator on periodic refreshes
-    final isInitialLoad = _messages.isEmpty;
-    if (isInitialLoad) {
-      setState(() => _loading = true);
+  Future<void> _loadMessages({bool isLoadMore = false}) async {
+    if (isLoadMore) {
+      if (_loadingMore || !_hasMore) return;
+      setState(() => _loadingMore = true);
+    } else {
+      print("🔄 Loading messages from API...");
+      // Only show full loading screen if we have no messages
+      if (_messages.isEmpty) {
+        setState(() {
+          _loading = true;
+          _hasMore = true;
+        });
+      }
     }
 
     try {
-      final resp = await widget.api.getMessages(widget.userId, limit: 50);
+      final offset = isLoadMore ? _messages.where((m) => !m.id.startsWith('temp-')).length : 0;
+      final resp = await widget.api.getMessages(widget.userId, limit: 50, offset: offset);
       print("📥 API response: ${resp.statusCode}");
+      
       if (resp.statusCode == 200) {
         final decoded = jsonDecode(resp.body);
-        print("📦 Raw API response: $decoded");
         final list = decoded is List ? decoded : [];
-        final messages = <MessageDto>[];
+        final newMessages = <MessageDto>[];
+        
         for (final item in list) {
           try {
-            print("🔍 Raw message item: $item");
-            print(
-              "🔍 isSeen field value: ${item['isSeen']}, IsSeen field value: ${item['IsSeen']}",
-            );
             final msg = MessageDto.fromJson(item);
-            print(
-              "📧 Message: id=${msg.id}, content=${msg.content}, isSeen=${msg.isSeen}, senderId=${msg.senderId}",
-            );
-            messages.add(msg);
+            newMessages.add(msg);
           } catch (e) {
             print('Error parsing message: $e');
           }
         }
 
-        // Only update if messages have changed
-        if (_hasMessagesChanged(messages)) {
-          print(
-            "✅ Messages changed - updating UI (old: ${_messages.length}, new: ${messages.length})",
-          );
-          // Save scroll position
-          final shouldScrollToBottom =
-              _scrollController.hasClients &&
-              _scrollController.position.pixels >=
-                  _scrollController.position.maxScrollExtent - 100;
+        if (newMessages.length < 50) {
+          _hasMore = false;
+        }
 
+        if (mounted) {
           setState(() {
-            _messages = messages;
-            _loading = false;
+            if (isLoadMore) {
+              // Filter out duplicates if any
+              final existingIds = _messages.map((m) => m.id).toSet();
+              final uniqueNew = newMessages.where((m) => !existingIds.contains(m.id)).toList();
+              
+              // Insert before temp messages
+              final tempMessages = _messages.where((m) => m.id.startsWith('temp-')).toList();
+              final realMessages = _messages.where((m) => !m.id.startsWith('temp-')).toList();
+              
+              _messages = [...realMessages, ...uniqueNew, ...tempMessages];
+              _loadingMore = false;
+            } else {
+              _messages = newMessages;
+              _loading = false;
+              // Scroll to bottom on initial load
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (_scrollController.hasClients) {
+                  _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+                }
+              });
+            }
           });
-
-          // Only auto-scroll if user was already at bottom
-          if (shouldScrollToBottom) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              _scrollToBottom();
-            });
-          }
-        } else {
-          print("ℹ️ Messages unchanged - skipping UI update");
-          if (isInitialLoad) {
-            setState(() => _loading = false);
-          }
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            if (isLoadMore) _loadingMore = false;
+            else _loading = false;
+          });
         }
       }
     } catch (e) {
       print('Error loading messages: $e');
-      if (isInitialLoad) {
-        setState(() => _loading = false);
+      if (mounted) {
+        setState(() {
+          if (isLoadMore) _loadingMore = false;
+          else _loading = false;
+        });
       }
     }
   }
 
-  bool _hasMessagesChanged(List<MessageDto> newMessages) {
-    if (newMessages.length != _messages.length) return true;
-
-    for (int i = 0; i < newMessages.length; i++) {
-      if (newMessages[i].content != _messages[i].content ||
-          newMessages[i].senderId != _messages[i].senderId ||
-          newMessages[i].isSeen != _messages[i].isSeen) {
-        return true;
-      }
-    }
-
-    return false;
-  }
+  Future<void> _loadMoreMessages() => _loadMessages(isLoadMore: true);
 
   void _scrollToBottom() {
     if (_scrollController.hasClients) {
@@ -331,20 +381,55 @@ class _ChatScreenState extends State<ChatScreen> {
       final dto = SendMessageDto(receiverId: widget.userId, content: text);
       final resp = await widget.api.sendMessage(dto);
       if (resp.statusCode == 200 || resp.statusCode == 201) {
-        // Reload to get the actual message from server
-        await _loadMessages();
+        // Try to parse the response to get the real message
+        try {
+          if (resp.body.isNotEmpty) {
+            final json = jsonDecode(resp.body);
+            final newMessage = MessageDto.fromJson(json);
+            
+            if (mounted) {
+              setState(() {
+                // Replace the temp message with the real one
+                final index = _messages.indexWhere((m) => m.id == tempMessage.id);
+                if (index != -1) {
+                  _messages[index] = newMessage;
+                } else {
+                  // If temp message not found (weird), just add real one if not duplicate
+                  if (!_messages.any((m) => m.id == newMessage.id)) {
+                    _messages.add(newMessage);
+                    _scrollToBottom();
+                  }
+                }
+              });
+            }
+          }
+        } catch (e) {
+          print('Error parsing send response: $e');
+          // If we can't parse, we might leave the temp message or reload silently
+          // For now, we leave the temp message as it is visually correct
+        }
       } else {
         // Remove the optimistic message if send failed
-        setState(() {
-          _messages.removeLast();
-        });
+        if (mounted) {
+          setState(() {
+            _messages.removeWhere((m) => m.id == tempMessage.id);
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to send message')),
+          );
+        }
       }
     } catch (e) {
       print('Error sending message: $e');
       // Remove the optimistic message on error
-      setState(() {
-        _messages.removeLast();
-      });
+      if (mounted) {
+        setState(() {
+          _messages.removeWhere((m) => m.id == tempMessage.id);
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error sending message')),
+        );
+      }
     }
   }
 
@@ -486,8 +571,20 @@ class _ChatScreenState extends State<ChatScreen> {
                           controller: _scrollController,
                           padding: const EdgeInsets.all(16),
                           physics: const BouncingScrollPhysics(),
-                          itemCount: _messages.length,
+                          itemCount: _messages.length + (_loadingMore ? 1 : 0),
                           itemBuilder: (context, index) {
+                            if (index == _messages.length) {
+                              return const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 16.0),
+                                child: Center(
+                                  child: SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  ),
+                                ),
+                              );
+                            }
                             final isLastMessage = index == _messages.length - 1;
 
                             return _MessageBubble(

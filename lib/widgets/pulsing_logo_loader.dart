@@ -78,10 +78,13 @@ class _PulsingLogoLoaderState extends State<PulsingLogoLoader>
                         ),
                       ],
                     ),
-                    child: ClipOval(
-                      child: Image.asset(
-                        'lib/assets/logo.png',
-                        fit: BoxFit.cover,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: ClipOval(
+                        child: Image.asset(
+                          'lib/assets/logo.png',
+                          fit: BoxFit.contain,
+                        ),
                       ),
                     ),
                   ),

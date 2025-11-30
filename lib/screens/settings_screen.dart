@@ -51,43 +51,40 @@ class SettingsScreen extends StatelessWidget {
           divider,
           const SizedBox(height: 12),
           // Dark Mode
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Dark Mode',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                        color: isDark ? AppColors.textWhite : AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      themeProvider.isDarkMode 
-                          ? 'Dark mode enabled' 
-                          : 'Light mode enabled',
-                      style: TextStyle(
-                        color: isDark 
-                            ? AppColors.textWhite70 
-                            : AppColors.textGrey,
-                        fontSize: 12,
-                        letterSpacing: 0.3,
-                      ),
-                    ),
-                  ],
-                ),
+          ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+            visualDensity: VisualDensity.compact,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            leading: Icon(
+              Icons.dark_mode_outlined,
+              color: isDark ? AppColors.textWhite : AppColors.textPrimaryAlt,
+            ),
+            title: Text(
+              'Dark Mode',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
+                color: isDark ? AppColors.textWhite : AppColors.textPrimary,
               ),
-              Switch(
-                value: themeProvider.isDarkMode,
-                onChanged: (value) {
-                  themeProvider.toggleTheme();
-                },
+            ),
+            subtitle: Text(
+              themeProvider.isDarkMode 
+                  ? 'Dark mode enabled' 
+                  : 'Light mode enabled',
+              style: TextStyle(
+                color: isDark 
+                    ? AppColors.textWhite70 
+                    : AppColors.textGrey,
+                fontSize: 12,
+                letterSpacing: 0.3,
               ),
-            ],
+            ),
+            trailing: Switch(
+              value: themeProvider.isDarkMode,
+              onChanged: (value) {
+                themeProvider.toggleTheme();
+              },
+            ),
           ),
           const SizedBox(height: 8),
           divider,
