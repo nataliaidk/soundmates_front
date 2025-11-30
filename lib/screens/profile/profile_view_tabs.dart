@@ -647,17 +647,48 @@ class _ProfileViewTabsState extends State<ProfileViewTabs> {
                                 // Show video thumbnail (first frame)
                                 VideoThumbnail(videoUrl: media.url)
                               else
-                                // Audio files
+                                // Audio files - gradient with music notes pattern
                                 Container(
-                                  color: isDark
-                                      ? AppColors.surfaceDarkAlt
-                                      : AppColors.accentPurpleSoft,
-                                  child: Center(
-                                    child: Icon(
-                                      Icons.audiotrack,
-                                      size: 48,
-                                      color: AppColors.accentPurple,
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [
+                                        AppColors.accentPurple.withAlpha(179),
+                                        AppColors.accentPurple.withAlpha(102),
+                                      ],
                                     ),
+                                  ),
+                                  child: Stack(
+                                    children: [
+                                      // Background music notes pattern
+                                      Positioned(
+                                        top: 10,
+                                        left: 10,
+                                        child: Icon(
+                                          Icons.music_note,
+                                          color: Colors.white.withAlpha(77),
+                                          size: 24,
+                                        ),
+                                      ),
+                                      Positioned(
+                                        bottom: 10,
+                                        right: 10,
+                                        child: Icon(
+                                          Icons.music_note,
+                                          color: Colors.white.withAlpha(77),
+                                          size: 24,
+                                        ),
+                                      ),
+                                      // Center large music note
+                                      Center(
+                                        child: Icon(
+                                          Icons.music_note,
+                                          color: Colors.white,
+                                          size: 56,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
 

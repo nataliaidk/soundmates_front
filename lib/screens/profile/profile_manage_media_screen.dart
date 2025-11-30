@@ -112,6 +112,10 @@ class _ProfileManageMediaScreenState extends State<ProfileManageMediaScreen> {
           _profilePictures.removeWhere((p) => p.id == pictureId);
           _status = 'Photo deleted';
         });
+        // Notify parent that changes were made
+        if (mounted) {
+          Navigator.pop(context, true);
+        }
       } else {
         setState(() => _status = 'Failed to delete photo: ${resp.statusCode}');
       }
@@ -149,6 +153,10 @@ class _ProfileManageMediaScreenState extends State<ProfileManageMediaScreen> {
           _musicSamples.removeWhere((s) => s.id == sampleId);
           _status = 'Media deleted';
         });
+        // Notify parent that changes were made
+        if (mounted) {
+          Navigator.pop(context, true);
+        }
       } else {
         setState(() => _status = 'Failed to delete media: ${resp.statusCode}');
       }
