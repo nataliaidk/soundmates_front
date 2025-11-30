@@ -9,6 +9,7 @@ import 'api/token_store.dart';
 import 'utils/audio_notifier.dart';
 import 'theme/theme_provider.dart';
 import 'theme/app_design_system.dart';
+import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/profile/profile_screen_new.dart' as profile_new;
@@ -262,6 +263,10 @@ class _MyAppState extends State<MyApp> {
       Navigator.pushReplacementNamed(navContext, '/profile/create');
     }
 
+    void onSplashComplete() {
+      print("🚀 Splash screen complete");
+    }
+
     return ChangeNotifierProvider(
       create: (_) => ThemeProvider(),
       child: Consumer<ThemeProvider>(
@@ -272,8 +277,12 @@ class _MyAppState extends State<MyApp> {
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: themeProvider.themeMode,
-            initialRoute: '/login',
+            initialRoute: '/',
             routes: {
+              '/': (c) => SplashScreen(
+                tokens: tokens,
+                onComplete: onSplashComplete,
+              ),
               '/login': (c) => LoginScreen(
                 api: api,
                 tokens: tokens,

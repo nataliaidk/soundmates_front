@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:zpi_test/screens/visit_profile/visit_profile_screen.dart';
+import '../widgets/pulsing_logo_loader.dart';
 import '../api/api_client.dart';
 import '../api/token_store.dart';
 import '../api/models.dart';
@@ -448,10 +449,9 @@ class _ChatScreenState extends State<ChatScreen> {
               children: [
                 Expanded(
                   child: _loading
-                      ? const Center(
-                          child: CircularProgressIndicator(
-                            color: AppColors.accentPurple,
-                          ),
+                      ? const PulsingLogoLoader(
+                          message: 'Loading messages...',
+                          size: 120,
                         )
                       : _messages.isEmpty
                       ? Center(

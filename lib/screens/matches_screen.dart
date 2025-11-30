@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:intl/intl.dart';
 import '../widgets/app_bottom_nav.dart';
+import '../widgets/pulsing_logo_loader.dart';
 import '../api/api_client.dart';
 import '../api/token_store.dart';
 import '../api/models.dart';
@@ -303,9 +304,11 @@ class _MatchesScreenState extends State<MatchesScreen> {
   Widget _buildContent(List<OtherUserProfileDto> conversations, {bool isDesktop = false}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return _loading
-        ? Center(
-            child: CircularProgressIndicator(
-              color: isDark ? AppColors.accentPurpleLight : AppColors.accentPurple,
+        ? Container(
+            color: isDark ? AppColors.backgroundDarkAlt : AppColors.backgroundLight,
+            child: const PulsingLogoLoader(
+              message: 'Loading your matches...',
+              size: 140,
             ),
           )
         : Column(
