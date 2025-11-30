@@ -98,9 +98,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        TextField(
+                        TextFormField(
                           controller: _email,
                           keyboardType: TextInputType.emailAddress,
+                          autovalidateMode: AutovalidateMode.onUserInteraction,
+                          validator: (value) => validateEmail(value ?? ''),
                           decoration: InputDecoration(
                             labelText: 'Email',
                             hintText: 'Enter your email',
@@ -123,14 +125,24 @@ class _LoginScreenState extends State<LoginScreen> {
                                 width: 2,
                               ),
                             ),
+                            errorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: isDark ? const Color(0xFFE57373) : Colors.red, width: 1.5),
+                            ),
+                            focusedErrorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: isDark ? const Color(0xFFE57373) : Colors.red, width: 2),
+                            ),
                             filled: true,
                             fillColor: isDark ? AppColors.surfaceDarkAlt : AppColors.backgroundLight,
                           ),
                         ),
                         const SizedBox(height: 16),
-                        TextField(
+                        TextFormField(
                           controller: _pass,
                           obscureText: _obscurePassword,
+                          autovalidateMode: AutovalidateMode.onUserInteraction,
+                          validator: (value) => validatePassword(value ?? ''),
                           decoration: InputDecoration(
                             labelText: 'Password',
                             hintText: 'Enter your password',
@@ -162,6 +174,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                 color: AppColors.accentPurpleMid,
                                 width: 2,
                               ),
+                            ),
+                            errorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: isDark ? const Color(0xFFE57373) : Colors.red, width: 1.5),
+                            ),
+                            focusedErrorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: isDark ? const Color(0xFFE57373) : Colors.red, width: 2),
                             ),
                             filled: true,
                             fillColor: isDark ? AppColors.surfaceDarkAlt : AppColors.backgroundLight,

@@ -115,9 +115,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        TextField(
+                        TextFormField(
                           controller: _email,
                           keyboardType: TextInputType.emailAddress,
+                          autovalidateMode: AutovalidateMode.onUserInteraction,
+                          validator: (value) => validateEmail(value ?? ''),
                           decoration: InputDecoration(
                             labelText: 'Email',
                             hintText: 'Enter your email',
@@ -140,17 +142,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 width: 2,
                               ),
                             ),
+                            errorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: isDark ? const Color(0xFFE57373) : Colors.red, width: 1.5),
+                            ),
+                            focusedErrorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: isDark ? const Color(0xFFE57373) : Colors.red, width: 2),
+                            ),
                             filled: true,
                             fillColor: isDark ? AppColors.surfaceDarkAlt : AppColors.backgroundLight,
                           ),
                         ),
                         const SizedBox(height: 16),
-                        TextField(
+                        TextFormField(
                           controller: _pass,
                           obscureText: _obscurePassword,
+                          autovalidateMode: AutovalidateMode.onUserInteraction,
+                          validator: (value) => validatePassword(value ?? ''),
                           decoration: InputDecoration(
                             labelText: 'Password',
                             hintText: 'Enter your password',
+                            helperText: 'Min 8 chars: a-z, A-Z, 0-9, special char',
+                            helperMaxLines: 2,
                             prefixIcon: const Icon(
                               Icons.lock_outline,
                               color: AppColors.accentPurpleMid,
@@ -180,14 +194,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 width: 2,
                               ),
                             ),
+                            errorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: isDark ? const Color(0xFFE57373) : Colors.red, width: 1.5),
+                            ),
+                            focusedErrorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: isDark ? const Color(0xFFE57373) : Colors.red, width: 2),
+                            ),
                             filled: true,
                             fillColor: isDark ? AppColors.surfaceDarkAlt : AppColors.backgroundLight,
                           ),
                         ),
                         const SizedBox(height: 16),
-                        TextField(
+                        TextFormField(
                           controller: _confirmPass,
                           obscureText: _obscureConfirm,
+                          autovalidateMode: AutovalidateMode.onUserInteraction,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) return 'Please confirm your password';
+                            if (value != _pass.text) return 'Passwords do not match';
+                            return null;
+                          },
                           decoration: InputDecoration(
                             labelText: 'Confirm Password',
                             hintText: 'Re-enter your password',
@@ -219,6 +247,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 color: AppColors.accentPurpleMid,
                                 width: 2,
                               ),
+                            ),
+                            errorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: isDark ? const Color(0xFFE57373) : Colors.red, width: 1.5),
+                            ),
+                            focusedErrorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: isDark ? const Color(0xFFE57373) : Colors.red, width: 2),
                             ),
                             filled: true,
                             fillColor: isDark ? AppColors.surfaceDarkAlt : AppColors.backgroundLight,

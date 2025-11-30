@@ -4,6 +4,7 @@ import '../../api/api_client.dart';
 import '../../api/token_store.dart';
 import '../../api/models.dart';
 import '../../theme/app_design_system.dart';
+import '../../utils/validators.dart';
 import 'profile_data_loader.dart';
 import 'profile_tag_manager.dart';
 import 'profile_band_member_dialog.dart';
@@ -447,20 +448,34 @@ class _ProfileEditTagsScreenState extends State<ProfileEditTagsScreen> {
                   ),
                   const SizedBox(height: 24),
                   // Description
-                  TextField(
+                  TextFormField(
                     controller: _desc,
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
+                    validator: (value) => validateDescription(value ?? ''),
                     decoration: InputDecoration(
                       labelText: 'Description',
+                      helperText: '${_desc.text.length}/500 characters',
                       filled: true,
                       fillColor: isDark ? AppColors.surfaceDarkAlt : AppColors.accentPurpleSoft,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(20),
                         borderSide: BorderSide.none,
                       ),
+                      errorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide(color: isDark ? const Color(0xFFE57373) : Colors.red, width: 1.5),
+                      ),
+                      focusedErrorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide(color: isDark ? const Color(0xFFE57373) : Colors.red, width: 2),
+                      ),
                       hintText: 'Tell others about yourself...',
                       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
                     ),
                     maxLines: 4,
+                    onChanged: (value) {
+                      setState(() {}); // Trigger rebuild to update character count
+                    },
                   ),
                   const SizedBox(height: 24),
 

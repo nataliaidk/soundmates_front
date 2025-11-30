@@ -3,6 +3,7 @@ import '../api/api_client.dart';
 import '../api/models.dart';
 import '../api/token_store.dart';
 import '../theme/app_design_system.dart';
+import '../utils/validators.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   final ApiClient api;
@@ -40,8 +41,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
   String? _validateNew(String? v) {
     if (v == null || v.trim().isEmpty) return 'Enter new password';
-    if (v.trim().length < 6) return 'Minimum 6 characters';
-    return null;
+    return validatePassword(v);
   }
 
   Future<void> _submit() async {
@@ -118,6 +118,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   TextFormField(
                     controller: _oldCtrl,
                     obscureText: _obscureOld,
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
                     decoration: InputDecoration(
                       labelText: 'Current password',
                       prefixIcon: const Icon(
@@ -146,6 +147,14 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                           width: 2,
                         ),
                       ),
+                      errorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: isDark ? const Color(0xFFE57373) : Colors.red, width: 1.5),
+                      ),
+                      focusedErrorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: isDark ? const Color(0xFFE57373) : Colors.red, width: 2),
+                      ),
                       filled: true,
                       fillColor: isDark ? AppColors.surfaceDarkAlt : AppColors.backgroundLight,
                     ),
@@ -155,8 +164,11 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   TextFormField(
                     controller: _newCtrl,
                     obscureText: _obscureNew,
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
                     decoration: InputDecoration(
                       labelText: 'New password',
+                      helperText: 'Min 8 chars: a-z, A-Z, 0-9, special char',
+                      helperMaxLines: 2,
                       prefixIcon: const Icon(
                         Icons.lock_outline,
                         color: AppColors.accentPurpleMid,
@@ -182,6 +194,14 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                           color: AppColors.accentPurpleMid,
                           width: 2,
                         ),
+                      ),
+                      errorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: isDark ? const Color(0xFFE57373) : Colors.red, width: 1.5),
+                      ),
+                      focusedErrorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: isDark ? const Color(0xFFE57373) : Colors.red, width: 2),
                       ),
                       filled: true,
                       fillColor: isDark ? AppColors.surfaceDarkAlt : AppColors.backgroundLight,

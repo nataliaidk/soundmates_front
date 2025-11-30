@@ -93,8 +93,10 @@ class ProfileEditStep1 extends StatelessWidget {
     return Column(
       children: [
         // Name field
-        TextField(
+        TextFormField(
           controller: nameController,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
+          validator: (value) => validateName(value ?? ''),
           decoration: InputDecoration(
             labelText: 'Name',
             hintText: 'How do they call you?',
@@ -111,6 +113,14 @@ class ProfileEditStep1 extends StatelessWidget {
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(30),
               borderSide: borderSide.copyWith(color: AppColors.accentPurple),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(30),
+              borderSide: BorderSide(color: isDark ? const Color(0xFFE57373) : Colors.red, width: 1.5),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(30),
+              borderSide: BorderSide(color: isDark ? const Color(0xFFE57373) : Colors.red, width: 2),
             ),
             contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
           ),
@@ -210,7 +220,11 @@ class ProfileEditStep1 extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: isDark ? AppColors.surfaceDarkAlt : AppColors.surfaceWhite,
                   borderRadius: BorderRadius.circular(30),
-                  border: isDark ? null : Border.all(color: AppTheme.getAdaptiveGrey(context, lightShade: 300, darkShade: 700)),
+                  border: Border.all(
+                    color: selectedCountry == null
+                        ? (isDark ? const Color(0xFFE57373) : Colors.red.shade300)
+                        : (isDark ? Colors.transparent : AppTheme.getAdaptiveGrey(context, lightShade: 300, darkShade: 700)),
+                  ),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -252,7 +266,11 @@ class ProfileEditStep1 extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: isDark ? AppColors.surfaceDarkAlt : AppColors.surfaceWhite,
                   borderRadius: BorderRadius.circular(30),
-                  border: isDark ? null : Border.all(color: AppTheme.getAdaptiveGrey(context, lightShade: 300, darkShade: 700)),
+                  border: Border.all(
+                    color: selectedCity == null && selectedCountry != null
+                        ? (isDark ? const Color(0xFFE57373) : Colors.red.shade300)
+                        : (isDark ? Colors.transparent : AppTheme.getAdaptiveGrey(context, lightShade: 300, darkShade: 700)),
+                  ),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -314,7 +332,11 @@ class ProfileEditStep1 extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isDark ? AppColors.surfaceDarkAlt : AppColors.surfaceWhite,
                 borderRadius: BorderRadius.circular(30),
-                border: isDark ? null : Border.all(color: AppTheme.getAdaptiveGrey(context, lightShade: 300, darkShade: 700)),
+                border: Border.all(
+                  color: birthDate == null
+                      ? (isDark ? const Color(0xFFE57373) : Colors.red.shade300)
+                      : (isDark ? Colors.transparent : AppTheme.getAdaptiveGrey(context, lightShade: 300, darkShade: 700)),
+                ),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -350,6 +372,8 @@ class ProfileEditStep1 extends StatelessWidget {
           // Gender dropdown
           DropdownButtonFormField<String>(
             value: selectedGender?.id,
+            validator: (value) => value == null ? 'Gender is required for artists' : null,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
             decoration: InputDecoration(
               labelText: 'Gender',
               filled: true,
@@ -365,6 +389,14 @@ class ProfileEditStep1 extends StatelessWidget {
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(30),
                 borderSide: borderSide.copyWith(color: AppColors.accentPurple),
+              ),
+              errorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(30),
+                borderSide: BorderSide(color: isDark ? const Color(0xFFE57373) : Colors.red, width: 1.5),
+              ),
+              focusedErrorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(30),
+                borderSide: BorderSide(color: isDark ? const Color(0xFFE57373) : Colors.red, width: 2),
               ),
               contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
             ),
