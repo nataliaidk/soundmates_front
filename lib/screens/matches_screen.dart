@@ -36,6 +36,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
   final Map<String, MessageDto> _lastMessages = {};
   String? _currentUserId;
   Map<String, String> _tagNames = {};
+  Map<String, OtherUserProfileDto> _conversationUsers = {}; // Add this line
 
   @override
   void initState() {
@@ -49,7 +50,9 @@ class _MatchesScreenState extends State<MatchesScreen> {
   void _setupSignalRCallbacks() {
     final eventHub = widget.eventHubService;
     if (eventHub == null) {
-      print("⚠️ EventHubService is null in MatchesScreen - no real-time updates");
+      print(
+        "⚠️ EventHubService is null in MatchesScreen - no real-time updates",
+      );
       return;
     }
 
@@ -173,24 +176,26 @@ class _MatchesScreenState extends State<MatchesScreen> {
             setState(() {
               _lastMessages.clear();
 
-              for (final match in _matches) {
-                final matchMessage = messages.firstWhere(
-                  (msg) =>
-                      (msg.senderId == _currentUserId &&
-                          msg.receiverId == match.id) ||
-                      (msg.senderId == match.id &&
-                          msg.receiverId == _currentUserId),
-                  orElse: () => MessageDto(
-                    id: '',
-                    content: '',
-                    timestamp: DateTime.now(),
-                    senderId: '',
-                    receiverId: '',
-                  ),
-                );
+              // Store last messages and fetch user data for conversations
+              for (final msg in messages) {
+                // Determine the other user's ID
+                final otherUserId = msg.senderId == _currentUserId
+                    ? msg.receiverId
+                    : msg.senderId;
 
-                if (matchMessage.content.isNotEmpty) {
-                  _lastMessages[match.id] = matchMessage;
+                // Only keep the most recent message per conversation
+                if (!_lastMessages.containsKey(otherUserId) ||
+                    msg.timestamp.isAfter(
+                      _lastMessages[otherUserId]!.timestamp,
+                    )) {
+                  _lastMessages[otherUserId] = msg;
+                }
+              }
+
+              // Fetch user data for conversations where we don't have it
+              for (final userId in _lastMessages.keys) {
+                if (!_conversationUsers.containsKey(userId)) {
+                  _fetchUserProfile(userId);
                 }
               }
 
@@ -214,23 +219,64 @@ class _MatchesScreenState extends State<MatchesScreen> {
     }
   }
 
+  Future<void> _fetchUserProfile(String userId) async {
+    try {
+      final profile = await widget.api.getOtherUserProfile(userId);
+      if (profile != null && mounted) {
+        setState(() {
+          _conversationUsers[userId] = profile;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching user profile for $userId: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final conversations = _matches
-        .where((m) => _lastMessages.containsKey(m.id))
-        .toList();
+    // Combine matched users and conversation users
+    final allConversationUserIds = _lastMessages.keys.toSet();
+    final conversations = <OtherUserProfileDto>[];
+
+    // Add matched users with messages
+    for (final match in _matches) {
+      if (_lastMessages.containsKey(match.id)) {
+        conversations.add(match);
+      }
+    }
+
+    // Add unmatched users we have conversations with
+    for (final userId in allConversationUserIds) {
+      if (!_matches.any((m) => m.id == userId) &&
+          _conversationUsers.containsKey(userId)) {
+        conversations.add(_conversationUsers[userId]!);
+      }
+    }
+
+    // Sort by most recent message
+    conversations.sort((a, b) {
+      final aMessage = _lastMessages[a.id];
+      final bMessage = _lastMessages[b.id];
+      if (aMessage == null && bMessage == null) return 0;
+      if (aMessage == null) return 1;
+      if (bMessage == null) return -1;
+      return bMessage.timestamp.compareTo(aMessage.timestamp);
+    });
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isDesktop = MediaQuery.of(context).size.width > 900;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDarkAlt : AppColors.surfaceDark,
-      appBar: isDesktop 
-          ? null 
+      backgroundColor: isDark
+          ? AppColors.backgroundDarkAlt
+          : AppColors.surfaceDark,
+      appBar: isDesktop
+          ? null
           : AppBar(
               backgroundColor: AppColors.surfaceDark,
               elevation: 0,
-              automaticallyImplyLeading: false, // No back arrow on navbar screen
+              automaticallyImplyLeading:
+                  false, // No back arrow on navbar screen
               title: Text(
                 'Messages',
                 style: AppTextStyles.appBarTitle.copyWith(
@@ -258,7 +304,9 @@ class _MatchesScreenState extends State<MatchesScreen> {
                       flex: 62,
                       child: Container(
                         decoration: BoxDecoration(
-                          color: isDark ? AppColors.backgroundDark : AppColors.surfaceDark,
+                          color: isDark
+                              ? AppColors.backgroundDark
+                              : AppColors.surfaceDark,
                         ),
                         child: _buildContent(conversations, isDesktop: true),
                       ),
@@ -300,7 +348,10 @@ class _MatchesScreenState extends State<MatchesScreen> {
     );
   }
 
-  Widget _buildContent(List<OtherUserProfileDto> conversations, {bool isDesktop = false}) {
+  Widget _buildContent(
+    List<OtherUserProfileDto> conversations, {
+    bool isDesktop = false,
+  }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return _loading
         ? Container(
@@ -330,7 +381,8 @@ class _MatchesScreenState extends State<MatchesScreen> {
                           Icons.settings_outlined,
                           color: AppColors.textWhite,
                         ),
-                        onPressed: () => Navigator.pushNamed(context, '/settings'),
+                        onPressed: () =>
+                            Navigator.pushNamed(context, '/settings'),
                       ),
                     ],
                   ),
@@ -355,7 +407,9 @@ class _MatchesScreenState extends State<MatchesScreen> {
               Expanded(
                 child: Container(
                   decoration: BoxDecoration(
-                    color: isDark ? AppColors.surfaceDarkAlt : AppColors.surfaceWhite,
+                    color: isDark
+                        ? AppColors.surfaceDarkAlt
+                        : AppColors.surfaceWhite,
                     borderRadius: AppBorderRadius.topLarge,
                   ),
                   child: conversations.isEmpty
@@ -366,7 +420,11 @@ class _MatchesScreenState extends State<MatchesScreen> {
                               Icon(
                                 Icons.chat_bubble_outline,
                                 size: 64,
-                                color: AppTheme.getAdaptiveGrey(context, lightShade: 400, darkShade: 600),
+                                color: AppTheme.getAdaptiveGrey(
+                                  context,
+                                  lightShade: 400,
+                                  darkShade: 600,
+                                ),
                               ),
                               const SizedBox(height: 16),
                               Text(
@@ -383,8 +441,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
                           itemCount: conversations.length,
                           itemBuilder: (context, index) => _MatchListItem(
                             match: conversations[index],
-                            lastMessage:
-                                _lastMessages[conversations[index].id],
+                            lastMessage: _lastMessages[conversations[index].id],
                             api: widget.api,
                             tokens: widget.tokens,
                             onRefresh: _loadLastMessages,
@@ -425,13 +482,12 @@ class _RecentMatchCard extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) =>
-                VisitProfileScreen(
-                  api: api,
-                  tokens: tokens,
-                  userId: match.id,
-                  eventHubService: eventHubService,
-                ),
+            builder: (context) => VisitProfileScreen(
+              api: api,
+              tokens: tokens,
+              userId: match.id,
+              eventHubService: eventHubService,
+            ),
           ),
         );
       },
@@ -455,7 +511,11 @@ class _RecentMatchCard extends StatelessWidget {
                       backgroundImage: imageUrl != null
                           ? NetworkImage(imageUrl)
                           : null,
-                      backgroundColor: AppTheme.getAdaptiveGrey(context, lightShade: 200, darkShade: 800),
+                      backgroundColor: AppTheme.getAdaptiveGrey(
+                        context,
+                        lightShade: 200,
+                        darkShade: 800,
+                      ),
                       child: imageUrl == null
                           ? Text(
                               (match.name ?? 'U').substring(0, 1).toUpperCase(),
@@ -528,10 +588,12 @@ class _MatchListItem extends StatelessWidget {
         ? match.profilePictures.first.getAbsoluteUrl(api.baseUrl)
         : null;
 
-    final isMe = currentUserId != null && lastMessage?.senderId == currentUserId;
+    final isMe =
+        currentUserId != null && lastMessage?.senderId == currentUserId;
     final isUnread = lastMessage != null && !isMe && !lastMessage!.isSeen;
 
-    String displayContent = lastMessage?.content ??
+    String displayContent =
+        lastMessage?.content ??
         (match.description.isNotEmpty ? match.description : 'New match');
 
     if (lastMessage != null && isMe) {
@@ -568,7 +630,11 @@ class _MatchListItem extends StatelessWidget {
             CircleAvatar(
               radius: 30,
               backgroundImage: imageUrl != null ? NetworkImage(imageUrl) : null,
-              backgroundColor: AppTheme.getAdaptiveGrey(context, lightShade: 300, darkShade: 700),
+              backgroundColor: AppTheme.getAdaptiveGrey(
+                context,
+                lightShade: 300,
+                darkShade: 700,
+              ),
               child: imageUrl == null
                   ? Text(
                       (match.name ?? 'U').substring(0, 1).toUpperCase(),
@@ -596,8 +662,12 @@ class _MatchListItem extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: AppTextStyles.bodyRegular.copyWith(
-                            fontWeight: isUnread ? FontWeight.bold : FontWeight.normal,
-                            color: isUnread ? AppTheme.getAdaptiveText(context) : null,
+                            fontWeight: isUnread
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                            color: isUnread
+                                ? AppTheme.getAdaptiveText(context)
+                                : null,
                           ),
                         ),
                       ),
@@ -607,7 +677,11 @@ class _MatchListItem extends StatelessWidget {
                           timeText,
                           style: AppTextStyles.bodyRegular.copyWith(
                             fontSize: 12,
-                            color: AppTheme.getAdaptiveGrey(context, lightShade: 600, darkShade: 400),
+                            color: AppTheme.getAdaptiveGrey(
+                              context,
+                              lightShade: 600,
+                              darkShade: 400,
+                            ),
                           ),
                         ),
                       ],
@@ -622,6 +696,7 @@ class _MatchListItem extends StatelessWidget {
     );
   }
 }
+
 class _DesktopRightPanel extends StatefulWidget {
   final List<OtherUserProfileDto> matches;
   final ApiClient api;
@@ -650,7 +725,10 @@ class _DesktopRightPanelState extends State<_DesktopRightPanel> {
     super.initState();
     _pickRandomMatch();
     // Auto-shuffle every 30 seconds to keep it dynamic
-    _shuffleTimer = Timer.periodic(const Duration(seconds: 30), (_) => _pickRandomMatch());
+    _shuffleTimer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => _pickRandomMatch(),
+    );
   }
 
   @override
@@ -663,7 +741,9 @@ class _DesktopRightPanelState extends State<_DesktopRightPanel> {
     if (widget.matches.isNotEmpty) {
       if (mounted) {
         setState(() {
-          _featuredMatch = widget.matches[DateTime.now().millisecondsSinceEpoch % widget.matches.length];
+          _featuredMatch =
+              widget.matches[DateTime.now().millisecondsSinceEpoch %
+                  widget.matches.length];
         });
       }
     }
@@ -705,7 +785,9 @@ class _DesktopRightPanelState extends State<_DesktopRightPanel> {
 
     // Determine subtitle (Artist/Band + Age/Members)
     String subtitle = match.isBand ? 'Band' : 'Artist';
-    if (!match.isBand && match is OtherUserProfileArtistDto && match.age != null) {
+    if (!match.isBand &&
+        match is OtherUserProfileArtistDto &&
+        match.age != null) {
       subtitle += ' • ${match.age} yo';
     } else if (match.isBand && match is OtherUserProfileBandDto) {
       subtitle += ' • ${match.bandMembers.length} Members';
@@ -715,13 +797,11 @@ class _DesktopRightPanelState extends State<_DesktopRightPanel> {
     // If it's a UUID (36 chars with dashes), we skip it to avoid ugliness.
     // This is a heuristic since we don't have the city name resolved.
     final city = match.city;
-    final showCity = city != null && city.length < 30; 
+    final showCity = city != null && city.length < 30;
 
     return Container(
       clipBehavior: Clip.hardEdge,
-      decoration: const BoxDecoration(
-        color: AppColors.backgroundDark,
-      ),
+      decoration: const BoxDecoration(color: AppColors.backgroundDark),
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -743,13 +823,11 @@ class _DesktopRightPanelState extends State<_DesktopRightPanel> {
                 ),
               ),
             ),
-          
+
           // Blur effect
           BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
-            child: Container(
-              color: Colors.black.withOpacity(0.3),
-            ),
+            child: Container(color: Colors.black.withOpacity(0.3)),
           ),
 
           // 2. Content
@@ -771,7 +849,9 @@ class _DesktopRightPanelState extends State<_DesktopRightPanel> {
                     constraints: const BoxConstraints(maxWidth: 360),
                     margin: const EdgeInsets.symmetric(horizontal: 16),
                     width: double.infinity,
-                    padding: const EdgeInsets.all(24), // Slightly smaller padding
+                    padding: const EdgeInsets.all(
+                      24,
+                    ), // Slightly smaller padding
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.08),
                       borderRadius: BorderRadius.circular(32),
@@ -818,14 +898,17 @@ class _DesktopRightPanelState extends State<_DesktopRightPanel> {
                           child: imageUrl == null
                               ? Center(
                                   child: Text(
-                                    (match.name ?? 'U').substring(0, 1).toUpperCase(),
-                                    style: AppTextStyles.avatarInitialLarge.copyWith(fontSize: 40),
+                                    (match.name ?? 'U')
+                                        .substring(0, 1)
+                                        .toUpperCase(),
+                                    style: AppTextStyles.avatarInitialLarge
+                                        .copyWith(fontSize: 40),
                                   ),
                                 )
                               : null,
                         ),
                         const SizedBox(height: 20),
-                        
+
                         // Name
                         Text(
                           match.name ?? 'Unknown',
@@ -836,7 +919,7 @@ class _DesktopRightPanelState extends State<_DesktopRightPanel> {
                           ),
                         ),
                         const SizedBox(height: 6),
-                        
+
                         // Subtitle (Type • Age/Members)
                         Text(
                           subtitle,
@@ -845,24 +928,30 @@ class _DesktopRightPanelState extends State<_DesktopRightPanel> {
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        
+
                         if (showCity) ...[
                           const SizedBox(height: 6),
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.location_on, size: 14, color: Colors.white70),
+                              Icon(
+                                Icons.location_on,
+                                size: 14,
+                                color: Colors.white70,
+                              ),
                               const SizedBox(width: 4),
                               Text(
                                 city,
-                                style: AppTextStyles.bodyRegular.copyWith(color: Colors.white70),
+                                style: AppTextStyles.bodyRegular.copyWith(
+                                  color: Colors.white70,
+                                ),
                               ),
                             ],
                           ),
                         ],
 
                         const SizedBox(height: 20),
-                        
+
                         // Tags
                         if (match.tags.isNotEmpty)
                           Wrap(
@@ -872,16 +961,22 @@ class _DesktopRightPanelState extends State<_DesktopRightPanel> {
                             children: match.tags.take(5).map((tagId) {
                               final tagName = widget.tagNames[tagId] ?? tagId;
                               // If it still looks like a UUID, try to shorten it or skip
-                              final displayTag = (tagName.length > 20 && tagName.contains('-')) 
-                                  ? 'Tag' 
+                              final displayTag =
+                                  (tagName.length > 20 && tagName.contains('-'))
+                                  ? 'Tag'
                                   : tagName;
-                                  
+
                               return Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
                                 decoration: BoxDecoration(
                                   color: Colors.white.withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: Colors.white.withOpacity(0.1)),
+                                  border: Border.all(
+                                    color: Colors.white.withOpacity(0.1),
+                                  ),
                                 ),
                                 child: Text(
                                   displayTag,
@@ -894,7 +989,7 @@ class _DesktopRightPanelState extends State<_DesktopRightPanel> {
                               );
                             }).toList(),
                           ),
-                        
+
                         if (match.tags.isNotEmpty) const SizedBox(height: 20),
 
                         // Description
@@ -923,22 +1018,28 @@ class _DesktopRightPanelState extends State<_DesktopRightPanel> {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (context) => VisitProfileScreen(
-                                          api: widget.api,
-                                          tokens: widget.tokens,
-                                          userId: match.id,
-                                          eventHubService: widget.eventHubService,
-                                        ),
+                                        builder: (context) =>
+                                            VisitProfileScreen(
+                                              api: widget.api,
+                                              tokens: widget.tokens,
+                                              userId: match.id,
+                                              eventHubService:
+                                                  widget.eventHubService,
+                                            ),
                                       ),
                                     );
                                   },
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.white.withOpacity(0.1),
+                                    backgroundColor: Colors.white.withOpacity(
+                                      0.1,
+                                    ),
                                     foregroundColor: Colors.white,
                                     elevation: 0,
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(22),
-                                      side: BorderSide(color: Colors.white.withOpacity(0.2)),
+                                      side: BorderSide(
+                                        color: Colors.white.withOpacity(0.2),
+                                      ),
                                     ),
                                   ),
                                   child: const Text('Profile'),
@@ -960,7 +1061,8 @@ class _DesktopRightPanelState extends State<_DesktopRightPanel> {
                                           userId: match.id,
                                           userName: match.name ?? 'User',
                                           userImageUrl: imageUrl,
-                                          eventHubService: widget.eventHubService,
+                                          eventHubService:
+                                              widget.eventHubService,
                                         ),
                                       ),
                                     );

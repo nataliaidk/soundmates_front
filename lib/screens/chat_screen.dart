@@ -756,27 +756,12 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             child: Row(
               children: [
-                Icon(
-                  Icons.info_outline,
-                  size: 20,
-                  color: AppTheme.getAdaptiveGrey(
-                    context,
-                    lightShade: 600,
-                    darkShade: 400,
-                  ),
-                ),
+                Icon(Icons.info_outline, size: 20, color: AppColors.accentRed),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     "You can't send messages because you're no longer matched with this user",
-                    style: TextStyle(
-                      color: AppTheme.getAdaptiveGrey(
-                        context,
-                        lightShade: 600,
-                        darkShade: 400,
-                      ),
-                      fontSize: 14,
-                    ),
+                    style: TextStyle(color: AppColors.accentRed, fontSize: 14),
                   ),
                 ),
               ],

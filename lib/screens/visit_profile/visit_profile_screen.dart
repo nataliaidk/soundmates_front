@@ -2,6 +2,7 @@ import 'dart:ui'; // Wymagane dla ImageFilter (Blur)
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:zpi_test/screens/matches_screen.dart';
 
 // Importy zależności projektu
 import '../../api/api_client.dart';
@@ -243,9 +244,18 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
                                             .unmatch(widget.userId);
                                         if (response.statusCode == 200) {
                                           if (mounted) {
-                                            Navigator.pop(
+                                            Navigator.pushReplacement(
                                               context,
-                                            ); // Return to previous screen
+                                              MaterialPageRoute(
+                                                builder: (context) =>
+                                                    MatchesScreen(
+                                                      api: widget.api,
+                                                      tokens: widget.tokens,
+                                                      eventHubService: widget
+                                                          .eventHubService,
+                                                    ),
+                                              ),
+                                            );
                                           }
                                         } else {
                                           if (mounted) {
