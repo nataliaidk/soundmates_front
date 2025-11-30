@@ -12,6 +12,7 @@ class EventHubService {
   Function(dynamic)? onMessageReceived;
   Function(dynamic)? onMatchReceived;
   Function(dynamic)? onMatchCreated;
+  Function(dynamic)? onConversationSeen;
   final List<Function(dynamic)> _messageListeners = [];
   String? _activeConversationUserId;
 
@@ -118,6 +119,22 @@ class EventHubService {
       } else {
         print(
           "⚠️ Cannot invoke callback - onMatchCreated is null or args empty",
+        );
+      }
+    });
+
+    // When conversation is marked as seen
+    _connection!.on("ConversationSeen", (args) {
+      print("👁️ ConversationSeen: $args");
+      print(
+        "👁️ onConversationSeen callback: ${onConversationSeen != null ? 'SET' : 'NULL'}",
+      );
+      if (onConversationSeen != null && args != null && args.isNotEmpty) {
+        print("👁️ Invoking onConversationSeen callback with: ${args[0]}");
+        onConversationSeen!(args[0]);
+      } else {
+        print(
+          "⚠️ Cannot invoke callback - onConversationSeen is null or args empty",
         );
       }
     });

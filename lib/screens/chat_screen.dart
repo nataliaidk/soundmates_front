@@ -43,12 +43,6 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _loading = true;
   String? _currentUserId;
   bool _showEmojiPicker = false;
-  Timer? _statusCheckTimer;
-  bool _isOnlineRecently = false;
-  DateTime? _lastSeenAckTime;
-  DateTime? _lastIncomingMessageTime;
-  DateTime? _lastActiveAt;
-  String? _lastSeenMessageId;
   void Function(dynamic)? _hubMessageListener;
 
   @override
@@ -64,26 +58,6 @@ class _ChatScreenState extends State<ChatScreen> {
     await _markConversationAsViewed();
     await _ensureSignalRConnection();
     _setupSignalRCallback();
-    _startStatusChecking();
-  }
-
-  void _startStatusChecking() {
-    _statusCheckTimer?.cancel();
-    _statusCheckTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (!mounted) return;
-
-      if (_messages.isNotEmpty) {
-        // Check if we have any unseen messages sent by us
-        final hasUnseenMyMessages = _messages.any(
-          (msg) => msg.senderId == _currentUserId && !msg.isSeen,
-        );
-
-        if (hasUnseenMyMessages) {
-          print('🔄 Checking message status...');
-          _loadMessages();
-        }
-      }
-    });
   }
 
   Future<void> _markConversationAsViewed() async {
@@ -130,6 +104,27 @@ class _ChatScreenState extends State<ChatScreen> {
 
     print("🔧 Setting up SignalR callback for chat with user ${widget.userId}");
     print("🔧 Current user ID: $_currentUserId");
+
+    // Set callback for ConversationSeen
+    eventHub.onConversationSeen = (payload) {
+      try {
+        print("👁️ ConversationSeen callback in chat: $payload");
+        
+        if (payload is Map<String, dynamic>) {
+          final userId = payload['userId']?.toString();
+          
+          // If this is notification about our conversation being seen by the other user
+          if (userId == _currentUserId) {
+            print("✅ Our messages were seen - updating message status");
+            if (mounted) {
+              _loadMessages();
+            }
+          }
+        }
+      } catch (e) {
+        print('❌ Error processing ConversationSeen: $e');
+      }
+    };
 
     // Set callback for MessageReceived
     _hubMessageListener = (messageData) {
@@ -178,7 +173,6 @@ class _ChatScreenState extends State<ChatScreen> {
   void dispose() {
     _messageController.dispose();
     _scrollController.dispose();
-    _statusCheckTimer?.cancel();
     _updateActiveConversation(isActive: false);
     if (widget.eventHubService != null && _hubMessageListener != null) {
       widget.eventHubService!.removeMessageListener(_hubMessageListener!);
@@ -248,15 +242,6 @@ class _ChatScreenState extends State<ChatScreen> {
 
         // Only update if messages have changed
         if (_hasMessagesChanged(messages)) {
-          final seenAckUpdate = _captureSeenAcknowledgement(messages);
-          final latestIncoming = _latestTimestamp(
-            messages,
-            (msg) => msg.senderId == widget.userId,
-          );
-          final seenReference = seenAckUpdate ?? _lastSeenAckTime;
-          final isOnline = _computeOnlineStatus(seenReference, latestIncoming);
-          final lastActive = _computeLastActive(seenReference, latestIncoming);
-
           print(
             "✅ Messages changed - updating UI (old: ${_messages.length}, new: ${messages.length})",
           );
@@ -269,12 +254,6 @@ class _ChatScreenState extends State<ChatScreen> {
           setState(() {
             _messages = messages;
             _loading = false;
-            if (seenAckUpdate != null) {
-              _lastSeenAckTime = seenAckUpdate;
-            }
-            _lastIncomingMessageTime = latestIncoming;
-            _isOnlineRecently = isOnline;
-            _lastActiveAt = lastActive;
           });
 
           // Only auto-scroll if user was already at bottom
@@ -324,71 +303,7 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  DateTime? _latestTimestamp(
-    List<MessageDto> source,
-    bool Function(MessageDto) predicate,
-  ) {
-    DateTime? latest;
-    for (final msg in source) {
-      if (predicate(msg)) {
-        if (latest == null || msg.timestamp.isAfter(latest)) {
-          latest = msg.timestamp;
-        }
-      }
-    }
-    return latest;
-  }
 
-  MessageDto? _latestMessage(
-    List<MessageDto> source,
-    bool Function(MessageDto) predicate,
-  ) {
-    MessageDto? latest;
-    for (final msg in source) {
-      if (predicate(msg)) {
-        if (latest == null || msg.timestamp.isAfter(latest.timestamp)) {
-          latest = msg;
-        }
-      }
-    }
-    return latest;
-  }
-
-  DateTime? _captureSeenAcknowledgement(List<MessageDto> newMessages) {
-    if (_currentUserId == null) return null;
-    final latestSeen = _latestMessage(
-      newMessages,
-      (msg) => msg.senderId == _currentUserId && msg.isSeen,
-    );
-    if (latestSeen != null && latestSeen.id != _lastSeenMessageId) {
-      _lastSeenMessageId = latestSeen.id;
-      return DateTime.now();
-    }
-    return null;
-  }
-
-  bool _computeOnlineStatus(DateTime? seenAck, DateTime? lastIncoming) {
-    final threshold = DateTime.now().subtract(const Duration(minutes: 10));
-    if (seenAck != null && seenAck.isAfter(threshold)) return true;
-    if (lastIncoming != null && lastIncoming.isAfter(threshold)) return true;
-    return false;
-  }
-
-  DateTime? _computeLastActive(DateTime? seenAck, DateTime? lastIncoming) {
-    if (seenAck == null) return lastIncoming;
-    if (lastIncoming == null) return seenAck;
-    return seenAck.isAfter(lastIncoming) ? seenAck : lastIncoming;
-  }
-
-  String _formatLastActive() {
-    final reference = _lastActiveAt ?? _lastIncomingMessageTime;
-    if (reference == null) return 'Offline';
-    final diff = DateTime.now().difference(reference);
-    if (diff.inMinutes < 1) return 'Active just now';
-    if (diff.inMinutes < 60) return 'Active ${diff.inMinutes} min ago';
-    if (diff.inHours < 24) return 'Active ${diff.inHours} h ago';
-    return 'Active on ${DateFormat('MMM d, h:mm a').format(reference)}';
-  }
 
   Future<void> _sendMessage() async {
     final text = _messageController.text.trim();
