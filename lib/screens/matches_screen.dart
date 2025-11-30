@@ -42,6 +42,39 @@ class _MatchesScreenState extends State<MatchesScreen> {
     _loadMatches();
     _loadCurrentUserId();
     _loadTags();
+    _setupSignalRCallbacks();
+  }
+
+  void _setupSignalRCallbacks() {
+    final eventHub = widget.eventHubService;
+    if (eventHub == null) {
+      print("⚠️ EventHubService is null in MatchesScreen - no real-time updates");
+      return;
+    }
+
+    print("🔧 Setting up SignalR callbacks for MatchesScreen");
+
+    // Reload message previews when new message arrives
+    eventHub.addMessageListener((messageData) {
+      print("📩 MessageReceived in MatchesScreen - refreshing previews");
+      if (mounted) {
+        _loadLastMessages();
+      }
+    });
+
+    // Reload when conversation is marked as seen
+    eventHub.onConversationSeen = (payload) {
+      print("👁️ ConversationSeen in MatchesScreen - refreshing previews");
+      if (mounted) {
+        _loadLastMessages();
+      }
+    };
+  }
+
+  @override
+  void dispose() {
+    // Clean up callbacks if needed
+    super.dispose();
   }
 
   Future<void> _loadTags() async {
