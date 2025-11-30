@@ -57,7 +57,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _updateActiveConversation(isActive: true);
     _initialize();
   }
-  
+
   Future<void> _initialize() async {
     await _loadCurrentUserId();
     await _loadMessages();
@@ -66,18 +66,18 @@ class _ChatScreenState extends State<ChatScreen> {
     _setupSignalRCallback();
     _startStatusChecking();
   }
-  
+
   void _startStatusChecking() {
     _statusCheckTimer?.cancel();
     _statusCheckTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
-      
+
       if (_messages.isNotEmpty) {
         // Check if we have any unseen messages sent by us
         final hasUnseenMyMessages = _messages.any(
-          (msg) => msg.senderId == _currentUserId && !msg.isSeen
+          (msg) => msg.senderId == _currentUserId && !msg.isSeen,
         );
-        
+
         if (hasUnseenMyMessages) {
           print('🔄 Checking message status...');
           _loadMessages();
@@ -85,7 +85,7 @@ class _ChatScreenState extends State<ChatScreen> {
       }
     });
   }
-  
+
   Future<void> _markConversationAsViewed() async {
     try {
       print('📖 Marking conversation with ${widget.userId} as viewed...');
@@ -99,17 +99,18 @@ class _ChatScreenState extends State<ChatScreen> {
       print('❌ Error marking conversation as viewed: $e');
     }
   }
-  
+
   Future<void> _ensureSignalRConnection() async {
     final eventHub = widget.eventHubService;
     if (eventHub == null) return;
-    
+
     // Check if already connected
-    if (eventHub.connection?.state.toString() == 'HubConnectionState.Connected') {
+    if (eventHub.connection?.state.toString() ==
+        'HubConnectionState.Connected') {
       print('✅ SignalR already connected');
       return;
     }
-    
+
     // Try to connect if not connected
     try {
       print('🔄 Connecting SignalR for chat...');
@@ -119,29 +120,31 @@ class _ChatScreenState extends State<ChatScreen> {
       print('❌ Failed to connect SignalR: $e');
     }
   }
-  
+
   void _setupSignalRCallback() {
     final eventHub = widget.eventHubService;
     if (eventHub == null) {
       print("⚠️ EventHubService is null - no real-time updates");
       return;
     }
-    
+
     print("🔧 Setting up SignalR callback for chat with user ${widget.userId}");
     print("🔧 Current user ID: $_currentUserId");
-    
+
     // Set callback for MessageReceived
     _hubMessageListener = (messageData) {
       try {
         print("📩 MessageReceived callback in chat: $messageData");
-        
+
         // Check if message is for this chat
         if (messageData is Map<String, dynamic>) {
           final senderId = messageData['senderId']?.toString();
-          
+
           print("🔍 Checking message: senderId=$senderId");
-          print("🔍 Current chat: userId=${widget.userId}, currentUserId=$_currentUserId");
-          
+          print(
+            "🔍 Current chat: userId=${widget.userId}, currentUserId=$_currentUserId",
+          );
+
           // Message is for this chat if sender is either:
           // 1. The user we're chatting with (they sent us a message)
           // 2. Current user (we sent a message - for optimistic UI update)
@@ -156,7 +159,9 @@ class _ChatScreenState extends State<ChatScreen> {
               }
             }
           } else {
-            print("❌ Message is not for this chat - ignoring (senderId doesn't match)");
+            print(
+              "❌ Message is not for this chat - ignoring (senderId doesn't match)",
+            );
           }
         }
       } catch (e) {
@@ -165,7 +170,7 @@ class _ChatScreenState extends State<ChatScreen> {
     };
 
     eventHub.addMessageListener(_hubMessageListener!);
-    
+
     print("✅ SignalR callback setup complete");
   }
 
@@ -178,7 +183,7 @@ class _ChatScreenState extends State<ChatScreen> {
     if (widget.eventHubService != null && _hubMessageListener != null) {
       widget.eventHubService!.removeMessageListener(_hubMessageListener!);
     }
-    
+
     super.dispose();
   }
 
@@ -198,9 +203,7 @@ class _ChatScreenState extends State<ChatScreen> {
       if (token != null) {
         final decoded = JwtDecoder.decode(token);
 
-
         final userId = decoded['sub'] ?? decoded['userId'] ?? decoded['id'];
-
 
         setState(() {
           _currentUserId = userId;
@@ -230,9 +233,13 @@ class _ChatScreenState extends State<ChatScreen> {
         for (final item in list) {
           try {
             print("🔍 Raw message item: $item");
-            print("🔍 isSeen field value: ${item['isSeen']}, IsSeen field value: ${item['IsSeen']}");
+            print(
+              "🔍 isSeen field value: ${item['isSeen']}, IsSeen field value: ${item['IsSeen']}",
+            );
             final msg = MessageDto.fromJson(item);
-            print("📧 Message: id=${msg.id}, content=${msg.content}, isSeen=${msg.isSeen}, senderId=${msg.senderId}");
+            print(
+              "📧 Message: id=${msg.id}, content=${msg.content}, isSeen=${msg.isSeen}, senderId=${msg.senderId}",
+            );
             messages.add(msg);
           } catch (e) {
             print('Error parsing message: $e');
@@ -242,14 +249,20 @@ class _ChatScreenState extends State<ChatScreen> {
         // Only update if messages have changed
         if (_hasMessagesChanged(messages)) {
           final seenAckUpdate = _captureSeenAcknowledgement(messages);
-          final latestIncoming = _latestTimestamp(messages, (msg) => msg.senderId == widget.userId);
+          final latestIncoming = _latestTimestamp(
+            messages,
+            (msg) => msg.senderId == widget.userId,
+          );
           final seenReference = seenAckUpdate ?? _lastSeenAckTime;
           final isOnline = _computeOnlineStatus(seenReference, latestIncoming);
           final lastActive = _computeLastActive(seenReference, latestIncoming);
 
-          print("✅ Messages changed - updating UI (old: ${_messages.length}, new: ${messages.length})");
+          print(
+            "✅ Messages changed - updating UI (old: ${_messages.length}, new: ${messages.length})",
+          );
           // Save scroll position
-          final shouldScrollToBottom = _scrollController.hasClients &&
+          final shouldScrollToBottom =
+              _scrollController.hasClients &&
               _scrollController.position.pixels >=
                   _scrollController.position.maxScrollExtent - 100;
 
@@ -299,8 +312,6 @@ class _ChatScreenState extends State<ChatScreen> {
     return false;
   }
 
-
-
   void _scrollToBottom() {
     if (_scrollController.hasClients) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -313,7 +324,10 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  DateTime? _latestTimestamp(List<MessageDto> source, bool Function(MessageDto) predicate) {
+  DateTime? _latestTimestamp(
+    List<MessageDto> source,
+    bool Function(MessageDto) predicate,
+  ) {
     DateTime? latest;
     for (final msg in source) {
       if (predicate(msg)) {
@@ -325,7 +339,10 @@ class _ChatScreenState extends State<ChatScreen> {
     return latest;
   }
 
-  MessageDto? _latestMessage(List<MessageDto> source, bool Function(MessageDto) predicate) {
+  MessageDto? _latestMessage(
+    List<MessageDto> source,
+    bool Function(MessageDto) predicate,
+  ) {
     MessageDto? latest;
     for (final msg in source) {
       if (predicate(msg)) {
@@ -373,8 +390,6 @@ class _ChatScreenState extends State<ChatScreen> {
     return 'Active on ${DateFormat('MMM d, h:mm a').format(reference)}';
   }
 
-
-
   Future<void> _sendMessage() async {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
@@ -421,18 +436,23 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : const Color(0xFFF5F6FB),
+      backgroundColor: isDark
+          ? AppColors.backgroundDark
+          : AppColors.surfaceWhite,
       appBar: AppBar(
-        backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
+        backgroundColor: isDark
+            ? AppColors.backgroundDark
+            : AppColors.surfaceWhite,
+        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
         elevation: 0,
         centerTitle: false,
         titleSpacing: 0,
         toolbarHeight: 72,
-        shadowColor: Colors.black.withOpacity(0.05),
         leading: IconButton(
           icon: Icon(
             Icons.arrow_back_ios_new_rounded,
-            color: isDark ? AppColors.textWhite : Colors.black87,
+            color: isDark ? AppColors.textWhite : AppColors.textBlack87,
           ),
           onPressed: () => Navigator.pop(context),
         ),
@@ -457,11 +477,18 @@ class _ChatScreenState extends State<ChatScreen> {
                 backgroundImage: widget.userImageUrl != null
                     ? NetworkImage(widget.userImageUrl!)
                     : null,
-                backgroundColor: const Color(0xFFE0E7FF),
+                backgroundColor: isDark
+                    ? AppColors.surfaceDarkAlt
+                    : AppColors.surfaceWhite,
                 child: widget.userImageUrl == null
                     ? Text(
                         widget.userName.substring(0, 1).toUpperCase(),
-                        style: const TextStyle(fontSize: 18, color: Color(0xFF4C4F72)),
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: isDark
+                              ? AppColors.textWhite
+                              : AppColors.textPrimary,
+                        ),
                       )
                     : null,
               ),
@@ -473,33 +500,15 @@ class _ChatScreenState extends State<ChatScreen> {
                   children: [
                     Text(
                       widget.userName,
-                      style: const TextStyle(
-                        color: Color(0xFF1F2430),
+                      style: TextStyle(
+                        color: isDark
+                            ? AppColors.textWhite
+                            : AppColors.textPrimary,
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: _isOnlineRecently ? const Color(0xFF40C057) : AppTheme.getAdaptiveGrey(context, lightShade: 400, darkShade: 600),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          _isOnlineRecently ? 'Online now' : _formatLastActive(),
-                          style: TextStyle(
-                            color: AppTheme.getAdaptiveGrey(context, lightShade: 600, darkShade: 400),
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
                   ],
                 ),
               ),
@@ -508,9 +517,11 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
       ),
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFFFFFFFF), Color(0xFFEEF1FB)],
+            colors: isDark
+                ? [AppColors.backgroundDark, AppColors.backgroundDarkAlt]
+                : [AppColors.surfaceWhite, AppColors.textWhite],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -524,51 +535,59 @@ class _ChatScreenState extends State<ChatScreen> {
                   child: _loading
                       ? const Center(
                           child: CircularProgressIndicator(
-                            color: Color(0xFF7C4DFF),
+                            color: AppColors.accentPurple,
                           ),
                         )
                       : _messages.isEmpty
-                          ? Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.chat_bubble_outline,
-                                    size: 64,
-                                    color: AppTheme.getAdaptiveGrey(context, lightShade: 300, darkShade: 700),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Text(
-                                    'No messages yet',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      color: AppTheme.getAdaptiveGrey(context, lightShade: 500, darkShade: 500),
-                                    ),
-                                  ),
-                                ],
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.chat_bubble_outline,
+                                size: 64,
+                                color: AppTheme.getAdaptiveGrey(
+                                  context,
+                                  lightShade: 300,
+                                  darkShade: 700,
+                                ),
                               ),
-                            )
-                            : ListView.builder(
-                              controller: _scrollController,
-                              padding: const EdgeInsets.all(16),
-                              physics: const BouncingScrollPhysics(),
-                              itemCount: _messages.length,
-                              itemBuilder: (context, index) {
-                                final isLastMessage = index == _messages.length - 1;
+                              const SizedBox(height: 16),
+                              Text(
+                                'No messages yet',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  color: AppTheme.getAdaptiveGrey(
+                                    context,
+                                    lightShade: 500,
+                                    darkShade: 500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView.builder(
+                          controller: _scrollController,
+                          padding: const EdgeInsets.all(16),
+                          physics: const BouncingScrollPhysics(),
+                          itemCount: _messages.length,
+                          itemBuilder: (context, index) {
+                            final isLastMessage = index == _messages.length - 1;
 
-                                return _MessageBubble(
-                                  message: _messages[index],
-                                  userImageUrl: widget.userImageUrl,
-                                  currentUserId: _currentUserId,
-                                  userId: widget.userId,
-                                  api: widget.api,
-                                  tokens: widget.tokens,
-                                  eventHubService: widget.eventHubService,
-                                  showStatus: isLastMessage,
-                                  showTimestamp: isLastMessage,
-                                );
-                              },
-                            ),
+                            return _MessageBubble(
+                              message: _messages[index],
+                              userImageUrl: widget.userImageUrl,
+                              currentUserId: _currentUserId,
+                              userId: widget.userId,
+                              api: widget.api,
+                              tokens: widget.tokens,
+                              eventHubService: widget.eventHubService,
+                              showStatus: isLastMessage,
+                              showTimestamp: isLastMessage,
+                            );
+                          },
+                        ),
                 ),
                 _buildMessageInput(),
                 if (_showEmojiPicker)
@@ -582,12 +601,17 @@ class _ChatScreenState extends State<ChatScreen> {
                         emojiViewConfig: EmojiViewConfig(
                           columns: 7,
                           emojiSizeMax: 32.0,
-                          backgroundColor: Colors.white,
+                          backgroundColor: isDark
+                              ? AppColors.surfaceDark
+                              : AppColors.surfaceWhite,
                           buttonMode: ButtonMode.MATERIAL,
                           recentsLimit: 28,
-                          noRecents: const Text('No Recents', style: TextStyle(fontSize: 20)),
+                          noRecents: const Text(
+                            'No Recents',
+                            style: TextStyle(fontSize: 20),
+                          ),
                           loadingIndicator: const CircularProgressIndicator(
-                            color: Color(0xFF6B4CE6),
+                            color: AppColors.accentPurple,
                           ),
                           gridPadding: EdgeInsets.zero,
                           horizontalSpacing: 0,
@@ -597,26 +621,36 @@ class _ChatScreenState extends State<ChatScreen> {
                         categoryViewConfig: CategoryViewConfig(
                           initCategory: Category.RECENT,
                           backgroundColor: AppTheme.getAdaptiveSurface(context),
-                          indicatorColor: const Color(0xFF6B4CE6),
-                          iconColor: AppTheme.getAdaptiveGrey(context, lightShade: 600, darkShade: 400),
-                          iconColorSelected: const Color(0xFF6B4CE6),
-                          dividerColor: AppTheme.getAdaptiveGrey(context, lightShade: 200, darkShade: 800),
+                          indicatorColor: AppColors.accentPurpleBlue,
+                          iconColor: AppTheme.getAdaptiveGrey(
+                            context,
+                            lightShade: 600,
+                            darkShade: 400,
+                          ),
+                          iconColorSelected: AppColors.accentPurple,
+                          dividerColor: AppTheme.getAdaptiveGrey(
+                            context,
+                            lightShade: 200,
+                            darkShade: 800,
+                          ),
                           categoryIcons: const CategoryIcons(),
                           recentTabBehavior: RecentTabBehavior.RECENT,
                         ),
                         bottomActionBarConfig: BottomActionBarConfig(
                           backgroundColor: AppTheme.getAdaptiveSurface(context),
-                          buttonColor: AppTheme.getAdaptiveGrey(context, lightShade: 200, darkShade: 800),
-                          buttonIconColor: const Color(0xFF6B4CE6),
+                          buttonColor: AppTheme.getAdaptiveGrey(
+                            context,
+                            lightShade: 200,
+                            darkShade: 800,
+                          ),
+                          buttonIconColor: AppColors.accentPurple,
                         ),
                         searchViewConfig: SearchViewConfig(
                           backgroundColor: AppTheme.getAdaptiveSurface(context),
-                          buttonIconColor: const Color(0xFF6B4CE6),
+                          buttonIconColor: AppColors.accentPurple,
                           hintText: 'Search emoji',
                         ),
                       ),
-
-
                     ),
                   ),
               ],
@@ -628,6 +662,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildMessageInput() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: SafeArea(
@@ -635,8 +670,14 @@ class _ChatScreenState extends State<ChatScreen> {
           children: [
             IconButton(
               icon: Icon(
-                _showEmojiPicker ? Icons.keyboard : Icons.emoji_emotions_outlined,
-                color: AppTheme.getAdaptiveGrey(context, lightShade: 600, darkShade: 400),
+                _showEmojiPicker
+                    ? Icons.keyboard
+                    : Icons.emoji_emotions_outlined,
+                color: AppTheme.getAdaptiveGrey(
+                  context,
+                  lightShade: 600,
+                  darkShade: 400,
+                ),
               ),
               onPressed: () {
                 setState(() {
@@ -647,21 +688,31 @@ class _ChatScreenState extends State<ChatScreen> {
             Expanded(
               child: Container(
                 margin: const EdgeInsets.symmetric(horizontal: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF5F6FB),
+                  color: isDark
+                      ? AppColors.surfaceDark
+                      : AppColors.surfaceWhite,
                   borderRadius: BorderRadius.circular(28),
-                  border: Border.all(color: const Color(0xFFE0E4F0)),
+                  border: Border.all(
+                    color: isDark
+                        ? AppColors.surfaceDark
+                        : AppColors.surfaceWhite,
+                  ),
                 ),
                 child: CallbackShortcuts(
                   bindings: {
-                    const SingleActivator(LogicalKeyboardKey.enter): () => _sendMessage(),
+                    const SingleActivator(LogicalKeyboardKey.enter): () =>
+                        _sendMessage(),
                   },
                   child: TextField(
                     controller: _messageController,
                     decoration: const InputDecoration(
                       hintText: 'Type a message...',
-                      hintStyle: TextStyle(color: Color(0xFF9EA3B5)),
+                      hintStyle: TextStyle(color: AppColors.textGrey),
                       border: InputBorder.none,
                       focusedBorder: InputBorder.none,
                       enabledBorder: InputBorder.none,
@@ -670,7 +721,11 @@ class _ChatScreenState extends State<ChatScreen> {
                       filled: false,
                       isCollapsed: true,
                     ),
-                    style: const TextStyle(color: Color(0xFF1F2430)),
+                    style: TextStyle(
+                      color: isDark
+                          ? AppColors.textWhite
+                          : AppColors.textPrimary,
+                    ),
                     textCapitalization: TextCapitalization.sentences,
                     minLines: 1,
                     maxLines: 4,
@@ -688,10 +743,16 @@ class _ChatScreenState extends State<ChatScreen> {
                 decoration: const BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: LinearGradient(
-                    colors: [Color(0xFF7C4DFF), Color(0xFF9C6BFF)],
+                    colors: [
+                      AppColors.accentPurple,
+                      AppColors.accentPurpleBlue,
+                    ],
                   ),
                 ),
-                child: const Icon(Icons.send_rounded, color: Colors.white),
+                child: const Icon(
+                  Icons.send_rounded,
+                  color: AppColors.textWhite,
+                ),
               ),
             ),
           ],
@@ -731,7 +792,7 @@ class _MessageBubble extends StatelessWidget {
     final timestamp = message.timestamp.toLocal();
     final timeLabel = DateFormat('h:mm a').format(timestamp);
     final bubbleGradient = const LinearGradient(
-      colors: [Color(0xFF7C4DFF), Color(0xFF9C6BFF)],
+      colors: [AppColors.accentPurple, AppColors.accentPurpleBlue],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     );
@@ -739,8 +800,9 @@ class _MessageBubble extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
-        mainAxisAlignment:
-        isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: isMe
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isMe) ...[
@@ -760,22 +822,34 @@ class _MessageBubble extends StatelessWidget {
               },
               child: CircleAvatar(
                 radius: 16,
-                backgroundImage:
-                userImageUrl != null ? NetworkImage(userImageUrl!) : null,
-                backgroundColor: AppTheme.getAdaptiveGrey(context, lightShade: 300, darkShade: 700),
+                backgroundImage: userImageUrl != null
+                    ? NetworkImage(userImageUrl!)
+                    : null,
+                backgroundColor: AppTheme.getAdaptiveGrey(
+                  context,
+                  lightShade: 300,
+                  darkShade: 700,
+                ),
               ),
             ),
             const SizedBox(width: 8),
           ],
           Flexible(
             child: Column(
-              crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              crossAxisAlignment: isMe
+                  ? CrossAxisAlignment.end
+                  : CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 14,
+                  ),
                   decoration: BoxDecoration(
                     gradient: isMe ? bubbleGradient : null,
-                    color: isMe ? null : (isDark ? AppColors.surfaceDark : Colors.white),
+                    color: isMe
+                        ? null
+                        : (isDark ? AppColors.surfaceDark : Colors.white),
                     borderRadius: BorderRadius.only(
                       topLeft: const Radius.circular(24),
                       topRight: const Radius.circular(24),
@@ -793,7 +867,11 @@ class _MessageBubble extends StatelessWidget {
                   child: Text(
                     message.content,
                     style: TextStyle(
-                      color: isMe ? Colors.white : (isDark ? AppColors.textWhite : const Color(0xFF1F2430)),
+                      color: isMe
+                          ? AppColors.textWhite
+                          : (isDark
+                                ? AppColors.textWhite
+                                : const Color(0xFF1F2430)),
                       fontSize: 15,
                       height: 1.4,
                     ),
@@ -802,7 +880,9 @@ class _MessageBubble extends StatelessWidget {
                 if (showTimestamp || (isMe && showStatus)) ...[
                   const SizedBox(height: 6),
                   Align(
-                    alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+                    alignment: isMe
+                        ? Alignment.centerRight
+                        : Alignment.centerLeft,
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -811,7 +891,11 @@ class _MessageBubble extends StatelessWidget {
                             timeLabel,
                             style: TextStyle(
                               fontSize: 11,
-                              color: AppTheme.getAdaptiveGrey(context, lightShade: 600, darkShade: 400),
+                              color: AppTheme.getAdaptiveGrey(
+                                context,
+                                lightShade: 600,
+                                darkShade: 400,
+                              ),
                               letterSpacing: 0.2,
                             ),
                           ),
@@ -820,15 +904,20 @@ class _MessageBubble extends StatelessWidget {
                           Icon(
                             message.isSeen ? Icons.done_all : Icons.done,
                             size: 16,
-                            color:
-                                message.isSeen ? const Color(0xFF7C4DFF) : Colors.grey,
+                            color: message.isSeen
+                                ? AppColors.accentPurpleBlue
+                                : AppColors.textGrey,
                           ),
                           const SizedBox(width: 4),
                           Text(
                             message.isSeen ? 'Seen' : 'Sent',
                             style: TextStyle(
                               fontSize: 11,
-                              color: AppTheme.getAdaptiveGrey(context, lightShade: 600, darkShade: 400),
+                              color: AppTheme.getAdaptiveGrey(
+                                context,
+                                lightShade: 600,
+                                darkShade: 400,
+                              ),
                             ),
                           ),
                         ],
