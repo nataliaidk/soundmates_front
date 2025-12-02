@@ -110,11 +110,6 @@ class _SwipingScreenState extends State<SwipingScreen>
           showBands: _viewModel!.showBands,
         );
       });
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Like sent!')));
-      }
     }
   }
 
@@ -139,11 +134,6 @@ class _SwipingScreenState extends State<SwipingScreen>
           showBands: _viewModel!.showBands,
         );
       });
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Dislike sent!')));
-      }
     }
   }
 

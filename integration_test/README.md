@@ -75,18 +75,7 @@ flutter devices
 
 ## Debugowanie testów
 
-### Z logami konsoli
 
-```bash
-flutter test integration_test -d chrome --verbose
-```
-
-### Z breakpointami
-
-Użyj `debugger()` w kodzie testu i uruchom z:
-```bash
-flutter run integration_test/app_test.dart -d chrome --debug
-```
 
 ## Wyniki testów
 
