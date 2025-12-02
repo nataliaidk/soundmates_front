@@ -460,10 +460,10 @@ class DraggableCardState extends State<DraggableCard>
                                       ),
                                     ),
                                   ),
-                                // Artist/Band Tag (Top Right)
+                                // Artist/Band Tag (Top Left)
                                 Positioned(
                                   top: 24,
-                                  right: 20,
+                                  left: 20,
                                   child: Container(
                                     padding: EdgeInsets.symmetric(
                                       horizontal: isWide ? 12 : 16,
@@ -961,10 +961,61 @@ class DraggableCardState extends State<DraggableCard>
                                           ],
                                         ),
                                       );
-                                    }),
+                                   }),
                                   ],
                                 ),
                               ),
+                            // Report Button Section
+                            Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: isWide ? 18 : 20,
+                                vertical: isWide ? 12 : 16,
+                              ),
+                              child: Center(
+                                child: SizedBox(
+                                  width: (w - (isWide ? 36 : 40)) * 0.7,
+                                  child: GestureDetector(
+                                    onTap: _showReportDialog,
+                                    child: Container(
+                                      padding: EdgeInsets.symmetric(
+                                        vertical: isWide ? 12 : 14,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.accentRed,
+                                        borderRadius: BorderRadius.circular(8),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: AppColors.accentRed.withAlpha(77),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            Icons.flag,
+                                            color: AppColors.textWhite,
+                                            size: isWide ? 18 : 20,
+                                          ),
+                                          SizedBox(width: isWide ? 8 : 10),
+                                          Text(
+                                            'REPORT THIS USER',
+                                            style: TextStyle(
+                                              color: AppColors.textWhite,
+                                              fontSize: isWide ? 12 : 13,
+                                              fontWeight: FontWeight.w600,
+                                              letterSpacing: 1.0,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
                             const SizedBox(height: 24),
                           ],
                         ),
@@ -1087,6 +1138,183 @@ class DraggableCardState extends State<DraggableCard>
           ),
         ),
       ),
+    );
+  }
+
+  void _showReportDialog() {
+    final userId = widget.userData['id']?.toString() ?? '';
+    if (userId.isEmpty) return;
+
+    String selectedReason = 'Inappropriate Content';
+    final List<String> reasons = [
+      'Inappropriate Content',
+      'Spam',
+      'Fake Profile',
+      'Harassment',
+      'Other',
+    ];
+    final TextEditingController descriptionController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceWhite,
+              title: Text(
+                'Report User',
+                style: TextStyle(
+                  color: isDark ? AppColors.textWhite : AppColors.textPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Reason',
+                      style: TextStyle(
+                        color: isDark ? AppColors.textWhite : AppColors.textPrimary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      value: selectedReason,
+                      dropdownColor: isDark ? AppColors.surfaceDark : AppColors.surfaceWhite,
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      items: reasons.map((String reason) {
+                        return DropdownMenuItem<String>(
+                          value: reason,
+                          child: Text(
+                            reason,
+                            style: TextStyle(
+                              color: isDark ? AppColors.textWhite : AppColors.textPrimary,
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (String? newValue) {
+                        if (newValue != null) {
+                          setState(() {
+                            selectedReason = newValue;
+                          });
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Description',
+                      style: TextStyle(
+                        color: isDark ? AppColors.textWhite : AppColors.textPrimary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: descriptionController,
+                      maxLines: 4,
+                      style: TextStyle(
+                        color: isDark ? AppColors.textWhite : AppColors.textPrimary,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Please provide more details...',
+                        hintStyle: TextStyle(
+                          color: isDark
+                              ? AppColors.textWhite.withAlpha(128)
+                              : AppColors.textPrimary.withAlpha(128),
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    descriptionController.dispose();
+                    Navigator.of(context).pop();
+                  },
+                  child: Text(
+                    'Cancel',
+                    style: TextStyle(
+                      color: isDark ? AppColors.textWhite : AppColors.textPrimary,
+                    ),
+                  ),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () async {
+                    if (descriptionController.text.trim().isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Please provide a description'),
+                        ),
+                      );
+                      return;
+                    }
+
+                    try {
+                      final dto = ReportUserDto(
+                        reportedUserId: userId,
+                        reason: selectedReason,
+                        description: descriptionController.text.trim(),
+                      );
+
+                      final response = await widget.api.reportUser(dto);
+
+                      if (!context.mounted) return;
+                      descriptionController.dispose();
+                      Navigator.of(context).pop();
+
+                      if (response.statusCode == 200 || response.statusCode == 201) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Report submitted successfully'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Failed to submit report: ${response.statusCode}'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      if (!context.mounted) return;
+                      descriptionController.dispose();
+                      Navigator.of(context).pop();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Error submitting report: $e'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  },
+                  child: const Text('Submit Report'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }

@@ -295,6 +295,14 @@ class ApiClient {
     return await _withRefreshRetry(() => http.get(uri, headers: headers));
   }
 
+  Future<http.Response> reportUser(ReportUserDto dto) async {
+    final uri = _uri('/api/Reports/user');
+    final headers = await _authHeaders();
+    return await _withRefreshRetry(
+      () => http.post(uri, headers: headers, body: jsonEncode(dto.toJson())),
+    );
+  }
+
   Future<http.Response> getPotentialMatchesArtists({
     int limit = 20,
     int offset = 0,

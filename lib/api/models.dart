@@ -6,10 +6,7 @@ class LoginDto {
 
   LoginDto({required this.email, required this.password});
 
-  Map<String, dynamic> toJson() => {
-        'email': email,
-        'password': password,
-      };
+  Map<String, dynamic> toJson() => {'email': email, 'password': password};
 }
 
 class RegisterDto {
@@ -18,10 +15,7 @@ class RegisterDto {
 
   RegisterDto({required this.email, required this.password});
 
-  Map<String, dynamic> toJson() => {
-        'email': email,
-        'password': password,
-      };
+  Map<String, dynamic> toJson() => {'email': email, 'password': password};
 }
 
 class RefreshTokenDto {
@@ -29,9 +23,7 @@ class RefreshTokenDto {
 
   RefreshTokenDto({required this.refreshToken});
 
-  Map<String, dynamic> toJson() => {
-        'refreshToken': refreshToken,
-      };
+  Map<String, dynamic> toJson() => {'refreshToken': refreshToken};
 }
 
 class SwipeDto {
@@ -39,9 +31,7 @@ class SwipeDto {
 
   SwipeDto({required this.receiverId});
 
-  Map<String, dynamic> toJson() => {
-        'receiverId': receiverId,
-      };
+  Map<String, dynamic> toJson() => {'receiverId': receiverId};
 }
 
 class SendMessageDto {
@@ -51,9 +41,27 @@ class SendMessageDto {
   SendMessageDto({required this.receiverId, required this.content});
 
   Map<String, dynamic> toJson() => {
-        'receiverId': receiverId,
-        'content': content,
-      };
+    'receiverId': receiverId,
+    'content': content,
+  };
+}
+
+class ReportUserDto {
+  final String reportedUserId;
+  final String reason;
+  final String description;
+
+  ReportUserDto({
+    required this.reportedUserId,
+    required this.reason,
+    required this.description,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'reportedUserId': reportedUserId,
+    'reason': reason,
+    'description': description,
+  };
 }
 
 class UpdateUserProfileDto {
@@ -64,7 +72,8 @@ class UpdateUserProfileDto {
   final String? countryId;
   final String? cityId;
   // artist-only fields
-  final DateTime? birthDate; // send as ISO date yyyy-MM-dd expected by DateOnly on server
+  final DateTime?
+  birthDate; // send as ISO date yyyy-MM-dd expected by DateOnly on server
   final String? genderId;
 
   // tagsIds - list of tag UUIDs
@@ -73,9 +82,19 @@ class UpdateUserProfileDto {
   final List<String> musicSamplesOrder;
   final List<String> profilePicturesOrder;
 
-  UpdateUserProfileDto({this.isBand, required this.name, required this.description, this.countryId, this.cityId, this.birthDate, this.genderId, this.tagsIds, List<String>? musicSamplesOrder, List<String>? profilePicturesOrder}) :
-    musicSamplesOrder = musicSamplesOrder ?? const [],
-    profilePicturesOrder = profilePicturesOrder ?? const [];
+  UpdateUserProfileDto({
+    this.isBand,
+    required this.name,
+    required this.description,
+    this.countryId,
+    this.cityId,
+    this.birthDate,
+    this.genderId,
+    this.tagsIds,
+    List<String>? musicSamplesOrder,
+    List<String>? profilePicturesOrder,
+  }) : musicSamplesOrder = musicSamplesOrder ?? const [],
+       profilePicturesOrder = profilePicturesOrder ?? const [];
 
   Map<String, dynamic> toJson() {
     // Always include discriminator required by server polymorphic DTO
@@ -101,20 +120,32 @@ class UpdateUserProfileDto {
     return m;
   }
 
-  factory UpdateUserProfileDto.fromJson(Map<String, dynamic> json) => UpdateUserProfileDto(
-        isBand: json.containsKey('userType') ? (json['userType']?.toString() == 'band') : null,
-        name: json['name'] ?? '',
-        description: json['description'] ?? '',
-        countryId: json['countryId']?.toString() ?? json['country_id']?.toString(),
-        cityId: json['cityId']?.toString() ?? json['city_id']?.toString(),
-        birthDate: json['birthDate'] != null ? DateTime.tryParse(json['birthDate'].toString()) : null,
-        genderId: json['genderId']?.toString() ?? json['gender_id']?.toString(),
-        tagsIds: (json['tagsIds'] is List) ? List<String>.from(json['tagsIds'].map((e) => e.toString())) : null,
-        musicSamplesOrder: (json['musicSamplesOrder'] is List) ? List<String>.from(json['musicSamplesOrder'].map((e) => e.toString())) : const [],
-        profilePicturesOrder: (json['profilePicturesOrder'] is List) ? List<String>.from(json['profilePicturesOrder'].map((e) => e.toString())) : const [],
-      );
-
-      
+  factory UpdateUserProfileDto.fromJson(
+    Map<String, dynamic> json,
+  ) => UpdateUserProfileDto(
+    isBand: json.containsKey('userType')
+        ? (json['userType']?.toString() == 'band')
+        : null,
+    name: json['name'] ?? '',
+    description: json['description'] ?? '',
+    countryId: json['countryId']?.toString() ?? json['country_id']?.toString(),
+    cityId: json['cityId']?.toString() ?? json['city_id']?.toString(),
+    birthDate: json['birthDate'] != null
+        ? DateTime.tryParse(json['birthDate'].toString())
+        : null,
+    genderId: json['genderId']?.toString() ?? json['gender_id']?.toString(),
+    tagsIds: (json['tagsIds'] is List)
+        ? List<String>.from(json['tagsIds'].map((e) => e.toString()))
+        : null,
+    musicSamplesOrder: (json['musicSamplesOrder'] is List)
+        ? List<String>.from(json['musicSamplesOrder'].map((e) => e.toString()))
+        : const [],
+    profilePicturesOrder: (json['profilePicturesOrder'] is List)
+        ? List<String>.from(
+            json['profilePicturesOrder'].map((e) => e.toString()),
+          )
+        : const [],
+  );
 }
 
 class UpdateArtistProfile {
@@ -125,7 +156,8 @@ class UpdateArtistProfile {
   final String? countryId;
   final String? cityId;
   // artist-only fields
-  final DateTime? birthDate; // send as ISO date yyyy-MM-dd expected by DateOnly on server
+  final DateTime?
+  birthDate; // send as ISO date yyyy-MM-dd expected by DateOnly on server
   final String? genderId;
 
   // tagsIds - list of tag UUIDs
@@ -134,10 +166,20 @@ class UpdateArtistProfile {
   final List<String> musicSamplesOrder;
   final List<String> profilePicturesOrder;
 
-  UpdateArtistProfile({this.isBand, required this.name, required this.description, this.countryId, this.cityId, this.birthDate, this.genderId, this.tagsIds, List<String>? musicSamplesOrder, List<String>? profilePicturesOrder}) :
-    musicSamplesOrder = musicSamplesOrder ?? const [],
-    profilePicturesOrder = profilePicturesOrder ?? const [];
-    
+  UpdateArtistProfile({
+    this.isBand,
+    required this.name,
+    required this.description,
+    this.countryId,
+    this.cityId,
+    this.birthDate,
+    this.genderId,
+    this.tagsIds,
+    List<String>? musicSamplesOrder,
+    List<String>? profilePicturesOrder,
+  }) : musicSamplesOrder = musicSamplesOrder ?? const [],
+       profilePicturesOrder = profilePicturesOrder ?? const [];
+
   Map<String, dynamic> toJson() {
     // Always include discriminator required by server polymorphic DTO
     // Put it first in the map so it appears earliest in serialized JSON.
@@ -159,9 +201,8 @@ class UpdateArtistProfile {
     // include orders (server expects these lists)
     m['musicSamplesOrder'] = musicSamplesOrder;
     m['profilePicturesOrder'] = profilePicturesOrder;
-    return m;}
-
-
+    return m;
+  }
 }
 
 class UpdateBandProfile {
@@ -179,12 +220,19 @@ class UpdateBandProfile {
   final List<BandMemberDto> bandMembers;
   final List<String> profilePicturesOrder;
 
-  UpdateBandProfile({this.isBand, required this.name, required this.description, this.countryId, this.cityId, this.tagsIds, List<String>? musicSamplesOrder, List<BandMemberDto>? bandMembers, List<String>? profilePicturesOrder}) :
-    bandMembers = bandMembers ?? const [],
-    musicSamplesOrder = musicSamplesOrder ?? const [],
-    profilePicturesOrder = profilePicturesOrder ?? const [];
-    
-
+  UpdateBandProfile({
+    this.isBand,
+    required this.name,
+    required this.description,
+    this.countryId,
+    this.cityId,
+    this.tagsIds,
+    List<String>? musicSamplesOrder,
+    List<BandMemberDto>? bandMembers,
+    List<String>? profilePicturesOrder,
+  }) : bandMembers = bandMembers ?? const [],
+       musicSamplesOrder = musicSamplesOrder ?? const [],
+       profilePicturesOrder = profilePicturesOrder ?? const [];
 
   Map<String, dynamic> toJson() {
     // Always include discriminator required by server polymorphic DTO
@@ -197,9 +245,9 @@ class UpdateBandProfile {
     if (countryId != null && countryId!.isNotEmpty) m['countryId'] = countryId;
     if (cityId != null && cityId!.isNotEmpty) m['cityId'] = cityId;
     if (tagsIds != null) m['tagsIds'] = tagsIds;
-    
+
     m['bandMembers'] = bandMembers.map((bm) => bm.toJson()).toList();
-    
+
     // include orders (server expects these lists)
     m['musicSamplesOrder'] = musicSamplesOrder;
     m['profilePicturesOrder'] = profilePicturesOrder;
@@ -207,15 +255,12 @@ class UpdateBandProfile {
   }
 }
 
-
 class PasswordDto {
   final String password;
 
   PasswordDto({required this.password});
 
-  Map<String, dynamic> toJson() => {
-        'password': password,
-      };
+  Map<String, dynamic> toJson() => {'password': password};
 }
 
 class ChangePasswordDto {
@@ -225,9 +270,9 @@ class ChangePasswordDto {
   ChangePasswordDto({required this.oldPassword, required this.newPassword});
 
   Map<String, dynamic> toJson() => {
-        'oldPassword': oldPassword,
-        'newPassword': newPassword,
-      };
+    'oldPassword': oldPassword,
+    'newPassword': newPassword,
+  };
 }
 
 class ProfilePictureDto {
@@ -244,10 +289,7 @@ class ProfilePictureDto {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'fileUrl': fileUrl,
-    };
+    return {'id': id, 'fileUrl': fileUrl};
   }
 
   // Add helper method to get absolute URL
@@ -256,7 +298,9 @@ class ProfilePictureDto {
       return fileUrl;
     }
     final normalizedBase = baseUrl.endsWith('/') ? baseUrl : '$baseUrl/';
-    final normalizedPath = fileUrl.startsWith('/') ? fileUrl.substring(1) : fileUrl;
+    final normalizedPath = fileUrl.startsWith('/')
+        ? fileUrl.substring(1)
+        : fileUrl;
     return '$normalizedBase$normalizedPath';
   }
 }
@@ -268,17 +312,11 @@ class MusicSampleDto {
   MusicSampleDto({required this.id, required this.fileUrl});
 
   factory MusicSampleDto.fromJson(Map<String, dynamic> json) {
-    return MusicSampleDto(
-      id: json['id'] ?? '',
-      fileUrl: json['fileUrl'] ?? '',
-    );
+    return MusicSampleDto(id: json['id'] ?? '', fileUrl: json['fileUrl'] ?? '');
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'fileUrl': fileUrl,
-    };
+    return {'id': id, 'fileUrl': fileUrl};
   }
 
   // Add helper method to get absolute URL
@@ -287,12 +325,12 @@ class MusicSampleDto {
       return fileUrl;
     }
     final normalizedBase = baseUrl.endsWith('/') ? baseUrl : '$baseUrl/';
-    final normalizedPath = fileUrl.startsWith('/') ? fileUrl.substring(1) : fileUrl;
+    final normalizedPath = fileUrl.startsWith('/')
+        ? fileUrl.substring(1)
+        : fileUrl;
     return '$normalizedBase$normalizedPath';
   }
 }
-
-
 
 class UserDto {
   final String id;
@@ -337,7 +375,8 @@ class UserDto {
 
     DateTime parseDate(dynamic v) {
       if (v is DateTime) return v;
-      if (v is String) return DateTime.tryParse(v) ?? DateTime.fromMillisecondsSinceEpoch(0);
+      if (v is String)
+        return DateTime.tryParse(v) ?? DateTime.fromMillisecondsSinceEpoch(0);
       if (v is int) return DateTime.fromMillisecondsSinceEpoch(v);
       return DateTime.fromMillisecondsSinceEpoch(0);
     }
@@ -345,21 +384,52 @@ class UserDto {
     return UserDto(
       id: json['id']?.toString() ?? '',
       email: json['email']?.toString() ?? '',
-      passwordHash: json['passwordHash']?.toString() ?? json['password_hash']?.toString() ?? '',
-      isBand: json.containsKey('isBand') ? (json['isBand'] == null ? null : (json['isBand'] is bool ? json['isBand'] as bool : (json['isBand'].toString().toLowerCase() == 'true'))) : null,
+      passwordHash:
+          json['passwordHash']?.toString() ??
+          json['password_hash']?.toString() ??
+          '',
+      isBand: json.containsKey('isBand')
+          ? (json['isBand'] == null
+                ? null
+                : (json['isBand'] is bool
+                      ? json['isBand'] as bool
+                      : (json['isBand'].toString().toLowerCase() == 'true')))
+          : null,
       name: json['name']?.toString(),
       description: json['description']?.toString() ?? '',
-      createdAt: parseDate(json['createdAt'] ?? json['created_at'] ?? DateTime.fromMillisecondsSinceEpoch(0)),
-      isActive: json['isActive'] is bool ? json['isActive'] as bool : (json['isActive'] != null ? json['isActive'].toString().toLowerCase() == 'true' : false),
-      isFirstLogin: json['isFirstLogin'] is bool ? json['isFirstLogin'] as bool : (json['isFirstLogin'] != null ? json['isFirstLogin'].toString().toLowerCase() == 'true' : false),
-      isEmailConfirmed: json['isEmailConfirmed'] is bool ? json['isEmailConfirmed'] as bool : (json['isEmailConfirmed'] != null ? json['isEmailConfirmed'].toString().toLowerCase() == 'true' : false),
-      isLoggedOut: json['isLoggedOut'] is bool ? json['isLoggedOut'] as bool : (json['isLoggedOut'] != null ? json['isLoggedOut'].toString().toLowerCase() == 'true' : false),
-      countryId: json['countryId']?.toString() ?? json['country_id']?.toString(),
+      createdAt: parseDate(
+        json['createdAt'] ??
+            json['created_at'] ??
+            DateTime.fromMillisecondsSinceEpoch(0),
+      ),
+      isActive: json['isActive'] is bool
+          ? json['isActive'] as bool
+          : (json['isActive'] != null
+                ? json['isActive'].toString().toLowerCase() == 'true'
+                : false),
+      isFirstLogin: json['isFirstLogin'] is bool
+          ? json['isFirstLogin'] as bool
+          : (json['isFirstLogin'] != null
+                ? json['isFirstLogin'].toString().toLowerCase() == 'true'
+                : false),
+      isEmailConfirmed: json['isEmailConfirmed'] is bool
+          ? json['isEmailConfirmed'] as bool
+          : (json['isEmailConfirmed'] != null
+                ? json['isEmailConfirmed'].toString().toLowerCase() == 'true'
+                : false),
+      isLoggedOut: json['isLoggedOut'] is bool
+          ? json['isLoggedOut'] as bool
+          : (json['isLoggedOut'] != null
+                ? json['isLoggedOut'].toString().toLowerCase() == 'true'
+                : false),
+      countryId:
+          json['countryId']?.toString() ?? json['country_id']?.toString(),
       cityId: json['cityId']?.toString() ?? json['city_id']?.toString(),
       tags: tagList,
     );
   }
 }
+
 class ArtistDto extends UserDto {
   final DateTime? birthDate;
   final String? genderId;
@@ -380,10 +450,8 @@ class ArtistDto extends UserDto {
     required super.tags,
     this.birthDate,
     this.genderId,
-  }) : super(
-          isBand: false,
-        );
-   Map<String, dynamic> toJson() {
+  }) : super(isBand: false);
+  Map<String, dynamic> toJson() {
     final m = <String, dynamic>{
       'id': id,
       'email': email,
@@ -401,12 +469,13 @@ class ArtistDto extends UserDto {
     };
     if (birthDate != null) {
       m['birthDate'] = birthDate!.toIso8601String();
-    } 
+    }
     if (genderId != null) {
       m['genderId'] = genderId;
-    } 
+    }
     return m;
   }
+
   factory ArtistDto.fromJson(Map<String, dynamic> json) {
     DateTime? parseDate(dynamic v) {
       if (v == null) return null;
@@ -419,99 +488,157 @@ class ArtistDto extends UserDto {
     return ArtistDto(
       id: json['id']?.toString() ?? '',
       email: json['email']?.toString() ?? '',
-      passwordHash: json['passwordHash']?.toString() ?? json['password_hash']?.toString() ?? '',
+      passwordHash:
+          json['passwordHash']?.toString() ??
+          json['password_hash']?.toString() ??
+          '',
       name: json['name']?.toString(),
       description: json['description']?.toString() ?? '',
-      createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? json['created_at']?.toString() ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0),
-      isActive: json['isActive'] is bool ? json['isActive'] as bool : (json['isActive'] != null ? json['isActive'].toString().toLowerCase() == 'true' : false),
-      isFirstLogin: json['isFirstLogin'] is bool ? json['isFirstLogin'] as bool : (json['isFirstLogin'] != null ? json['isFirstLogin'].toString().toLowerCase() == 'true' : false),
-      isEmailConfirmed: json['isEmailConfirmed'] is bool ? json['isEmailConfirmed'] as bool : (json['isEmailConfirmed'] != null ? json['isEmailConfirmed'].toString().toLowerCase() == 'true' : false),
-      isLoggedOut: json['isLoggedOut'] is bool ? json['isLoggedOut'] as bool : (json['isLoggedOut'] != null ? json['isLoggedOut'].toString().toLowerCase() == 'true' : false),
-      countryId: json['countryId']?.toString() ?? json['country_id']?.toString(),
+      createdAt:
+          DateTime.tryParse(
+            json['createdAt']?.toString() ??
+                json['created_at']?.toString() ??
+                '',
+          ) ??
+          DateTime.fromMillisecondsSinceEpoch(0),
+      isActive: json['isActive'] is bool
+          ? json['isActive'] as bool
+          : (json['isActive'] != null
+                ? json['isActive'].toString().toLowerCase() == 'true'
+                : false),
+      isFirstLogin: json['isFirstLogin'] is bool
+          ? json['isFirstLogin'] as bool
+          : (json['isFirstLogin'] != null
+                ? json['isFirstLogin'].toString().toLowerCase() == 'true'
+                : false),
+      isEmailConfirmed: json['isEmailConfirmed'] is bool
+          ? json['isEmailConfirmed'] as bool
+          : (json['isEmailConfirmed'] != null
+                ? json['isEmailConfirmed'].toString().toLowerCase() == 'true'
+                : false),
+      isLoggedOut: json['isLoggedOut'] is bool
+          ? json['isLoggedOut'] as bool
+          : (json['isLoggedOut'] != null
+                ? json['isLoggedOut'].toString().toLowerCase() == 'true'
+                : false),
+      countryId:
+          json['countryId']?.toString() ?? json['country_id']?.toString(),
       cityId: json['cityId']?.toString() ?? json['city_id']?.toString(),
-      tags: (json['tags'] is List) ? List<String>.from(json['tags'].map((e) => e.toString())) : [],
-      birthDate: parseDate(json['birthDate'] ?? json['birth_date']),  
+      tags: (json['tags'] is List)
+          ? List<String>.from(json['tags'].map((e) => e.toString()))
+          : [],
+      birthDate: parseDate(json['birthDate'] ?? json['birth_date']),
     );
+  }
+}
 
-  }}
+class BandDto extends UserDto {
+  final BandMemberDto? bandMemberInfo;
+  BandDto({
+    required super.id,
+    required super.email,
+    required super.passwordHash,
+    required super.name,
+    required super.description,
+    required super.createdAt,
+    required super.isActive,
+    required super.isFirstLogin,
+    required super.isEmailConfirmed,
+    required super.isLoggedOut,
+    required super.countryId,
+    required super.cityId,
+    required super.tags,
+    this.bandMemberInfo,
+  }) : super(isBand: true);
 
-  class BandDto extends UserDto {
-    final BandMemberDto? bandMemberInfo;
-    BandDto({ 
-      required super.id,
-      required super.email,
-      required super.passwordHash,
-      required super.name,
-      required super.description,
-      required super.createdAt,
-      required super.isActive,
-      required super.isFirstLogin,
-      required super.isEmailConfirmed,
-      required super.isLoggedOut,
-      required super.countryId,
-      required super.cityId,
-      required super.tags,
-      this.bandMemberInfo,
-    }) : super(
-          isBand: true,
-        );  
-
-    Map<String, dynamic> toJson() { 
-      final m = <String, dynamic>{
-        'id': id,
-        'email': email,
-        'passwordHash': passwordHash,
-        'name': name,
-        'description': description,
-        'createdAt': createdAt.toIso8601String(),
-        'isActive': isActive,
-        'isFirstLogin': isFirstLogin,
-        'isEmailConfirmed': isEmailConfirmed,
-        'isLoggedOut': isLoggedOut,
-        'countryId': countryId,
-        'cityId': cityId,
-        'tags': tags,
+  Map<String, dynamic> toJson() {
+    final m = <String, dynamic>{
+      'id': id,
+      'email': email,
+      'passwordHash': passwordHash,
+      'name': name,
+      'description': description,
+      'createdAt': createdAt.toIso8601String(),
+      'isActive': isActive,
+      'isFirstLogin': isFirstLogin,
+      'isEmailConfirmed': isEmailConfirmed,
+      'isLoggedOut': isLoggedOut,
+      'countryId': countryId,
+      'cityId': cityId,
+      'tags': tags,
+    };
+    if (bandMemberInfo != null) {
+      m['bandMemberInfo'] = {
+        'id': bandMemberInfo!.id,
+        'name': bandMemberInfo!.name,
+        'age': bandMemberInfo!.age,
+        'displayOrder': bandMemberInfo!.displayOrder,
+        'bandId': bandMemberInfo!.bandId,
+        'bandRoleId': bandMemberInfo!.bandRoleId,
       };
-      if (bandMemberInfo != null) {
-        m['bandMemberInfo'] = {
-          'id': bandMemberInfo!.id,
-          'name': bandMemberInfo!.name,
-          'age': bandMemberInfo!.age,
-          'displayOrder': bandMemberInfo!.displayOrder,
-          'bandId': bandMemberInfo!.bandId,
-          'bandRoleId': bandMemberInfo!.bandRoleId,
-        };
-      } 
-      return m;
+    }
+    return m;
+  }
+
+  factory BandDto.fromJson(Map<String, dynamic> json) {
+    BandMemberDto? parseBandMemberInfo(dynamic v) {
+      if (v is Map<String, dynamic>) {
+        return BandMemberDto.fromJson(v);
+      }
+      return null;
     }
 
-    factory BandDto.fromJson(Map<String, dynamic> json) {
-      BandMemberDto? parseBandMemberInfo(dynamic v) {
-        if (v is Map<String, dynamic>) {
-          return BandMemberDto.fromJson(v);
-        }
-        return null;
-      } 
-      return BandDto(
-        id: json['id']?.toString() ?? '',
-        email: json['email']?.toString() ?? '',
-        passwordHash: json['passwordHash']?.toString() ?? json['password_hash']?.toString() ?? '',
-        name: json['name']?.toString(),
-        description: json['description']?.toString() ?? '',
-        createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? json['created_at']?.toString() ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0),
-        isActive: json['isActive'] is bool ? json['isActive'] as bool : (json['isActive'] != null ? json['isActive'].toString().toLowerCase() == 'true' : false),
-        isFirstLogin: json['isFirstLogin'] is bool ? json['isFirstLogin'] as bool : (json['isFirstLogin'] != null ? json['isFirstLogin'].toString().toLowerCase() == 'true' : false),
-        isEmailConfirmed: json['isEmailConfirmed'] is bool ? json['isEmailConfirmed'] as bool : (json['isEmailConfirmed'] != null ? json['isEmailConfirmed'].toString().toLowerCase() == 'true' : false),
-        isLoggedOut: json['isLoggedOut'] is bool ? json['isLoggedOut'] as bool : (json['isLoggedOut'] != null ? json['isLoggedOut'].toString().toLowerCase() == 'true' : false),
-        countryId: json['countryId']?.toString() ?? json['country_id']?.toString(),
-        cityId: json['cityId']?.toString() ?? json['city_id']?.toString(),
-        tags: (json['tags'] is List) ? List<String>.from(json['tags'].map((e) => e.toString())) : [],
-        bandMemberInfo: parseBandMemberInfo(json['bandMemberInfo'] ?? json['band_member_info']),  
-      );
-    }}
+    return BandDto(
+      id: json['id']?.toString() ?? '',
+      email: json['email']?.toString() ?? '',
+      passwordHash:
+          json['passwordHash']?.toString() ??
+          json['password_hash']?.toString() ??
+          '',
+      name: json['name']?.toString(),
+      description: json['description']?.toString() ?? '',
+      createdAt:
+          DateTime.tryParse(
+            json['createdAt']?.toString() ??
+                json['created_at']?.toString() ??
+                '',
+          ) ??
+          DateTime.fromMillisecondsSinceEpoch(0),
+      isActive: json['isActive'] is bool
+          ? json['isActive'] as bool
+          : (json['isActive'] != null
+                ? json['isActive'].toString().toLowerCase() == 'true'
+                : false),
+      isFirstLogin: json['isFirstLogin'] is bool
+          ? json['isFirstLogin'] as bool
+          : (json['isFirstLogin'] != null
+                ? json['isFirstLogin'].toString().toLowerCase() == 'true'
+                : false),
+      isEmailConfirmed: json['isEmailConfirmed'] is bool
+          ? json['isEmailConfirmed'] as bool
+          : (json['isEmailConfirmed'] != null
+                ? json['isEmailConfirmed'].toString().toLowerCase() == 'true'
+                : false),
+      isLoggedOut: json['isLoggedOut'] is bool
+          ? json['isLoggedOut'] as bool
+          : (json['isLoggedOut'] != null
+                ? json['isLoggedOut'].toString().toLowerCase() == 'true'
+                : false),
+      countryId:
+          json['countryId']?.toString() ?? json['country_id']?.toString(),
+      cityId: json['cityId']?.toString() ?? json['city_id']?.toString(),
+      tags: (json['tags'] is List)
+          ? List<String>.from(json['tags'].map((e) => e.toString()))
+          : [],
+      bandMemberInfo: parseBandMemberInfo(
+        json['bandMemberInfo'] ?? json['band_member_info'],
+      ),
+    );
+  }
+}
 
 class BandMemberDto {
-  final String id;  
+  final String id;
   final String name;
   final int age;
   final int displayOrder;
@@ -542,6 +669,7 @@ class BandMemberDto {
       bandRoleId: bandRoleId ?? this.bandRoleId,
     );
   }
+
   Map<String, dynamic> toJson() => {
     'id': id,
     'name': name,
@@ -551,43 +679,34 @@ class BandMemberDto {
     'bandRoleId': bandRoleId,
   };
 
-
   factory BandMemberDto.fromJson(Map<String, dynamic> json) {
     return BandMemberDto(
       id: json['id']?.toString() ?? const Uuid().v4(),
       name: json['name']?.toString() ?? '',
-      age: (json['age'] is int) ? json['age'] as int : int.tryParse(json['age']?.toString() ?? '') ?? 0,
-      displayOrder: (json['displayOrder'] is int) ? json['displayOrder'] as int : int.tryParse(json['displayOrder']?.toString() ?? '') ?? 0,
+      age: (json['age'] is int)
+          ? json['age'] as int
+          : int.tryParse(json['age']?.toString() ?? '') ?? 0,
+      displayOrder: (json['displayOrder'] is int)
+          ? json['displayOrder'] as int
+          : int.tryParse(json['displayOrder']?.toString() ?? '') ?? 0,
       bandId: json['bandId']?.toString() ?? '',
       bandRoleId: json['bandRoleId']?.toString() ?? '',
     );
   }
-} 
+}
 
-  class BandRoleDto {
-  final String id;  
+class BandRoleDto {
+  final String id;
   final String name;
-  BandRoleDto({
-    required this.id,
-    required this.name,
-  });
+  BandRoleDto({required this.id, required this.name});
 
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'name': name,
-  };
-  
+  Map<String, dynamic> toJson() => {'id': id, 'name': name};
+
   factory BandRoleDto.fromJson(Map<String, dynamic> json) => BandRoleDto(
     id: json['id']?.toString() ?? '',
     name: json['name']?.toString() ?? '',
   );
 }
-
-
-
-
-
-
 
 class CountryDto {
   final String id;
@@ -596,9 +715,14 @@ class CountryDto {
   CountryDto({required this.id, required this.name});
 
   factory CountryDto.fromJson(Map<String, dynamic> json) => CountryDto(
-        id: json['id']?.toString() ?? json['value']?.toString() ?? '',
-        name: json['name']?.toString() ?? json['label']?.toString() ?? json['text']?.toString() ?? json['value']?.toString() ?? '',
-      );
+    id: json['id']?.toString() ?? json['value']?.toString() ?? '',
+    name:
+        json['name']?.toString() ??
+        json['label']?.toString() ??
+        json['text']?.toString() ??
+        json['value']?.toString() ??
+        '',
+  );
 }
 
 class CityDto {
@@ -609,10 +733,15 @@ class CityDto {
   CityDto({required this.id, required this.name, this.countryId});
 
   factory CityDto.fromJson(Map<String, dynamic> json) => CityDto(
-        id: json['id']?.toString() ?? json['value']?.toString() ?? '',
-        name: json['name']?.toString() ?? json['label']?.toString() ?? json['text']?.toString() ?? json['value']?.toString() ?? '',
-        countryId: json['countryId']?.toString() ?? json['country_id']?.toString(),
-      );
+    id: json['id']?.toString() ?? json['value']?.toString() ?? '',
+    name:
+        json['name']?.toString() ??
+        json['label']?.toString() ??
+        json['text']?.toString() ??
+        json['value']?.toString() ??
+        '',
+    countryId: json['countryId']?.toString() ?? json['country_id']?.toString(),
+  );
 }
 
 class TagCategoryDto {
@@ -620,12 +749,18 @@ class TagCategoryDto {
   final String name;
   final bool isForBand;
 
-  TagCategoryDto({required this.id, required this.name, required this.isForBand});
+  TagCategoryDto({
+    required this.id,
+    required this.name,
+    required this.isForBand,
+  });
 
   factory TagCategoryDto.fromJson(Map<String, dynamic> json) => TagCategoryDto(
     id: json['id']?.toString() ?? '',
     name: json['name']?.toString() ?? '',
-    isForBand: json['isForBand'] is bool ? json['isForBand'] as bool : (json['isForBand']?.toString().toLowerCase() == 'true'),
+    isForBand: json['isForBand'] is bool
+        ? json['isForBand'] as bool
+        : (json['isForBand']?.toString().toLowerCase() == 'true'),
   );
 }
 
@@ -639,7 +774,9 @@ class TagDto {
   factory TagDto.fromJson(Map<String, dynamic> json) => TagDto(
     id: json['id']?.toString() ?? '',
     name: json['name']?.toString() ?? '',
-    tagCategoryId: json['tagCategoryId']?.toString() ?? json['tag_category_id']?.toString(),
+    tagCategoryId:
+        json['tagCategoryId']?.toString() ??
+        json['tag_category_id']?.toString(),
   );
 }
 
@@ -651,7 +788,11 @@ class GenderDto {
 
   factory GenderDto.fromJson(Map<String, dynamic> json) => GenderDto(
     id: json['id']?.toString() ?? json['value']?.toString() ?? '',
-    name: json['name']?.toString() ?? json['label']?.toString() ?? json['value']?.toString() ?? '',
+    name:
+        json['name']?.toString() ??
+        json['label']?.toString() ??
+        json['value']?.toString() ??
+        '',
   );
 }
 
@@ -682,23 +823,23 @@ class MatchPreferenceDto {
     this.filterTagsIds,
   });
 
-  factory MatchPreferenceDto.fromJson(Map<String, dynamic> json) => MatchPreferenceDto(
-    showArtists: json['showArtists'] as bool?,
-    showBands: json['showBands'] as bool?,
-    maxDistance: json['maxDistance'] as int?,
-    artistMinAge: json['artistMinAge'] as int?,
-    artistMaxAge: json['artistMaxAge'] as int?,
-    countryId: json['countryId']?.toString(),
-    cityId: json['cityId']?.toString(),
-    artistGenderId: json['artistGenderId']?.toString(),
-    bandMinMembersCount: json['bandMinMembersCount'] as int?,
-    bandMaxMembersCount: json['bandMaxMembersCount'] as int?,
-    filterTagsIds: (json['filterTagsIds'] is List)
-        ? List<String>.from(json['filterTagsIds'].map((e) => e.toString()))
-        : null,
-  );
+  factory MatchPreferenceDto.fromJson(Map<String, dynamic> json) =>
+      MatchPreferenceDto(
+        showArtists: json['showArtists'] as bool?,
+        showBands: json['showBands'] as bool?,
+        maxDistance: json['maxDistance'] as int?,
+        artistMinAge: json['artistMinAge'] as int?,
+        artistMaxAge: json['artistMaxAge'] as int?,
+        countryId: json['countryId']?.toString(),
+        cityId: json['cityId']?.toString(),
+        artistGenderId: json['artistGenderId']?.toString(),
+        bandMinMembersCount: json['bandMinMembersCount'] as int?,
+        bandMaxMembersCount: json['bandMaxMembersCount'] as int?,
+        filterTagsIds: (json['filterTagsIds'] is List)
+            ? List<String>.from(json['filterTagsIds'].map((e) => e.toString()))
+            : null,
+      );
 }
-
 
 class UpdateMatchPreferenceDto {
   final bool showArtists;
@@ -768,7 +909,8 @@ class OtherUserProfileDto {
   });
 
   factory OtherUserProfileDto.fromJson(Map<String, dynamic> json) {
-    final isBand = json['userType']?.toString() == 'band' ||
+    final isBand =
+        json['userType']?.toString() == 'band' ||
         (json['isBand'] is bool ? json['isBand'] as bool : false);
 
     return OtherUserProfileDto(
@@ -782,17 +924,18 @@ class OtherUserProfileDto {
           : [],
       profilePictures: (json['profilePictures'] is List)
           ? List<ProfilePictureDto>.from(
-          json['profilePictures'].map((e) => ProfilePictureDto.fromJson(e)))
+              json['profilePictures'].map((e) => ProfilePictureDto.fromJson(e)),
+            )
           : [],
       musicSamples: (json['musicSamples'] is List)
           ? List<MusicSampleDto>.from(
-          json['musicSamples'].map((e) => MusicSampleDto.fromJson(e)))
+              json['musicSamples'].map((e) => MusicSampleDto.fromJson(e)),
+            )
           : null,
       isBand: isBand,
     );
   }
 }
-
 
 class OtherUserProfileArtistDto extends OtherUserProfileDto {
   final int? age;
@@ -811,9 +954,7 @@ class OtherUserProfileArtistDto extends OtherUserProfileDto {
     this.age,
     this.gender,
     this.birthDate,
-  }) : super(
-    isBand: false,
-  );
+  }) : super(isBand: false);
 
   int? get calculatedAge {
     if (birthDate == null) return age;
@@ -845,22 +986,24 @@ class OtherUserProfileArtistDto extends OtherUserProfileDto {
           : [],
       profilePictures: (json['profilePictures'] is List)
           ? List<ProfilePictureDto>.from(
-          json['profilePictures'].map((e) => ProfilePictureDto.fromJson(e)))
+              json['profilePictures'].map((e) => ProfilePictureDto.fromJson(e)),
+            )
           : [],
       musicSamples: (json['musicSamples'] is List)
           ? List<MusicSampleDto>.from(
-          json['musicSamples'].map((e) => MusicSampleDto.fromJson(e)))
+              json['musicSamples'].map((e) => MusicSampleDto.fromJson(e)),
+            )
           : null,
-      age: (json['age'] is int) ? json['age'] as int : int.tryParse(
-          json['age']?.toString() ?? ''),
+      age: (json['age'] is int)
+          ? json['age'] as int
+          : int.tryParse(json['age']?.toString() ?? ''),
       gender: json['gender']?.toString(),
       birthDate: parseDate(json['birthDate'] ?? json['birth_date']),
     );
   }
 }
 
-
-  class OtherUserProfileBandDto extends OtherUserProfileDto {
+class OtherUserProfileBandDto extends OtherUserProfileDto {
   final List<BandMemberDto> bandMembers;
 
   OtherUserProfileBandDto({
@@ -873,9 +1016,7 @@ class OtherUserProfileArtistDto extends OtherUserProfileDto {
     required super.profilePictures,
     super.musicSamples,
     required this.bandMembers,
-  }) : super(
-    isBand: true,
-  );
+  }) : super(isBand: true);
 
   factory OtherUserProfileBandDto.fromJson(Map<String, dynamic> json) {
     return OtherUserProfileBandDto(
@@ -889,19 +1030,21 @@ class OtherUserProfileArtistDto extends OtherUserProfileDto {
           : [],
       profilePictures: (json['profilePictures'] is List)
           ? List<ProfilePictureDto>.from(
-          json['profilePictures'].map((e) => ProfilePictureDto.fromJson(e)))
+              json['profilePictures'].map((e) => ProfilePictureDto.fromJson(e)),
+            )
           : [],
       musicSamples: (json['musicSamples'] is List)
           ? List<MusicSampleDto>.from(
-          json['musicSamples'].map((e) => MusicSampleDto.fromJson(e)))
+              json['musicSamples'].map((e) => MusicSampleDto.fromJson(e)),
+            )
           : null,
       bandMembers: (json['bandMembers'] is List)
           ? List<BandMemberDto>.from(
-          json['bandMembers'].map((e) => BandMemberDto.fromJson(e)))
+              json['bandMembers'].map((e) => BandMemberDto.fromJson(e)),
+            )
           : [],
     );
   }
-
 }
 
 class MessageDto {
@@ -933,14 +1076,15 @@ class MessageDto {
   factory MessageDto.fromJson(Map<String, dynamic> json) {
     // Generate a temporary ID if not provided by backend
     final id = json['id']?.toString();
-    final tempId = id != null && id.isNotEmpty 
-        ? id 
+    final tempId = id != null && id.isNotEmpty
+        ? id
         : '${json['senderId']}-${json['timestamp']}'.replaceAll(':', '-');
-    
+
     return MessageDto(
       id: tempId,
       content: json['content']?.toString() ?? '',
-      timestamp: DateTime.tryParse(json['timestamp']?.toString() ?? '') ??
+      timestamp:
+          DateTime.tryParse(json['timestamp']?.toString() ?? '') ??
           DateTime.now(),
       senderId: json['senderId']?.toString() ?? '',
       receiverId: json['receiverId']?.toString() ?? '',
@@ -973,7 +1117,9 @@ class MessagePreviewDto {
       final messages = json['messages'] as List;
       final lastMessageJson = messages.last;
       lastMsg = lastMessageJson['content']?.toString() ?? '';
-      lastTime = DateTime.tryParse(lastMessageJson['timestamp']?.toString() ?? '') ?? DateTime.now();
+      lastTime =
+          DateTime.tryParse(lastMessageJson['timestamp']?.toString() ?? '') ??
+          DateTime.now();
     }
 
     return MessagePreviewDto(
@@ -985,6 +1131,3 @@ class MessagePreviewDto {
     );
   }
 }
-
-
-

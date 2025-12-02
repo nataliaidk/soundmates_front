@@ -415,7 +415,11 @@ class _VisitProfileScreenState extends State<VisitProfileScreen>
                             child: TabBarView(
                               controller: _tabController,
                               children: [
-                                VisitInfoTab(data: data),
+                                VisitInfoTab(
+                                  data: data,
+                                  api: widget.api,
+                                  userId: widget.userId,
+                                ),
                                 VisitMediaTab(items: data.galleryItems),
                               ],
                             ),
