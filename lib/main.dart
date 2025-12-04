@@ -274,6 +274,7 @@ class _MyAppState extends State<MyApp> {
           return MaterialApp(
             navigatorKey: navigatorKey,
             title: 'Soundmates Demo',
+            debugShowCheckedModeBanner: false,
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: themeProvider.themeMode,
