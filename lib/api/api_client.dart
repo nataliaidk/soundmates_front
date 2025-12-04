@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter/foundation.dart';
 
 import 'models.dart';
 import 'token_store.dart';
@@ -22,7 +23,12 @@ class ApiClient {
     String? baseUrl,
   }) : baseUrl = _normalizeBase(
          baseUrl ??
-             dotenv.get('API_BASE_URL', fallback: 'http://localhost:5000/'),
+             // If running on Android, prefer API_ANDROID_URL from dotenv (falls back to API_BASE_URL then localhost)
+             (defaultTargetPlatform == TargetPlatform.android
+                 ? dotenv.get('API_ANDROID_URL',
+                     fallback: dotenv.get('API_BASE_URL',
+                         fallback: 'http://localhost:5000/'))
+                 : dotenv.get('API_BASE_URL', fallback: 'http://localhost:5000/')),
        );
 
   static String _normalizeBase(String url) {

@@ -40,6 +40,7 @@ class AppColors {
   static const Color surfaceDarkAlt = Color(0xFF2A2438);
   static const Color surfaceDarkGrey = Color(0xFF4A4A6A);
   static const Color surfaceCardPurple = Color(0xFF3D2C5E);
+
   static const Color backgroundFilterStart = Color(0xFF2D1B4E);
   static const Color backgroundFilterEnd = Color(0xFF150A32);
 
