@@ -50,17 +50,21 @@ class SettingsScreen extends StatelessWidget {
         children: [
           divider,
           const SizedBox(height: 12),
-          // Dark Mode
+          // Theme Mode Selector
           ListTile(
             contentPadding: const EdgeInsets.symmetric(horizontal: 4),
             visualDensity: VisualDensity.compact,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             leading: Icon(
-              Icons.dark_mode_outlined,
+              themeProvider.themeMode == ThemeMode.system
+                  ? Icons.brightness_auto
+                  : themeProvider.themeMode == ThemeMode.dark
+                      ? Icons.dark_mode
+                      : Icons.light_mode,
               color: isDark ? AppColors.textWhite : AppColors.textPrimaryAlt,
             ),
             title: Text(
-              'Dark Mode',
+              'Theme',
               style: TextStyle(
                 fontWeight: FontWeight.w600,
                 fontSize: 16,
@@ -68,9 +72,11 @@ class SettingsScreen extends StatelessWidget {
               ),
             ),
             subtitle: Text(
-              themeProvider.isDarkMode 
-                  ? 'Dark mode enabled' 
-                  : 'Light mode enabled',
+              themeProvider.themeMode == ThemeMode.system
+                  ? 'Following system settings'
+                  : themeProvider.themeMode == ThemeMode.dark
+                      ? 'Dark mode'
+                      : 'Light mode',
               style: TextStyle(
                 color: isDark 
                     ? AppColors.textWhite70 
@@ -79,11 +85,101 @@ class SettingsScreen extends StatelessWidget {
                 letterSpacing: 0.3,
               ),
             ),
-            trailing: Switch(
-              value: themeProvider.isDarkMode,
-              onChanged: (value) {
-                themeProvider.toggleTheme();
-              },
+            trailing: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? AppColors.surfaceDarkAlt
+                    : AppColors.backgroundLight,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: isDark
+                      ? AppColors.surfaceDarkGrey
+                      : AppColors.borderLight,
+                ),
+              ),
+              child: DropdownButton<ThemeMode>(
+                value: themeProvider.themeMode,
+                underline: const SizedBox(),
+                isDense: true,
+                dropdownColor: isDark
+                    ? AppColors.surfaceDark
+                    : AppColors.surfaceWhite,
+                icon: Icon(
+                  Icons.arrow_drop_down,
+                  color: isDark ? AppColors.textWhite70 : AppColors.textGrey,
+                ),
+                items: [
+                  DropdownMenuItem(
+                    value: ThemeMode.system,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.brightness_auto,
+                          size: 18,
+                          color: isDark ? AppColors.textWhite70 : AppColors.textGrey,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'System',
+                          style: TextStyle(
+                            color: isDark ? AppColors.textWhite : AppColors.textPrimary,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  DropdownMenuItem(
+                    value: ThemeMode.light,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.light_mode,
+                          size: 18,
+                          color: isDark ? AppColors.textWhite70 : AppColors.textGrey,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Light',
+                          style: TextStyle(
+                            color: isDark ? AppColors.textWhite : AppColors.textPrimary,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  DropdownMenuItem(
+                    value: ThemeMode.dark,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.dark_mode,
+                          size: 18,
+                          color: isDark ? AppColors.textWhite70 : AppColors.textGrey,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Dark',
+                          style: TextStyle(
+                            color: isDark ? AppColors.textWhite : AppColors.textPrimary,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                onChanged: (ThemeMode? newMode) {
+                  if (newMode != null) {
+                    themeProvider.setThemeMode(newMode);
+                  }
+                },
+              ),
             ),
           ),
           const SizedBox(height: 8),

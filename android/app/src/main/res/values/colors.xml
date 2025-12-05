@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Splash screen background color matching Flutter's dark theme -->
+    <color name="splash_background">#FF1A1A1A</color>
+    <color name="splash_background_dark">#FF1A1525</color>
+    <!-- Accent purple color -->
+    <color name="accent_purple">#FF7B51D3</color>
+</resources>
+

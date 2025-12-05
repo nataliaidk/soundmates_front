@@ -1,52 +1,144 @@
-# zpi_test
+# SoundMates
 
-A new Flutter project.
+A Flutter application for connecting music enthusiasts.
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
+### Prerequisites
 
-A few resources to get you started if this is your first Flutter project:
+- Flutter SDK (3.9.2 or later)
+- Dart SDK (included with Flutter)
+- Android Studio (for Android emulator)
+- A `.env` file in the project root with configuration:
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
-
-## API demo
-
-This project includes a small API client wired to the OpenAPI at `http://localhost:5000/`.
-
-Files added:
-- `lib/api/api_client.dart` — small HTTP client for the Soundmates API.
-- `lib/api/models.dart` — DTO model classes used by the client.
-- `lib/main.dart` — demo page (`ApiDemoPage`) with buttons to call `GET /users` and `GET /messages/preview` and show responses.
-
-How to configure and run:
-
-1. Create a `.env` file in the project root with the API base URL (optional if using default `http://localhost:5000/`):
-
-```
+```env
 API_BASE_URL=http://localhost:5000/
+API_ANDROID_URL=http://10.0.2.2:5000
+LOGO_PATH=lib/assets/logo.png
 ```
 
-2. Get packages:
+### Install Dependencies
 
-```
+```bash
 flutter pub get
 ```
 
-3. Run the app (desktop or device):
+---
 
+## Native Splash Screen Setup
+
+This project uses `flutter_native_splash` to generate native splash screens for Android, iOS, and Web.
+
+### Configuration
+
+The splash screen is configured in `flutter_native_splash.yaml`. Key settings:
+
+- **Background colors**: Light mode (`#FFFFFF`), Dark mode (`#1A1A1A`)
+- **Logo**: `lib/assets/logo.png`
+- **Android 12+**: Uses background color only (no icon) to avoid circular mask clipping
+
+### Generate Splash Screen Assets
+
+After modifying `flutter_native_splash.yaml`, regenerate the assets:
+
+```bash
+dart run flutter_native_splash:create
 ```
+
+This updates native resources in `android/app/src/main/res/` and `ios/Runner/`.
+
+---
+
+## Running the App
+
+### Web
+
+Run the app on a local web server:
+
+```bash
 flutter run -d web-server --web-port=5555 --web-hostname=localhost
 ```
 
-4. Open the app and press "Get Users" or "Get Message Previews" to see the raw JSON responses returned by the API running at `API_BASE_URL`.
+Then open `http://localhost:5555` in your browser.
 
-Notes and next steps:
-- The client is intentionally simple (uses `http` and manual DTOs). For production, consider code generation using OpenAPI Generator or `openapi_yaml` packages.
-- Endpoints for file upload and authentication tokens are present in `ApiClient` but the demo UI only exercises simple GET endpoints. You can extend it to call register/login and persist tokens.
+### Android Emulator
+
+1. Start your Android emulator from Android Studio (AVD Manager)
+2. Verify the emulator is detected:
+
+```bash
+flutter devices
+```
+
+3. Run the app:
+
+```bash
+flutter run -d emulator-5554
+```
+
+Or use **Run > Run 'main.dart'** in Android Studio.
+
+---
+
+## Android Build Troubleshooting
+
+### Error: "Incompatible magic value 0 in class file"
+
+This error indicates corrupted Gradle cache files. Follow these steps to fix:
+
+#### Step 1: Stop Gradle Daemon
+
+```powershell
+cd android
+.\gradlew.bat --stop
+cd ..
+```
+
+#### Step 2: Clean Project Caches
+
+```powershell
+flutter clean
+Remove-Item -Recurse -Force android\.gradle -ErrorAction SilentlyContinue
+Remove-Item -Recurse -Force android\app\build -ErrorAction SilentlyContinue
+Remove-Item -Recurse -Force android\build -ErrorAction SilentlyContinue
+Remove-Item -Recurse -Force build -ErrorAction SilentlyContinue
+```
+
+#### Step 3: Clean User Gradle Cache
+
+```powershell
+Remove-Item -Recurse -Force $env:USERPROFILE\.gradle\caches -ErrorAction SilentlyContinue
+Remove-Item -Recurse -Force $env:USERPROFILE\.gradle\daemon -ErrorAction SilentlyContinue
+```
+
+#### Step 4: Rebuild
+
+```bash
+flutter pub get
+flutter run -d emulator-5554
+```
+
+### Prevention Tips
+
+- **Don't interrupt builds**: Avoid pressing `Ctrl+C` while Gradle is downloading dependencies or compiling
+- **Graceful exit**: Press `q` in the terminal to quit Flutter run gracefully
+- **Stop daemon first**: If you need to cancel, run `.\android\gradlew.bat --stop` before cleaning caches
+
+---
+
+## API Client
+
+This project includes an API client for the SoundMates backend at `http://localhost:5000/`.
+
+### Key Files
+
+- `lib/api/api_client.dart` — HTTP client for the SoundMates API
+- `lib/api/models.dart` — DTO model classes
+- `lib/api/token_store.dart` — Secure token storage
+
+### Notes
+
+- The client uses the `http` package with manual DTOs
+- Authentication tokens are stored securely using `flutter_secure_storage`
+- For production, consider code generation using OpenAPI Generator
 

@@ -1,0 +1,53 @@
+# flutter_native_splash Configuration for SoundMates
+#
+# To use this configuration:
+# 1. Add flutter_native_splash to dev_dependencies in pubspec.yaml:
+#    flutter_native_splash: ^2.3.5
+#
+# 2. Run: flutter pub get
+#
+# 3. Generate splash screens: dart run flutter_native_splash:create
+#
+# This file configures the native splash screens for Android, iOS, and Web
+# to provide a seamless transition from native launch to Flutter app.
+
+flutter_native_splash:
+  # Background color for the splash screen
+  # Matches LoginScreen: AppColors.surfaceWhite (light mode)
+  color: "#FFFFFF"
+
+  # Dark mode: Matches LoginScreen: AppColors.backgroundDark (0xFF1A1A1A)
+  color_dark: "#1A1A1A"
+
+  # Logo image (centered) - Shows from frame 0
+  image: lib/assets/logo.png
+
+  # Branding image at the bottom (optional)
+  # branding: assets/branding.png
+
+  # Android 12+ specific settings
+  # On Android 12+, the splash icon is displayed inside a circular mask
+  # which clips the logo. We disable the icon entirely and show only
+  # the background color, letting Flutter's SplashScreen display the full logo.
+  android_12:
+    # Background color for Android 12+ (matches Flutter splash background)
+    color: "#FFFFFF"
+    color_dark: "#1A1A1A"
+    # No image - prevents the circular mask clipping issue
+    # The Flutter SplashScreen will display the logo properly
+
+  # iOS specific settings
+  ios: true
+
+  # Web specific settings
+  web: true
+
+  # Preserve the native splash screen until Flutter is ready
+  # This prevents a white flash
+  android: true
+  android_gravity: center
+  android_screen_orientation: portrait
+
+  # fullscreen mode
+  fullscreen: true
+
