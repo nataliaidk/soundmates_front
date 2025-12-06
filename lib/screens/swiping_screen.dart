@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../widgets/app_bottom_nav.dart';
 import '../widgets/app_side_nav.dart';
-import '../widgets/loading_screen.dart';
 import '../api/api_client.dart';
 import '../api/token_store.dart';
 import '../api/event_hub_service.dart';
@@ -498,11 +497,46 @@ class _LoadingOverlayState extends State<_LoadingOverlay>
   Widget build(BuildContext context) {
     if (!_visible) return const SizedBox.shrink();
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return FadeTransition(
       opacity: Tween<double>(begin: 1.0, end: 0.0).animate(_fadeAnimation),
-      child: const LoadingScreen(
-        compact: true,
-        message: 'Finding matches...',
+      child: Container(
+        color: isDark ? AppColors.backgroundDark : AppColors.surfaceWhite,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Logo
+              Image.asset(
+                dotenv.env['LOGO_PATH'] ?? 'lib/assets/logo.png',
+                width: 120,
+                height: 120,
+                fit: BoxFit.contain,
+              ),
+              const SizedBox(height: 32),
+              // Loading text
+              Text(
+                'Finding matches...',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w500,
+                  color: isDark ? AppColors.textWhite70 : AppColors.textGrey,
+                ),
+              ),
+              const SizedBox(height: 24),
+              // Loading indicator
+              const SizedBox(
+                width: 32,
+                height: 32,
+                child: CircularProgressIndicator(
+                  strokeWidth: 3,
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.accentPurpleMid),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

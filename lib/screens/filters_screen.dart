@@ -8,7 +8,6 @@ import 'package:soundmates/api/api_client.dart';
 import '../api/models.dart';
 import '../api/token_store.dart';
 import '../widgets/city_map_preview.dart';
-import '../widgets/loading_screen.dart';
 
 class FiltersScreen extends StatefulWidget {
   final ApiClient api;
@@ -486,7 +485,7 @@ class _FiltersScreenState extends State<FiltersScreen> {
         ],
       ),
       body: _isLoading
-          ? const LoadingScreen(compact: true, message: 'Loading preferences...')
+          ? const Center(child: CircularProgressIndicator(color: Colors.white))
           : Column(
         children: [
           // Main scrollable content
