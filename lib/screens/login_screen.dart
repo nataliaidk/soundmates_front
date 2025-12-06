@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../api/api_client.dart';
 import '../api/token_store.dart';
@@ -35,18 +36,27 @@ class _LoginScreenState extends State<LoginScreen> {
     if (passErr != null) return setState(() => _status = passErr);
 
     setState(() => _status = 'Logging in...');
-    final resp = await widget.api.login(
-      LoginDto(email: _email.text.trim(), password: _pass.text),
-    );
-    final stored = await widget.tokens.readAccessToken();
-    final headers = resp.headers.entries
-        .map((e) => '${e.key}: ${e.value}')
-        .join('\n');
-    setState(
-      () => _status =
-          'Login: ${resp.statusCode} ; stored token: ${stored ?? '(none)'}\nbody: ${resp.body}\nheaders:\n$headers',
-    );
-    if (resp.statusCode == 200) widget.onLoggedIn();
+    try {
+      final resp = await widget.api.login(
+        LoginDto(email: _email.text.trim(), password: _pass.text),
+      );
+
+      if (resp.statusCode == 200) {
+        setState(() => _status = 'Success');
+        widget.onLoggedIn();
+      } else {
+        String msg = 'Login failed';
+        try {
+          final body = jsonDecode(resp.body);
+          if (body is Map && body['message'] != null) {
+            msg = body['message'];
+          }
+        } catch (_) {}
+        setState(() => _status = msg);
+      }
+    } catch (e) {
+      setState(() => _status = 'An error occurred. Please try again.');
+    }
   }
 
   @override

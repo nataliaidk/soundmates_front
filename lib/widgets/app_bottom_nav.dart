@@ -65,49 +65,63 @@ class _AppBottomNavState extends State<AppBottomNav> {
     final double size = emphasized ? 56 : 48;
     final double iconSize = emphasized ? 28 : 24;
 
-    return GestureDetector(
-      onTapDown: (_) {
-        setState(() => _pressedItem = item);
-      },
-      onTapUp: (_) {
-        setState(() => _pressedItem = null);
-        HapticFeedback.lightImpact();
-        onTap();
-      },
-      onTapCancel: () {
-        setState(() => _pressedItem = null);
-      },
-      child: AnimatedScale(
-        scale: isPressed ? 0.9 : 1.0,
-        duration: const Duration(milliseconds: 100),
-        curve: Curves.easeOut,
-        child: Semantics(
-          button: true,
-          label: item == BottomNavItem.home
-              ? 'Discover'
-              : (item == BottomNavItem.profile ? 'Profile' : 'Messages'),
-          child: Container(
-            width: size,
-            height: size,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: selected ? _activeGradient : null,
-              color: selected ? null : Colors.transparent,
-              boxShadow: selected
-                  ? [
-                      BoxShadow(
-                        color: AppColors.accentPurple.withOpacity(isDark ? 0.4 : 0.3),
-                        blurRadius: 12,
-                        spreadRadius: isDark ? 2 : 1,
-                      ),
-                    ]
-                  : null,
-            ),
-            child: Center(
-              child: Icon(
-                icon,
-                size: iconSize,
-                color: _iconColor(item, isDark),
+    String tooltip;
+    switch (item) {
+      case BottomNavItem.profile:
+        tooltip = 'Your Profile';
+        break;
+      case BottomNavItem.home:
+        tooltip = 'Discover';
+        break;
+      case BottomNavItem.messages:
+        tooltip = 'Messages';
+        break;
+    }
+
+    return Tooltip(
+      message: tooltip,
+      child: GestureDetector(
+        onTapDown: (_) {
+          setState(() => _pressedItem = item);
+        },
+        onTapUp: (_) {
+          setState(() => _pressedItem = null);
+          HapticFeedback.lightImpact();
+          onTap();
+        },
+        onTapCancel: () {
+          setState(() => _pressedItem = null);
+        },
+        child: AnimatedScale(
+          scale: isPressed ? 0.9 : 1.0,
+          duration: const Duration(milliseconds: 100),
+          curve: Curves.easeOut,
+          child: Semantics(
+            button: true,
+            label: tooltip,
+            child: Container(
+              width: size,
+              height: size,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: selected ? _activeGradient : null,
+                color: selected ? null : Colors.transparent,
+                boxShadow: selected
+                    ? [
+                        BoxShadow(
+                          color: AppColors.accentPurple.withOpacity(isDark ? 0.4 : 0.3),
+                          blurRadius: 12,
+                          spreadRadius: isDark ? 2 : 1,
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Center(
+                child: Icon(
+                  icon,
+                  size: iconSize,
+                  color: _iconColor(item, isDark),
+                ),
               ),
             ),
           ),
