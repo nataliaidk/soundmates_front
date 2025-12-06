@@ -628,6 +628,7 @@ class _ProfileManageMediaScreenState extends State<ProfileManageMediaScreen> {
                                         icon: const Icon(
                                           Icons.arrow_back,
                                           size: 16,
+                                          color: AppColors.textPrimary,
                                         ),
                                         onPressed: () {
                                           if (isImage) {
@@ -660,6 +661,7 @@ class _ProfileManageMediaScreenState extends State<ProfileManageMediaScreen> {
                                         icon: const Icon(
                                           Icons.arrow_forward,
                                           size: 16,
+                                          color: AppColors.textPrimary,
                                         ),
                                         onPressed: () {
                                           if (isImage) {

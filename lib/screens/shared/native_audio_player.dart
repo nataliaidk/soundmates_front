@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import '../../theme/app_design_system.dart';
+import '../../utils/audio_player_manager.dart';
 
 /// Generic audio track interface for the native audio player
 class AudioTrack {
@@ -46,6 +47,7 @@ class _NativeAudioPlayerState extends State<NativeAudioPlayer> {
 
   Future<void> _initializePlayer() async {
     _player = AudioPlayer();
+    AudioPlayerManager.instance.registerPlayer(_player);
     await _loadTrack(_currentTrackIndex);
   }
 
@@ -85,6 +87,8 @@ class _NativeAudioPlayerState extends State<NativeAudioPlayer> {
 
   @override
   void dispose() {
+    _player.stop();
+    AudioPlayerManager.instance.unregisterPlayer(_player);
     _player.dispose();
     super.dispose();
   }
@@ -240,11 +244,13 @@ class _NativeAudioPlayerState extends State<NativeAudioPlayer> {
 
                   // Play/Pause Button
                   GestureDetector(
-                    onTap: () {
+                    onTap: () async {
                       if (isPlaying) {
-                        _player.pause();
+                        await _player.pause();
                       } else {
-                        _player.play();
+                        // Pause all other players before playing this one
+                        await AudioPlayerManager.instance.pauseAllExcept(_player);
+                        await _player.play();
                       }
                     },
                     child: Container(

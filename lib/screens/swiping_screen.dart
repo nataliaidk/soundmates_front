@@ -8,6 +8,7 @@ import '../widgets/app_side_nav.dart';
 import '../api/api_client.dart';
 import '../api/token_store.dart';
 import '../api/event_hub_service.dart';
+import '../utils/audio_player_manager.dart';
 import 'swiping/swiping_data_loader.dart';
 import 'swiping/swiping_view_model.dart';
 import 'swiping/widgets/swiping_card.dart';
@@ -32,7 +33,7 @@ class SwipingScreen extends StatefulWidget {
 }
 
 class _SwipingScreenState extends State<SwipingScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late SwipingDataLoader _dataLoader;
   SwipingViewModel? _viewModel;
   bool _isLoading = true;
@@ -48,6 +49,7 @@ class _SwipingScreenState extends State<SwipingScreen>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _dataLoader = SwipingDataLoader(widget.api);
     _loadData();
 
@@ -64,6 +66,15 @@ class _SwipingScreenState extends State<SwipingScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _focusNode.requestFocus();
     });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // Stop all audio when app goes to background or inactive
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      AudioPlayerManager.instance.stopAll();
+    }
   }
 
   Future<void> _loadData() async {
@@ -91,6 +102,8 @@ class _SwipingScreenState extends State<SwipingScreen>
   }
 
   Future<void> _handleLike(String id, int index) async {
+    // Stop all audio when swiping
+    await AudioPlayerManager.instance.stopAll();
     await _dataLoader.like(id);
     if (mounted) {
       setState(() {
@@ -115,6 +128,8 @@ class _SwipingScreenState extends State<SwipingScreen>
   }
 
   Future<void> _handleDislike(String id, int index) async {
+    // Stop all audio when swiping
+    await AudioPlayerManager.instance.stopAll();
     await _dataLoader.dislike(id);
     if (mounted) {
       setState(() {
@@ -140,6 +155,8 @@ class _SwipingScreenState extends State<SwipingScreen>
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    AudioPlayerManager.instance.stopAll();
     _focusNode.dispose();
     _ambientController.dispose();
     super.dispose();
@@ -155,7 +172,12 @@ class _SwipingScreenState extends State<SwipingScreen>
       // No users and not loading - show empty state
       mainContent = SwipingEmptyState(
         isLoading: false,
-        onFilterTap: () => Navigator.pushNamed(context, '/filters'),
+        onFilterTap: () async {
+          await AudioPlayerManager.instance.stopAll();
+          if (mounted) {
+            Navigator.pushNamed(context, '/filters');
+          }
+        },
       );
     } else if (hasUsers) {
       // Has users - show cards
@@ -203,8 +225,12 @@ class _SwipingScreenState extends State<SwipingScreen>
                 isWideLayout: isWideLayout,
                 onPrimaryDislike: () =>
                     _topCardKey?.currentState?.swipeLeft(),
-                onPrimaryFilter: () =>
-                    Navigator.pushNamed(context, '/filters'),
+                onPrimaryFilter: () async {
+                  await AudioPlayerManager.instance.stopAll();
+                  if (mounted) {
+                    Navigator.pushNamed(context, '/filters');
+                  }
+                },
                 onPrimaryLike: () =>
                     _topCardKey?.currentState?.swipeRight(),
               ),
