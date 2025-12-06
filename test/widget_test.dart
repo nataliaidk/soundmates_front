@@ -8,7 +8,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:zpi_test/widgets/city_map_preview.dart';
+import 'package:soundmates/widgets/city_map_preview.dart';
 
 void main() {
   testWidgets('CityMapPreview shows placeholder when no center', (tester) async {

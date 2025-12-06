@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
-import 'package:zpi_test/screens/shared/video_thumbnail.dart';
+import 'package:soundmates/screens/shared/video_thumbnail.dart';
 import '../../api/api_client.dart';
 import '../../api/models.dart';
 import '../../theme/app_design_system.dart';

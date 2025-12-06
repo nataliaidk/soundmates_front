@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:zpi_test/utils/audio_notifier.dart';
+import 'package:soundmates/utils/audio_notifier.dart';
 
 // NOTE: Full testing of AudioNotifier is limited due to just_audio's architecture.
 // The just_audio plugin creates unique platform channels for each AudioPlayer instance

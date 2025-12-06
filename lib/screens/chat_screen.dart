@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:zpi_test/screens/visit_profile/visit_profile_screen.dart';
+import 'package:soundmates/screens/visit_profile/visit_profile_screen.dart';
 import '../widgets/pulsing_logo_loader.dart';
 import '../api/api_client.dart';
 import '../api/token_store.dart';

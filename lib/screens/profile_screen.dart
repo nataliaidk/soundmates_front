@@ -10,6 +10,7 @@ import 'package:latlong2/latlong.dart';
 import '../widgets/city_map_preview.dart';
 import 'package:http/http.dart' as http; // for optional geocoding fallback
 import '../widgets/app_bottom_nav.dart';
+import '../widgets/loading_screen.dart';
 class ProfileScreen extends StatefulWidget {
   final ApiClient api;
   final TokenStore tokens;
@@ -37,6 +38,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   List<PlatformFile> _pickedFiles = [];
   PlatformFile? _pickedProfilePhoto; // Single profile photo (optional)
   String _status = '';
+  bool _isLoading = true; // Track initial loading state
 
   List<CountryDto> _countries = [];
   List<CityDto> _cities = [];
@@ -87,6 +89,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _loadProfileAndTags() async {
+    setState(() => _isLoading = true);
+
     // Load both profile and tag data, then populate selected tags
     await Future.wait([
       _loadProfile(),
@@ -104,7 +108,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() {
         _isEditing = true;
         _currentStep = 1;
+        _isLoading = false;
       });
+    } else {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -1260,6 +1269,11 @@ Widget _buildBandMembersSection() {
 
   @override
   Widget build(BuildContext context) {
+    // Show loading screen during initial data load
+    if (_isLoading) {
+      return const LoadingScreen(compact: true, message: 'Loading your profile...');
+    }
+
     final showNav = !_isEditing; // hide nav during editing
     return Scaffold(
       backgroundColor: Colors.grey[50],

@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:zpi_test/api/event_hub_service.dart';
-import 'package:zpi_test/api/token_store.dart';
+import 'package:soundmates/api/event_hub_service.dart';
+import 'package:soundmates/api/token_store.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 // Mock TokenStore for testing

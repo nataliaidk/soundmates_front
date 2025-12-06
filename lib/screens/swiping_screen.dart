@@ -2,8 +2,10 @@ import 'dart:ui' show lerpDouble;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../widgets/app_bottom_nav.dart';
 import '../widgets/app_side_nav.dart';
+import '../widgets/loading_screen.dart';
 import '../api/api_client.dart';
 import '../api/token_store.dart';
 import '../api/event_hub_service.dart';
@@ -145,72 +147,88 @@ class _SwipingScreenState extends State<SwipingScreen>
   }
 
   Widget _buildPhoneExperience(bool isWideLayout) {
-    if (_isLoading || _viewModel == null) {
-      return SwipingEmptyState(
-        isLoading: _isLoading,
+    final users = _viewModel?.users ?? [];
+    final hasUsers = _viewModel != null && users.isNotEmpty;
+
+    // Build the main content (cards or empty state)
+    Widget mainContent;
+    if (!hasUsers && !_isLoading) {
+      // No users and not loading - show empty state
+      mainContent = SwipingEmptyState(
+        isLoading: false,
         onFilterTap: () => Navigator.pushNamed(context, '/filters'),
       );
+    } else if (hasUsers) {
+      // Has users - show cards
+      mainContent = RawKeyboardListener(
+        focusNode: _focusNode,
+        onKey: (event) {
+          if (event is RawKeyDownEvent) {
+            final key = event.logicalKey;
+            if (key == LogicalKeyboardKey.arrowRight) {
+              _topCardKey?.currentState?.swipeRight();
+            } else if (key == LogicalKeyboardKey.arrowLeft) {
+              _topCardKey?.currentState?.swipeLeft();
+            }
+          }
+        },
+        child: Stack(
+          children: List.generate(users.length, (index) {
+            final cardData = users[index];
+            final imageUrl = _viewModel!.userImages[cardData.id];
+            final top = index == users.length - 1;
+
+            final cardKey = top ? GlobalKey<DraggableCardState>() : null;
+            if (top) _topCardKey = cardKey;
+
+            return Positioned.fill(
+              child: DraggableCard(
+                key: cardKey ?? ValueKey(cardData.id),
+                name: cardData.name,
+                description: cardData.description,
+                imageUrl: imageUrl,
+                isBand: cardData.isBand,
+                city: cardData.city,
+                country: cardData.country,
+                gender: cardData.gender,
+                userData: cardData.userData,
+                tagById: _viewModel!.tagById,
+                categoryNames: _viewModel!.categoryNames,
+                onSwipedLeft: () => _handleDislike(cardData.id, index),
+                onSwipedRight: () => _handleLike(cardData.id, index),
+                isDraggable: top,
+                api: widget.api,
+                tokens: widget.tokens,
+                eventHubService: widget.eventHubService,
+                showPrimaryActions: top,
+                isWideLayout: isWideLayout,
+                onPrimaryDislike: () =>
+                    _topCardKey?.currentState?.swipeLeft(),
+                onPrimaryFilter: () =>
+                    Navigator.pushNamed(context, '/filters'),
+                onPrimaryLike: () =>
+                    _topCardKey?.currentState?.swipeRight(),
+              ),
+            );
+          }),
+        ),
+      );
+    } else {
+      // Loading but no data yet - show placeholder
+      mainContent = const SizedBox.shrink();
     }
 
-    final users = _viewModel!.users;
-
-    return RawKeyboardListener(
-      focusNode: _focusNode,
-      onKey: (event) {
-        if (event is RawKeyDownEvent) {
-          final key = event.logicalKey;
-          if (key == LogicalKeyboardKey.arrowRight) {
-            _topCardKey?.currentState?.swipeRight();
-          } else if (key == LogicalKeyboardKey.arrowLeft) {
-            _topCardKey?.currentState?.swipeLeft();
-          }
-        }
-      },
-      child: users.isEmpty
-          ? SwipingEmptyState(
-              isLoading: false,
-              onFilterTap: () => Navigator.pushNamed(context, '/filters'),
-            )
-          : Stack(
-              children: List.generate(users.length, (index) {
-                final cardData = users[index];
-                final imageUrl = _viewModel!.userImages[cardData.id];
-                final top = index == users.length - 1;
-
-                final cardKey = top ? GlobalKey<DraggableCardState>() : null;
-                if (top) _topCardKey = cardKey;
-
-                return Positioned.fill(
-                  child: DraggableCard(
-                    key: cardKey ?? ValueKey(cardData.id),
-                    name: cardData.name,
-                    description: cardData.description,
-                    imageUrl: imageUrl,
-                    isBand: cardData.isBand,
-                    city: cardData.city,
-                    country: cardData.country,
-                    gender: cardData.gender,
-                    userData: cardData.userData,
-                    tagById: _viewModel!.tagById,
-                    categoryNames: _viewModel!.categoryNames,
-                    onSwipedLeft: () => _handleDislike(cardData.id, index),
-                    onSwipedRight: () => _handleLike(cardData.id, index),
-                    isDraggable: top,
-                    api: widget.api,
-                    tokens: widget.tokens,
-                    eventHubService: widget.eventHubService,
-                    showPrimaryActions: top,
-                    isWideLayout: isWideLayout,
-                    onPrimaryDislike: () =>
-                        _topCardKey?.currentState?.swipeLeft(),
-                    onPrimaryFilter: () =>
-                        Navigator.pushNamed(context, '/filters'),
-                    onPrimaryLike: () =>
-                        _topCardKey?.currentState?.swipeRight(),
-                  ),
-                );
-              }),
-            ),
+    // Stack with loading overlay on top
+    return Stack(
+      children: [
+        // Main content underneath
+        mainContent,
+        // Loading overlay on top (handles its own fade animation)
+        if (_isLoading || _viewModel == null)
+          Positioned.fill(
+            child: _LoadingOverlay(isLoading: _isLoading),
+          ),
+      ],
     );
   }
 
@@ -414,6 +432,77 @@ class _SwipingScreenState extends State<SwipingScreen>
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+/// Loading overlay that fades out smoothly when loading completes
+class _LoadingOverlay extends StatefulWidget {
+  final bool isLoading;
+
+  const _LoadingOverlay({required this.isLoading});
+
+  @override
+  State<_LoadingOverlay> createState() => _LoadingOverlayState();
+}
+
+class _LoadingOverlayState extends State<_LoadingOverlay>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnimation;
+  bool _visible = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fadeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _fadeAnimation = CurvedAnimation(
+      parent: _fadeController,
+      curve: Curves.easeInOut,
+    );
+  }
+
+  @override
+  void didUpdateWidget(_LoadingOverlay oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // When loading completes, start fade out after a brief delay
+    if (oldWidget.isLoading && !widget.isLoading) {
+      Future.delayed(const Duration(milliseconds: 400), () {
+        if (mounted) {
+          _fadeController.forward().then((_) {
+            if (mounted) {
+              setState(() => _visible = false);
+            }
+          });
+        }
+      });
+    }
+    // If loading starts again, reset
+    if (!oldWidget.isLoading && widget.isLoading) {
+      _fadeController.reset();
+      setState(() => _visible = true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _fadeController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_visible) return const SizedBox.shrink();
+
+    return FadeTransition(
+      opacity: Tween<double>(begin: 1.0, end: 0.0).animate(_fadeAnimation),
+      child: const LoadingScreen(
+        compact: true,
+        message: 'Finding matches...',
       ),
     );
   }

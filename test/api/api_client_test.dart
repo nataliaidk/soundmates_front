@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'dart:convert';
-import 'package:zpi_test/api/api_client.dart';
-import 'package:zpi_test/api/models.dart';
-import 'package:zpi_test/api/token_store.dart';
+import 'package:soundmates/api/api_client.dart';
+import 'package:soundmates/api/models.dart';
+import 'package:soundmates/api/token_store.dart';
 
 // Mock TokenStore for testing
 class MockTokenStore extends TokenStore {

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../../../theme/app_design_system.dart';
 
 /// Empty state widget displayed when there are no potential matches.
 /// Shows either a loading indicator or a "no matches" message with a filter button.
-class SwipingEmptyState extends StatelessWidget {
+class SwipingEmptyState extends StatefulWidget {
   final bool isLoading;
   final VoidCallback onFilterTap;
 
@@ -14,22 +15,105 @@ class SwipingEmptyState extends StatelessWidget {
   });
 
   @override
+  State<SwipingEmptyState> createState() => _SwipingEmptyStateState();
+}
+
+class _SwipingEmptyStateState extends State<SwipingEmptyState>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnimation;
+  bool _showLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fadeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+    _fadeAnimation = CurvedAnimation(
+      parent: _fadeController,
+      curve: Curves.easeOut,
+    );
+    _showLoading = widget.isLoading;
+  }
+
+  @override
+  void didUpdateWidget(SwipingEmptyState oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // When loading completes, start fade out animation
+    if (oldWidget.isLoading && !widget.isLoading) {
+      // Add a small delay before starting fade to ensure minimum display time
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) {
+          _fadeController.forward().then((_) {
+            if (mounted) {
+              setState(() {
+                _showLoading = false;
+              });
+            }
+          });
+        }
+      });
+    }
+    // If loading starts again, reset
+    if (!oldWidget.isLoading && widget.isLoading) {
+      _fadeController.reset();
+      setState(() {
+        _showLoading = true;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _fadeController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (isLoading) {
-      return Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              AppColors.backgroundFilterStart,
-              AppColors.surfaceCardPurple,
-            ],
-          ),
-        ),
-        child: const Center(
-          child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(AppColors.surfaceWhite),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Show loading screen with fade out
+    if (_showLoading) {
+      return FadeTransition(
+        opacity: Tween<double>(begin: 1.0, end: 0.0).animate(_fadeAnimation),
+        child: Container(
+          color: isDark ? AppColors.backgroundDark : AppColors.surfaceWhite,
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Logo
+                Image.asset(
+                  dotenv.env['LOGO_PATH'] ?? 'lib/assets/logo.png',
+                  width: 120,
+                  height: 120,
+                  fit: BoxFit.contain,
+                ),
+                const SizedBox(height: 32),
+                // Loading text
+                Text(
+                  'Finding matches...',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w500,
+                    color: isDark ? AppColors.textWhite70 : AppColors.textGrey,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                // Loading indicator
+                const SizedBox(
+                  width: 32,
+                  height: 32,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 3,
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.accentPurpleMid),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -80,7 +164,7 @@ class SwipingEmptyState extends StatelessWidget {
               ),
               const SizedBox(height: 40),
               ElevatedButton(
-                onPressed: onFilterTap,
+                onPressed: widget.onFilterTap,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.surfaceWhite,
                   foregroundColor: AppColors.textPurpleDark,
@@ -92,7 +176,7 @@ class SwipingEmptyState extends StatelessWidget {
                     borderRadius: BorderRadius.circular(30),
                   ),
                   elevation: 8,
-                  shadowColor: Colors.black.withOpacity(0.3),
+                  shadowColor: Colors.black.withValues(alpha: 0.3),
                 ),
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,

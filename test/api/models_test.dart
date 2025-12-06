@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:zpi_test/api/models.dart';
+import 'package:soundmates/api/models.dart';
 
 void main() {
   group('LoginDto', () {

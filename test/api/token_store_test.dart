@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:zpi_test/api/token_store.dart';
+import 'package:soundmates/api/token_store.dart';
 import 'package:flutter/services.dart';
 
 void main() {

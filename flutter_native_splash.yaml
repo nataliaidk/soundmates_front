@@ -12,29 +12,32 @@
 # to provide a seamless transition from native launch to Flutter app.
 
 flutter_native_splash:
-  # Background color for the splash screen
-  # Matches LoginScreen: AppColors.surfaceWhite (light mode)
+  # Background color for the splash screen (LIGHT MODE)
   color: "#FFFFFF"
 
-  # Dark mode: Matches LoginScreen: AppColors.backgroundDark (0xFF1A1A1A)
+  # Dark mode background color
   color_dark: "#1A1A1A"
 
-  # Logo image (centered) - Shows from frame 0
-  image: lib/assets/logo.png
+  # Logo image (centered) - Headphones only, no text
+  image: lib/assets/logo_no_text.png
+  image_dark: lib/assets/logo_no_text.png
 
   # Branding image at the bottom (optional)
   # branding: assets/branding.png
 
   # Android 12+ specific settings
-  # On Android 12+, the splash icon is displayed inside a circular mask
-  # which clips the logo. We disable the icon entirely and show only
-  # the background color, letting Flutter's SplashScreen display the full logo.
+  # Adapts to system light/dark theme
   android_12:
-    # Background color for Android 12+ (matches Flutter splash background)
+    # Light mode - white background
     color: "#FFFFFF"
+    # Dark mode - dark background
     color_dark: "#1A1A1A"
-    # No image - prevents the circular mask clipping issue
-    # The Flutter SplashScreen will display the logo properly
+    # Use headphones logo
+    image: lib/assets/logo_no_text.png
+    image_dark: lib/assets/logo_no_text.png
+    # Icon background color adapts to theme
+    icon_background_color: "#FFFFFF"
+    icon_background_color_dark: "#1A1A1A"
 
   # iOS specific settings
   ios: true
