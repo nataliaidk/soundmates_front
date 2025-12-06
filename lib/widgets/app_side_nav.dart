@@ -64,49 +64,63 @@ class _AppSideNavState extends State<AppSideNav> {
     final double size = emphasized ? 56 : 48;
     final double iconSize = emphasized ? 28 : 24;
 
-    return GestureDetector(
-      onTapDown: (_) {
-        setState(() => _pressedItem = item);
-      },
-      onTapUp: (_) {
-        setState(() => _pressedItem = null);
-        HapticFeedback.lightImpact();
-        onTap();
-      },
-      onTapCancel: () {
-        setState(() => _pressedItem = null);
-      },
-      child: AnimatedScale(
-        scale: isPressed ? 0.9 : 1.0,
-        duration: const Duration(milliseconds: 100),
-        curve: Curves.easeOut,
-        child: Semantics(
-          button: true,
-          label: item == SideNavItem.home
-              ? 'Discover'
-              : (item == SideNavItem.profile ? 'Profile' : 'Messages'),
-          child: Container(
-            width: size,
-            height: size,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: selected ? _activeGradient : null,
-              color: selected ? null : Colors.transparent,
-              boxShadow: selected
-                  ? [
-                      BoxShadow(
-                        color: AppColors.accentPurple.withOpacity(0.4),
-                        blurRadius: 12,
-                        spreadRadius: 2,
-                      ),
-                    ]
-                  : null,
-            ),
-            child: Center(
-              child: Icon(
-                icon,
-                size: iconSize,
-                color: _iconColor(item),
+    String tooltip;
+    switch (item) {
+      case SideNavItem.profile:
+        tooltip = 'Your Profile';
+        break;
+      case SideNavItem.home:
+        tooltip = 'Discover';
+        break;
+      case SideNavItem.messages:
+        tooltip = 'Messages';
+        break;
+    }
+
+    return Tooltip(
+      message: tooltip,
+      child: GestureDetector(
+        onTapDown: (_) {
+          setState(() => _pressedItem = item);
+        },
+        onTapUp: (_) {
+          setState(() => _pressedItem = null);
+          HapticFeedback.lightImpact();
+          onTap();
+        },
+        onTapCancel: () {
+          setState(() => _pressedItem = null);
+        },
+        child: AnimatedScale(
+          scale: isPressed ? 0.9 : 1.0,
+          duration: const Duration(milliseconds: 100),
+          curve: Curves.easeOut,
+          child: Semantics(
+            button: true,
+            label: tooltip,
+            child: Container(
+              width: size,
+              height: size,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: selected ? _activeGradient : null,
+                color: selected ? null : Colors.transparent,
+                boxShadow: selected
+                    ? [
+                        BoxShadow(
+                          color: AppColors.accentPurple.withOpacity(0.4),
+                          blurRadius: 12,
+                          spreadRadius: 2,
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Center(
+                child: Icon(
+                  icon,
+                  size: iconSize,
+                  color: _iconColor(item),
+                ),
               ),
             ),
           ),

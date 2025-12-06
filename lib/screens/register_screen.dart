@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../api/api_client.dart';
 import '../api/token_store.dart';
@@ -40,30 +41,40 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
 
     setState(() => _status = 'Registering...');
-    final resp = await widget.api.register(
-      RegisterDto(email: _email.text.trim(), password: _pass.text),
-    );
-    final stored = await widget.tokens.readAccessToken();
-    final headers = resp.headers.entries
-        .map((e) => '${e.key}: ${e.value}')
-        .join('\n');
-    setState(
-      () => _status =
-          'Register: ${resp.statusCode} ; stored token: ${stored ?? '(none)'}\nbody: ${resp.body}\nheaders:\n$headers',
-    );
-    if (resp.statusCode == 200) {
-      final loginResp = await widget.api.login(
-        LoginDto(email: _email.text.trim(), password: _pass.text),
+    try {
+      final resp = await widget.api.register(
+        RegisterDto(email: _email.text.trim(), password: _pass.text),
       );
-      final stored2 = await widget.tokens.readAccessToken();
-      final headers2 = loginResp.headers.entries
-          .map((e) => '${e.key}: ${e.value}')
-          .join('\n');
-      setState(
-        () => _status =
-            'Login: ${loginResp.statusCode} ; stored token: ${stored2 ?? '(none)'}\nbody: ${loginResp.body}\nheaders:\n$headers2',
-      );
-      widget.onRegistered();
+
+      if (resp.statusCode == 200) {
+        final loginResp = await widget.api.login(
+          LoginDto(email: _email.text.trim(), password: _pass.text),
+        );
+        if (loginResp.statusCode == 200) {
+          setState(() => _status = 'Success');
+          widget.onRegistered();
+        } else {
+          String msg = 'Registration successful, but login failed.';
+          try {
+            final body = jsonDecode(loginResp.body);
+            if (body is Map && body['message'] != null) {
+              msg = body['message'];
+            }
+          } catch (_) {}
+          setState(() => _status = msg);
+        }
+      } else {
+        String msg = 'Registration failed';
+        try {
+          final body = jsonDecode(resp.body);
+          if (body is Map && body['message'] != null) {
+            msg = body['message'];
+          }
+        } catch (_) {}
+        setState(() => _status = msg);
+      }
+    } catch (e) {
+      setState(() => _status = 'An error occurred. Please try again.');
     }
   }
 
