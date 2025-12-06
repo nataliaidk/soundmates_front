@@ -1,0 +1,31 @@
+# flutter_launcher_icons Configuration for SoundMates
+#
+# To regenerate icons, run: dart run flutter_launcher_icons
+#
+# This uses the headphones-only logo (no text) for the app icon
+
+flutter_launcher_icons:
+  # Android configuration
+  android: true
+  ios: true
+
+  # Path to the icon image (headphones only, no text)
+  image_path: "lib/assets/logo_no_text.png"
+
+  # Minimum SDK version for adaptive icons (Android 8.0+)
+  min_sdk_android: 21
+
+  # Android adaptive icon configuration - WHITE background like other apps
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "lib/assets/logo_no_text.png"
+
+  # Remove alpha channel for iOS (required by App Store)
+  remove_alpha_ios: true
+
+  # Web favicon
+  web:
+    generate: true
+    image_path: "lib/assets/logo_no_text.png"
+    background_color: "#FFFFFF"
+    theme_color: "#7B51D3"
+

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:zpi_test/api/api_client.dart';
-import 'package:zpi_test/api/token_store.dart';
-import 'package:zpi_test/api/event_hub_service.dart';
-import 'package:zpi_test/screens/chat_screen.dart';
-import 'package:zpi_test/screens/visit_profile/visit_profile_loader.dart';
-import 'package:zpi_test/screens/visit_profile/visit_profile_model.dart';
-import 'package:zpi_test/theme/app_design_system.dart';
+import 'package:soundmates/api/api_client.dart';
+import 'package:soundmates/api/token_store.dart';
+import 'package:soundmates/api/event_hub_service.dart';
+import 'package:soundmates/screens/chat_screen.dart';
+import 'package:soundmates/screens/visit_profile/visit_profile_loader.dart';
+import 'package:soundmates/screens/visit_profile/visit_profile_model.dart';
+import 'package:soundmates/theme/app_design_system.dart';
 
 class MatchScreen extends StatefulWidget {
   final ApiClient api;

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:zpi_test/screens/visit_profile/visit_profile_screen.dart';
+import 'package:soundmates/screens/visit_profile/visit_profile_screen.dart';
 import '../../../api/api_client.dart';
 import '../../../api/token_store.dart';
 import '../../../api/models.dart';

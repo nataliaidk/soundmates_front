@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:intl/intl.dart';
 import '../widgets/app_bottom_nav.dart';
-import '../widgets/pulsing_logo_loader.dart';
+import '../widgets/loading_screen.dart';
 import '../api/api_client.dart';
 import '../api/token_store.dart';
 import '../api/models.dart';
@@ -354,13 +354,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return _loading
-        ? Container(
-            color: isDark ? AppColors.backgroundDarkAlt : AppColors.surfaceDark,
-            child: const PulsingLogoLoader(
-              message: 'Loading your matches...',
-              size: 140,
-            ),
-          )
+        ? const LoadingScreen(compact: true, message: 'Loading your matches...')
         : Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

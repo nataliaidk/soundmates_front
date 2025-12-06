@@ -3,11 +3,12 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
-import 'package:zpi_test/api/api_client.dart';
+import 'package:soundmates/api/api_client.dart';
 
 import '../api/models.dart';
 import '../api/token_store.dart';
 import '../widgets/city_map_preview.dart';
+import '../widgets/loading_screen.dart';
 
 class FiltersScreen extends StatefulWidget {
   final ApiClient api;
@@ -485,7 +486,7 @@ class _FiltersScreenState extends State<FiltersScreen> {
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Colors.white))
+          ? const LoadingScreen(compact: true, message: 'Loading preferences...')
           : Column(
         children: [
           // Main scrollable content

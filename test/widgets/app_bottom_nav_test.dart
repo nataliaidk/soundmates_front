@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:zpi_test/widgets/app_bottom_nav.dart';
+import 'package:soundmates/widgets/app_bottom_nav.dart';
 
 void main() {
   group('AppBottomNav Widget', () {

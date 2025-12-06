@@ -1,11 +1,11 @@
 {
-    "name": "zpi_test",
-    "short_name": "zpi_test",
+    "name": "Soundmates",
+    "short_name": "Soundmates",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#FFFFFF",
+    "theme_color": "#7B51D3",
+    "description": "SoundMates - Connect through music",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

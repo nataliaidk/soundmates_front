@@ -2,7 +2,7 @@ import 'dart:ui'; // Wymagane dla ImageFilter (Blur)
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:zpi_test/screens/matches_screen.dart';
+import 'package:soundmates/screens/matches_screen.dart';
 
 // Importy zależności projektu
 import '../../api/api_client.dart';
