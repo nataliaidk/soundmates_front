@@ -6,6 +6,8 @@ import 'package:provider/provider.dart';
 import 'api/api_client.dart';
 import 'api/event_hub_service.dart';
 import 'api/token_store.dart';
+import 'api/models.dart';
+import 'state/auth_notifier.dart';
 import 'utils/audio_notifier.dart';
 import 'theme/theme_provider.dart';
 import 'theme/app_design_system.dart';
@@ -43,6 +45,7 @@ class _MyAppState extends State<MyApp> {
   late final TokenStore tokens;
   late final EventHubService eventHub;
   late final ApiClient api;
+  late final AuthNotifier authNotifier;
   late final AudioNotifier audioNotifier;
   void Function(dynamic)? _globalMessageListener;
   String? _currentUserId;
@@ -52,7 +55,21 @@ class _MyAppState extends State<MyApp> {
     super.initState();
     tokens = TokenStore();
     eventHub = EventHubService(tokenStore: tokens);
-    api = ApiClient(tokenStore: tokens, eventHubService: eventHub);
+
+    // Create a temporary ApiClient to initialize AuthNotifier
+    final tempApi = ApiClient(tokenStore: tokens, eventHubService: eventHub);
+    authNotifier = AuthNotifier(tokens: tokens, api: tempApi);
+
+    // Now create the real ApiClient with AuthNotifier
+    api = ApiClient(
+      tokenStore: tokens,
+      eventHubService: eventHub,
+      authNotifier: authNotifier,
+    );
+
+    // Set up authentication failure handler
+    api.onAuthenticationFailed = _handleAuthenticationFailure;
+
     audioNotifier = AudioNotifier.instance;
     audioNotifier.preloadAll();
     _hydrateCurrentUserId();
@@ -151,6 +168,147 @@ class _MyAppState extends State<MyApp> {
     } catch (e) {
       debugPrint('Failed to decode user id from token: $e');
     }
+  }
+
+  /// Handle authentication failures (token expired and refresh failed)
+  void _handleAuthenticationFailure() {
+    final context = navigatorKey.currentContext;
+    if (context == null) {
+      debugPrint('⚠️ No context available for authentication failure dialog');
+      return;
+    }
+
+    // Show dialog offering to refresh session or logout
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Session Expired'),
+        content: const Text(
+          'Your session has expired. Would you like to refresh your session or log out?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              Navigator.of(dialogContext).pop();
+              // Clear tokens and auth state on logout
+              await tokens.clear();
+              await authNotifier.clear();
+              // Navigate to login and clear the entire navigation stack
+              navigatorKey.currentState?.pushNamedAndRemoveUntil(
+                '/login',
+                (route) => false,
+              );
+            },
+            child: const Text('Log Out'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              Navigator.of(dialogContext).pop();
+              await _attemptSessionRefresh(context);
+            },
+            child: const Text('Refresh Session'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Attempt to refresh the session using the refresh token
+  Future<void> _attemptSessionRefresh(BuildContext context) async {
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: Card(
+          child: Padding(
+            padding: EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Refreshing session...'),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    try {
+      final refreshToken = await tokens.readRefreshToken();
+      if (refreshToken == null || refreshToken.isEmpty) {
+        if (context.mounted) Navigator.of(context).pop();
+        _showRefreshFailedDialog(context, 'No refresh token available.');
+        return;
+      }
+
+      // Attempt refresh
+      final resp = await api.refresh(RefreshTokenDto(refreshToken: refreshToken));
+
+      if (context.mounted) Navigator.of(context).pop(); // Close loading dialog
+
+      if (resp.statusCode == 200) {
+        // Success! Reconnect SignalR
+        debugPrint('✅ Session refreshed successfully');
+        await eventHub.connect();
+
+        // Show success message
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✅ Session refreshed successfully!'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      } else {
+        // Refresh failed
+        debugPrint('❌ Session refresh failed: ${resp.statusCode}');
+        _showRefreshFailedDialog(
+          context,
+          'Unable to refresh session. Please log in again.',
+        );
+      }
+    } catch (e) {
+      if (context.mounted) Navigator.of(context).pop(); // Close loading dialog
+      debugPrint('❌ Session refresh error: $e');
+      _showRefreshFailedDialog(
+        context,
+        'An error occurred. Please log in again.',
+      );
+    }
+  }
+
+  /// Show dialog when refresh fails, offering to go to login
+  void _showRefreshFailedDialog(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Refresh Failed'),
+        content: Text(message),
+        actions: [
+          FilledButton(
+            onPressed: () async {
+              Navigator.of(dialogContext).pop();
+              // Clear tokens and auth state
+              await tokens.clear();
+              await authNotifier.clear();
+              // Navigate to login and clear the entire navigation stack
+              navigatorKey.currentState?.pushNamedAndRemoveUntil(
+                '/login',
+                (route) => false,
+              );
+            },
+            child: const Text('Go to Login'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showGlobalMatchNotification(

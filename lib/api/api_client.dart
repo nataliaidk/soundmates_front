@@ -16,6 +16,9 @@ class ApiClient {
   final AuthNotifier? authNotifier;
   final EventHubService? eventHubService;
 
+  /// Callback invoked when token refresh fails and user needs to be logged out
+  void Function()? onAuthenticationFailed;
+
   ApiClient({
     this.tokenStore,
     this.authNotifier,
@@ -372,7 +375,7 @@ class ApiClient {
   }) async {
     final uri = _uri('music-samples?limit=$limit&offset=$offset');
     final headers = await _authHeaders();
-    return http.get(uri, headers: headers);
+    return await _withRefreshRetry(() => http.get(uri, headers: headers));
   }
 
   Future<http.StreamedResponse> uploadMusicSample(
@@ -671,12 +674,42 @@ class ApiClient {
   Future<bool> _tryRefresh() async {
     if (tokenStore == null) return false;
     final refreshToken = await tokenStore!.readRefreshToken();
-    if (refreshToken == null || refreshToken.isEmpty) return false;
+    if (refreshToken == null || refreshToken.isEmpty) {
+      debugPrint('⚠️ No refresh token available');
+      // Don't call failure handler yet - let the UI handle it
+      return false;
+    }
     try {
       final resp = await refresh(RefreshTokenDto(refreshToken: refreshToken));
-      return resp.statusCode == 200;
-    } catch (_) {
+      if (resp.statusCode == 200) {
+        debugPrint('✅ Token refresh successful');
+        return true;
+      } else {
+        debugPrint('❌ Token refresh failed: ${resp.statusCode}');
+        // Only trigger failure handler if refresh token is invalid (401/403)
+        if (resp.statusCode == 401 || resp.statusCode == 403) {
+          await _handleAuthenticationFailure();
+        }
+        return false;
+      }
+    } catch (e) {
+      debugPrint('❌ Token refresh error: $e');
+      // Network errors shouldn't trigger logout - user might want to retry
       return false;
+    }
+  }
+
+  /// Handle authentication failure by notifying the UI layer
+  /// Tokens are NOT cleared here - the UI will handle user choice
+  Future<void> _handleAuthenticationFailure() async {
+    debugPrint('🚨 Authentication failed - notifying UI');
+
+    // Disconnect SignalR but keep tokens for potential refresh
+    await eventHubService?.disconnect();
+
+    // Invoke callback to handle UI (show dialog with refresh option)
+    if (onAuthenticationFailed != null) {
+      onAuthenticationFailed!();
     }
   }
 
@@ -685,8 +718,15 @@ class ApiClient {
   ) async {
     final resp = await fn();
     if (resp.statusCode != 401) return resp;
+
+    debugPrint('⚠️ Got 401 Unauthorized - attempting token refresh');
     final refreshed = await _tryRefresh();
-    if (!refreshed) return resp;
+    if (!refreshed) {
+      debugPrint('❌ Token refresh failed - authentication required');
+      return resp;
+    }
+
+    debugPrint('✅ Token refreshed - retrying request');
     return await fn();
   }
 
@@ -730,5 +770,60 @@ class ApiClient {
       print('Error parsing profile: $e');
       return null;
     }
+  }
+
+  // ============================================================================
+  // DEBUG/TESTING METHODS - Use these to test token expiration without waiting
+  // ============================================================================
+
+  /// [DEBUG ONLY] Simulate token expiration by clearing only the access token.
+  /// This will trigger automatic background refresh on next API call.
+  /// Use this to test the seamless auto-refresh flow.
+  Future<void> debugSimulateAccessTokenExpired() async {
+    if (tokenStore == null) return;
+    debugPrint('🧪 DEBUG: Simulating access token expiration (keeping refresh token)');
+    final currentAccess = await tokenStore!.readAccessToken();
+    if (currentAccess != null) {
+      // Save a dummy expired token
+      await tokenStore!.saveAccessToken('expired_token_for_testing');
+      debugPrint('🧪 Next API call will trigger automatic refresh');
+    }
+  }
+
+  /// [DEBUG ONLY] Simulate complete session expiration by clearing both tokens.
+  /// This will trigger the "Refresh Session or Log Out" dialog.
+  /// Use this to test the manual refresh flow.
+  Future<void> debugSimulateBothTokensExpired() async {
+    if (tokenStore == null) return;
+    debugPrint('🧪 DEBUG: Simulating both tokens expired');
+    await tokenStore!.clear();
+    debugPrint('🧪 Next API call will show "Session Expired" dialog');
+  }
+
+  /// [DEBUG ONLY] Force trigger the authentication failure handler.
+  /// This immediately shows the "Refresh Session or Log Out" dialog.
+  /// Use this to test the dialog UI without making API calls.
+  Future<void> debugTriggerAuthFailureDialog() async {
+    debugPrint('🧪 DEBUG: Manually triggering auth failure dialog');
+    await _handleAuthenticationFailure();
+  }
+
+  /// [DEBUG ONLY] Check current token status.
+  /// Returns info about stored tokens for debugging.
+  Future<Map<String, dynamic>> debugGetTokenStatus() async {
+    if (tokenStore == null) {
+      return {'error': 'No token store available'};
+    }
+
+    final access = await tokenStore!.readAccessToken();
+    final refresh = await tokenStore!.readRefreshToken();
+
+    return {
+      'hasAccessToken': access != null && access.isNotEmpty,
+      'hasRefreshToken': refresh != null && refresh.isNotEmpty,
+      'accessTokenPreview': access?.substring(0, access.length < 20 ? access.length : 20),
+      'refreshTokenPreview': refresh?.substring(0, refresh.length < 20 ? refresh.length : 20),
+      'timestamp': DateTime.now().toIso8601String(),
+    };
   }
 }

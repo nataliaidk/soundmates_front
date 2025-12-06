@@ -210,7 +210,7 @@ class _ProfileViewTabsState extends State<ProfileViewTabs> {
                       ),
                       child: Center(
                         child: Text(
-                          'Your Info',
+                          'Details',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: _selectedTab == 0
