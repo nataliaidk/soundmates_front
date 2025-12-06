@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:soundmates/screens/visit_profile/visit_profile_screen.dart';
 import '../../../api/api_client.dart';
 import '../../../api/token_store.dart';
 import '../../../api/models.dart';
@@ -531,44 +530,23 @@ class DraggableCardState extends State<DraggableCard>
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      GestureDetector(
-                                        onTap: () {
-                                          final userId =
-                                              widget.userData['id']
-                                                  ?.toString() ??
-                                              '';
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  VisitProfileScreen(
-                                                    api: widget.api,
-                                                    tokens: widget.tokens,
-                                                    userId: userId,
-                                                    eventHubService:
-                                                        widget.eventHubService,
-                                                  ),
-                                            ),
-                                          );
-                                        },
-                                        child: Text(
-                                          '${widget.name}${age != null ? ', $age' : ''}',
-                                          style: TextStyle(
-                                            fontSize: isWide ? 22 : 24,
-                                            fontWeight: FontWeight.w700,
-                                            color: AppColors.textWhite
-                                                .withAlpha(242),
-                                            letterSpacing: 0.3,
-                                            shadows: [
-                                              Shadow(
-                                                color: Colors.black.withAlpha(
-                                                  128,
-                                                ),
-                                                blurRadius: 12,
-                                                offset: const Offset(0, 2),
+                                      Text(
+                                        '${widget.name}${age != null ? ', $age' : ''}',
+                                        style: TextStyle(
+                                          fontSize: isWide ? 22 : 24,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.textWhite
+                                              .withAlpha(242),
+                                          letterSpacing: 0.3,
+                                          shadows: [
+                                            Shadow(
+                                              color: Colors.black.withAlpha(
+                                                128,
                                               ),
-                                            ],
-                                          ),
+                                              blurRadius: 12,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ],
                                         ),
                                       ),
                                       if ((widget.city ?? '').isNotEmpty ||
@@ -981,29 +959,26 @@ class DraggableCardState extends State<DraggableCard>
                                         vertical: isWide ? 12 : 14,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: AppColors.accentRed,
-                                        borderRadius: BorderRadius.circular(8),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: AppColors.accentRed.withAlpha(77),
-                                            blurRadius: 8,
-                                            offset: const Offset(0, 2),
-                                          ),
-                                        ],
+                                        color: Colors.transparent,
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: AppColors.accentRed,
+                                          width: 1.5,
+                                        ),
                                       ),
                                       child: Row(
                                         mainAxisAlignment: MainAxisAlignment.center,
                                         children: [
                                           Icon(
-                                            Icons.flag,
-                                            color: AppColors.textWhite,
+                                            Icons.flag_outlined,
+                                            color: AppColors.accentRed,
                                             size: isWide ? 18 : 20,
                                           ),
                                           SizedBox(width: isWide ? 8 : 10),
                                           Text(
                                             'REPORT THIS USER',
                                             style: TextStyle(
-                                              color: AppColors.textWhite,
+                                              color: AppColors.accentRed,
                                               fontSize: isWide ? 12 : 13,
                                               fontWeight: FontWeight.w600,
                                               letterSpacing: 1.0,
@@ -1170,11 +1145,13 @@ class DraggableCardState extends State<DraggableCard>
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+              content: SizedBox(
+                width: MediaQuery.of(context).size.width > 600 ? 400 : double.maxFinite,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                     Text(
                       'Reason',
                       style: TextStyle(
@@ -1240,6 +1217,7 @@ class DraggableCardState extends State<DraggableCard>
                   ],
                 ),
               ),
+            ),
               actions: [
                 TextButton(
                   onPressed: () {
