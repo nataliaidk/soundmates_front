@@ -27,15 +27,28 @@ class MatchScreen extends StatefulWidget {
   State<MatchScreen> createState() => _MatchScreenState();
 }
 
-class _MatchScreenState extends State<MatchScreen> {
+class _MatchScreenState extends State<MatchScreen> with SingleTickerProviderStateMixin {
   late final VisitProfileLoader _loader;
   late Future<VisitProfileViewModel> _dataFuture;
+  late final AnimationController _rotationController;
 
   @override
   void initState() {
     super.initState();
     _loader = VisitProfileLoader(widget.api);
     _dataFuture = _loader.loadData(widget.userId);
+
+    // Setup rotation animation for background circles
+    _rotationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 30),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _rotationController.dispose();
+    super.dispose();
   }
 
   void _navigateToChat(VisitProfileViewModel data) {
@@ -90,12 +103,18 @@ class _MatchScreenState extends State<MatchScreen> {
 
           return Stack(
             children: [
-              // Background circles/waves decoration (simplified)
+              // Animated rotating background circles
               Positioned.fill(
-                child: CustomPaint(
-                  painter: _BackgroundPainter(
-                    bottomPadding: MediaQuery.of(context).padding.bottom,
-                  ),
+                child: AnimatedBuilder(
+                  animation: _rotationController,
+                  builder: (context, child) {
+                    return CustomPaint(
+                      painter: _BackgroundPainter(
+                        bottomPadding: MediaQuery.of(context).padding.bottom,
+                        rotation: _rotationController.value * 2 * 3.14159,
+                      ),
+                    );
+                  },
                 ),
               ),
 
@@ -137,11 +156,6 @@ class _MatchScreenState extends State<MatchScreen> {
                         color: AppColors.accentPurpleSoft,
                       ),
                     ),
-
-                    const SizedBox(height: 12),
-
-                    // Time (Hardcoded for now as requested)
-                    Text('11 mins ago', style: AppTextStyles.timeText),
 
                     const SizedBox(height: 40),
 
@@ -249,51 +263,107 @@ class _MatchScreenState extends State<MatchScreen> {
 
 class _BackgroundPainter extends CustomPainter {
   final double bottomPadding;
+  final double rotation;
 
-  _BackgroundPainter({required this.bottomPadding});
+  _BackgroundPainter({required this.bottomPadding, this.rotation = 0});
 
   @override
   void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height - bottomPadding - 80);
+
+    // Save canvas state and rotate around center
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
+    canvas.rotate(rotation);
+    canvas.translate(-center.dx, -center.dy);
+
     final paint = Paint()
       ..color = Colors.white.withOpacity(0.03)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
 
-    // Button is 80px height + 40px bottom margin
-    // Center is 40px (margin) + 40px (half height) = 80px from bottom of safe area
-    final center = Offset(size.width / 2, size.height - bottomPadding - 80);
-
-    // Draw concentric circles
+    // Draw concentric circles (these stay still visually but rotate with canvas)
     for (var i = 1; i <= 5; i++) {
       canvas.drawCircle(center, i * 80.0, paint);
     }
 
-    // Draw some arcs for "tech/modern" feel
+    // Draw rotating arcs for dynamic effect
     final arcPaint = Paint()
-      ..color = Colors.white.withOpacity(0.05)
+      ..color = Colors.white.withOpacity(0.08)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3
+      ..strokeCap = StrokeCap.round;
+
+    // Multiple arcs at different radii with varying lengths
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: 120),
+      rotation * 0.5,
+      0.8,
+      false,
+      arcPaint,
+    );
+
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: 200),
+      -rotation * 0.7,
+      1.2,
+      false,
+      arcPaint..color = Colors.white.withOpacity(0.06),
+    );
+
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: 280),
+      rotation * 0.3,
+      1.5,
+      false,
+      arcPaint..color = Colors.white.withOpacity(0.05),
+    );
+
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: 360),
+      -rotation * 0.4,
+      0.6,
+      false,
+      arcPaint..color = Colors.white.withOpacity(0.04),
+    );
+
+    // Add some accent purple arcs for color
+    final purpleArcPaint = Paint()
+      ..color = AppColors.accentPurple.withOpacity(0.1)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 4
       ..strokeCap = StrokeCap.round;
 
     canvas.drawArc(
-      Rect.fromCircle(center: center, radius: 200),
-      -0.5,
-      1.0,
+      Rect.fromCircle(center: center, radius: 160),
+      rotation * 0.6 + 1.5,
+      0.5,
       false,
-      arcPaint,
+      purpleArcPaint,
     );
 
     canvas.drawArc(
-      Rect.fromCircle(center: center, radius: 280),
-      3.5,
-      1.5,
+      Rect.fromCircle(center: center, radius: 240),
+      -rotation * 0.5 + 3.0,
+      0.7,
       false,
-      arcPaint,
+      purpleArcPaint..color = AppColors.accentPurple.withOpacity(0.08),
     );
+
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: 320),
+      rotation * 0.8,
+      0.4,
+      false,
+      purpleArcPaint..color = AppColors.accentPurple.withOpacity(0.06),
+    );
+
+    canvas.restore();
   }
 
   @override
   bool shouldRepaint(covariant _BackgroundPainter oldDelegate) {
-    return oldDelegate.bottomPadding != bottomPadding;
+    return oldDelegate.bottomPadding != bottomPadding ||
+           oldDelegate.rotation != rotation;
   }
 }

@@ -8,11 +8,15 @@ import '../widgets/loading_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   final TokenStore tokens;
+  final EventHubService? eventHub;
+  final ApiClient? api;
   final VoidCallback onComplete;
 
   const SplashScreen({
     super.key,
     required this.tokens,
+    this.eventHub,
+    this.api,
     required this.onComplete,
   });
 
@@ -49,6 +53,17 @@ class _SplashScreenState extends State<SplashScreen> {
     }
 
     if (isValidToken) {
+      // Connect EventHub since we have a valid token
+      if (widget.eventHub != null) {
+        debugPrint('🔌 Connecting EventHub from splash screen...');
+        try {
+          await widget.eventHub!.connect();
+          debugPrint('✅ EventHub connected from splash screen');
+        } catch (e) {
+          debugPrint('⚠️ Failed to connect EventHub from splash: $e');
+        }
+      }
+
       // User is logged in with valid token, check if profile is complete
       final isProfileComplete = await _checkProfileComplete();
       
@@ -72,10 +87,12 @@ class _SplashScreenState extends State<SplashScreen> {
   /// Check if the user's profile creation is complete
   Future<bool> _checkProfileComplete() async {
     try {
-      // Create a temporary API client to check profile
-      final eventHub = EventHubService(tokenStore: widget.tokens);
-      final api = ApiClient(tokenStore: widget.tokens, eventHubService: eventHub);
-      
+      // Use provided API client or create a temporary one
+      final api = widget.api ?? ApiClient(
+        tokenStore: widget.tokens,
+        eventHubService: widget.eventHub ?? EventHubService(tokenStore: widget.tokens),
+      );
+
       final resp = await api.getMyProfile();
       
       if (resp.statusCode == 200) {

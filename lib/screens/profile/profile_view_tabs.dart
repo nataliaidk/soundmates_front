@@ -61,6 +61,68 @@ class _ProfileViewTabsState extends State<ProfileViewTabs> {
     return bandRoleId;
   }
 
+  /// Build media buttons - icons only on small screens, icons + text on larger screens
+  Widget _buildMediaButtons(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 380; // Show icons only on small screens
+
+    if (isSmallScreen) {
+      // Small screens: icons only
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            onPressed: widget.onManageMedia,
+            icon: const Icon(Icons.edit, size: 20),
+            tooltip: 'Manage',
+            padding: const EdgeInsets.all(4),
+            constraints: const BoxConstraints(),
+            color: AppColors.accentPurple,
+          ),
+          const SizedBox(width: 8),
+          IconButton(
+            onPressed: widget.onAddMedia ?? widget.onEditProfile,
+            icon: const Icon(Icons.add_photo_alternate, size: 20),
+            tooltip: 'Add',
+            padding: const EdgeInsets.all(4),
+            constraints: const BoxConstraints(),
+            color: AppColors.accentPurple,
+          ),
+        ],
+      );
+    } else {
+      // Larger screens: icons with text
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextButton.icon(
+            onPressed: widget.onManageMedia,
+            icon: const Icon(Icons.edit, size: 16),
+            label: const Text('Manage'),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.accentPurple,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              minimumSize: const Size(0, 32),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          ),
+          const SizedBox(width: 4),
+          TextButton.icon(
+            onPressed: widget.onAddMedia ?? widget.onEditProfile,
+            icon: const Icon(Icons.add_photo_alternate, size: 16),
+            label: const Text('Add'),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.accentPurple,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              minimumSize: const Size(0, 32),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          ),
+        ],
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -535,30 +597,18 @@ class _ProfileViewTabsState extends State<ProfileViewTabs> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Photos & Media',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.getAdaptiveText(context),
+                  Flexible(
+                    child: Text(
+                      'Photos & Media',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.getAdaptiveText(context),
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TextButton.icon(
-                        onPressed: widget.onManageMedia,
-                        icon: const Icon(Icons.edit, size: 16),
-                        label: const Text('Manage'),
-                      ),
-                      const SizedBox(width: 4),
-                      TextButton.icon(
-                        onPressed: widget.onAddMedia ?? widget.onEditProfile,
-                        icon: const Icon(Icons.add_photo_alternate, size: 16),
-                        label: const Text('Add'),
-                      ),
-                    ],
-                  ),
+                  _buildMediaButtons(context),
                 ],
               ),
               const SizedBox(height: 12),

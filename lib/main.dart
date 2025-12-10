@@ -95,6 +95,7 @@ class _MyAppState extends State<MyApp> {
 
   void _setupGlobalRealtimeNotifications() {
     print("🌍 Setting up global match notifications in initState");
+    print("🔧 EventHub instance: ${eventHub.hashCode}");
 
     eventHub.onMatchReceived = (matchData) {
       print("🌍💜 Global MatchReceived callback triggered: $matchData");
@@ -105,6 +106,7 @@ class _MyAppState extends State<MyApp> {
       audioNotifier.playMatchReceived();
       _showGlobalMatchNotification(matchData, isMutual: false);
     };
+    print("✅ onMatchReceived callback set");
 
     eventHub.onMatchCreated = (matchData) {
       print("🌍🔥 Global MatchCreated callback triggered: $matchData");
@@ -131,17 +133,20 @@ class _MyAppState extends State<MyApp> {
         );
       } else {
         print("⚠️ Could not extract userId from matchData for navigation");
-        // Fallback to notification if navigation fails? Or just log error.
-        // For now, let's try to show notification as fallback if parsing fails,
-        // but the primary goal is navigation.
         _showGlobalMatchNotification(matchData, isMutual: true);
       }
     };
+    print("✅ onMatchCreated callback set");
+
     _globalMessageListener = (messageData) {
       _handleIncomingMessage(messageData);
     };
 
     eventHub.addMessageListener(_globalMessageListener!);
+    print("✅ Message listener added");
+
+    // Log EventHub state
+    print("📡 EventHub callbacks configured. Connection will be established by SplashScreen or login/register.");
   }
 
   Future<void> _handleIncomingMessage(dynamic messageData) async {
@@ -446,6 +451,8 @@ class _MyAppState extends State<MyApp> {
             routes: {
               '/': (c) => SplashScreen(
                 tokens: tokens,
+                eventHub: eventHub,
+                api: api,
                 onComplete: onSplashComplete,
               ),
               '/login': (c) => LoginScreen(
