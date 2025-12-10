@@ -72,9 +72,40 @@ class _ProfileEditStep2State extends State<ProfileEditStep2> {
         return Icons.music_note;
       case 'band status':
         return Icons.info_outline;
+      case 'genres':
+        return Icons.library_music;
       default:
         return Icons.label_outline;
     }
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Text(
+      title,
+      style: TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        color: AppColors.accentPurple,
+        letterSpacing: 1.2,
+      ),
+    );
+  }
+
+  Widget _buildCard(BuildContext context, bool isDark, {required Widget child}) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.getAdaptiveSurface(context),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: (isDark ? Colors.black : Colors.black).withOpacity(isDark ? 0.3 : 0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: child,
+    );
   }
 
   Widget _buildTags(BuildContext context) {
@@ -83,21 +114,17 @@ class _ProfileEditStep2State extends State<ProfileEditStep2> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 16),
-          const Text(
-            'Select tags',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-          ),
+          _buildSectionHeader('TAGS'),
           const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppTheme.getAdaptiveGrey(context, lightShade: 100, darkShade: 850),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              'No tags available',
-              style: TextStyle(color: AppTheme.getAdaptiveGrey(context, lightShade: 600, darkShade: 400)),
+          _buildCard(
+            context,
+            isDark,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                'No tags available',
+                style: TextStyle(color: AppTheme.getAdaptiveGrey(context, lightShade: 600, darkShade: 400)),
+              ),
             ),
           ),
         ],
@@ -105,95 +132,107 @@ class _ProfileEditStep2State extends State<ProfileEditStep2> {
     }
 
     final categories = widget.tagOptions.keys.toList();
-    final accentColor = AppColors.accentPurple;
-    final containerColor = isDark ? AppColors.surfaceDarkAlt : Colors.white;
-    final borderColor = isDark ? AppColors.accentPurple.withOpacity(0.3) : AppColors.accentPurple;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 16),
-        const Text(
-          'Select tags',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-        ),
+        _buildSectionHeader('TAGS'),
         const SizedBox(height: 12),
         ...categories.map((cat) {
           final selectedSet = widget.selectedTags[cat] ?? {};
           final options = widget.tagOptions[cat] ?? [];
           final selectedOptions = options.where((o) => selectedSet.contains(o['value'])).toList();
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(_categoryIcon(cat), color: accentColor, size: 20),
-                  const SizedBox(width: 8),
-                  Text(
-                    _humanize(cat),
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.getAdaptiveText(context),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              InkWell(
+
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: _buildCard(
+              context,
+              isDark,
+              child: InkWell(
                 onTap: () => widget.onShowTagPicker(cat),
                 borderRadius: BorderRadius.circular(16),
-                child: Container(
+                child: Padding(
                   padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: containerColor,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: borderColor),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: selectedOptions.isEmpty
-                        ? CrossAxisAlignment.center
-                        : CrossAxisAlignment.start,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: selectedOptions.isEmpty
-                            ? Text(
-                                'Tap to select',
-                                style: TextStyle(
-                                  color: isDark ? AppColors.accentPurple.withOpacity(0.7) : AppColors.accentPurple,
-                                  fontSize: 15,
-                                  fontWeight: isDark ? FontWeight.normal : FontWeight.w600,
-                                ),
-                              )
-                            : Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: selectedOptions.map((option) {
-                                  final label = option['label']?.toString() ?? option['value'].toString();
-                                  final value = option['value'];
-                                  return Chip(
-                                    label: Text(label),
-                                    backgroundColor: AppColors.accentPurple,
-                                    labelStyle: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                    deleteIcon: const Icon(Icons.close, size: 18),
-                                    deleteIconColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    onDeleted: () => widget.onRemoveTag(cat, value),
-                                  );
-                                }).toList(),
-                              ),
+                      Row(
+                        children: [
+                          Icon(
+                            _categoryIcon(cat),
+                            color: AppColors.accentPurple,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            _humanize(cat).toUpperCase(),
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.getAdaptiveGrey(context, lightShade: 600, darkShade: 400),
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          const Spacer(),
+                          Icon(
+                            Icons.add_circle_outline,
+                            color: AppColors.accentPurple,
+                            size: 22,
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 12),
-                      Icon(Icons.keyboard_arrow_down, color: accentColor),
+                      const SizedBox(height: 12),
+                      if (selectedOptions.isEmpty)
+                        Text(
+                          'Tap to select ${cat.toLowerCase()}',
+                          style: TextStyle(
+                            color: AppTheme.getAdaptiveGrey(context, lightShade: 400, darkShade: 600),
+                            fontSize: 14,
+                          ),
+                        )
+                      else
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: selectedOptions.map((option) {
+                            final label = option['label']?.toString() ?? option['value'].toString();
+                            final value = option['value'];
+                            return Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: AppColors.accentPurple,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    label,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  GestureDetector(
+                                    onTap: () => widget.onRemoveTag(cat, value),
+                                    child: const Icon(
+                                      Icons.close,
+                                      size: 16,
+                                      color: Colors.white70,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                        ),
                     ],
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
-            ],
+            ),
           );
         }),
       ],
@@ -204,77 +243,115 @@ class _ProfileEditStep2State extends State<ProfileEditStep2> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 16),
-        const Text(
-          'Band members',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-        ),
+        _buildSectionHeader('BAND MEMBERS'),
         const SizedBox(height: 12),
-        if (widget.bandMembers.isEmpty)
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppTheme.getAdaptiveGrey(context, lightShade: 100, darkShade: 850),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              'No members added yet',
-              style: TextStyle(color: AppTheme.getAdaptiveGrey(context, lightShade: 600, darkShade: 400)),
-            ),
-          )
-        else
-          ...widget.bandMembers.map((m) => Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.surfaceDarkAlt : Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: isDark ? null : Border.all(color: AppColors.accentPurple, width: 1.5),
-                ),
-                child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  title: Text(
-                    '${m.name} (${m.age} y/o)',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: isDark ? AppColors.textWhite : AppColors.accentPurple,
-                    ),
-                  ),
-                  subtitle: Text(
-                    _bandRoleName(m.bandRoleId),
-                    style: TextStyle(
-                      color: isDark ? AppTheme.getAdaptiveGrey(context, lightShade: 700, darkShade: 300) : AppColors.accentPurple.withOpacity(0.7),
-                    ),
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
+        _buildCard(
+          context,
+          isDark,
+          child: Column(
+            children: [
+              if (widget.bandMembers.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
                     children: [
-                      IconButton(
-                        icon: Icon(Icons.edit, color: AppColors.accentPurple),
-                        onPressed: () => widget.onEditBandMember(m),
+                      Icon(
+                        Icons.groups_outlined,
+                        size: 48,
+                        color: AppTheme.getAdaptiveGrey(context, lightShade: 400, darkShade: 600),
                       ),
-                      IconButton(
-                        icon: Icon(Icons.delete, color: isDark ? const Color(0xFFE57373) : Colors.red),
-                        onPressed: () => widget.onRemoveBandMember(m),
+                      const SizedBox(height: 12),
+                      Text(
+                        'No members added yet',
+                        style: TextStyle(
+                          color: AppTheme.getAdaptiveGrey(context, lightShade: 500, darkShade: 500),
+                          fontSize: 14,
+                        ),
                       ),
                     ],
                   ),
+                )
+              else
+                ...widget.bandMembers.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final m = entry.value;
+                  return Column(
+                    children: [
+                      if (index > 0)
+                        Divider(
+                          height: 1,
+                          indent: 16,
+                          endIndent: 16,
+                          color: AppTheme.getAdaptiveGrey(context, lightShade: 200, darkShade: 800),
+                        ),
+                      ListTile(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        leading: CircleAvatar(
+                          backgroundColor: AppColors.accentPurple.withOpacity(0.15),
+                          child: Icon(
+                            Icons.person,
+                            color: AppColors.accentPurple,
+                          ),
+                        ),
+                        title: Text(
+                          m.name,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.getAdaptiveText(context),
+                          ),
+                        ),
+                        subtitle: Text(
+                          '${_bandRoleName(m.bandRoleId)} • ${m.age} years old',
+                          style: TextStyle(
+                            color: AppTheme.getAdaptiveGrey(context, lightShade: 600, darkShade: 400),
+                            fontSize: 13,
+                          ),
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: Icon(
+                                Icons.edit_outlined,
+                                color: AppColors.accentPurple,
+                                size: 20,
+                              ),
+                              onPressed: () => widget.onEditBandMember(m),
+                            ),
+                            IconButton(
+                              icon: Icon(
+                                Icons.delete_outline,
+                                color: isDark ? const Color(0xFFE57373) : Colors.red.shade400,
+                                size: 20,
+                              ),
+                              onPressed: () => widget.onRemoveBandMember(m),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                }),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.add, size: 20),
+                    label: const Text('Add Member'),
+                    onPressed: widget.onAddBandMember,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.accentPurple,
+                      side: BorderSide(color: AppColors.accentPurple, width: 1.5),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                  ),
                 ),
-              )),
-        const SizedBox(height: 12),
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            icon: const Icon(Icons.add),
-            label: const Text('Add member'),
-            onPressed: widget.onAddBandMember,
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.accentPurple,
-              side: BorderSide(color: AppColors.accentPurple, width: 2),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(30),
               ),
-              padding: const EdgeInsets.symmetric(vertical: 16),
-            ),
+            ],
           ),
         ),
       ],
@@ -286,8 +363,11 @@ class _ProfileEditStep2State extends State<ProfileEditStep2> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Profile photo circle at the top
+        // Profile photo section
+        _buildSectionHeader('PROFILE PHOTO'),
+        const SizedBox(height: 12),
         Center(
           child: GestureDetector(
             onTap: widget.onPickProfilePhoto,
@@ -297,16 +377,26 @@ class _ProfileEditStep2State extends State<ProfileEditStep2> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(color: AppColors.accentPurple, width: 3),
-                    color: isDark ? null : Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.accentPurple.withOpacity(0.2),
+                        blurRadius: 20,
+                        spreadRadius: 2,
+                      ),
+                    ],
                   ),
                   child: CircleAvatar(
                     radius: 60,
-                    backgroundColor: isDark ? AppColors.surfaceDarkAlt : AppColors.accentPurpleSoft,
+                    backgroundColor: isDark ? AppColors.surfaceDarkAlt : Colors.grey.shade100,
                     backgroundImage: widget.pickedProfilePhoto?.bytes != null
                         ? MemoryImage(widget.pickedProfilePhoto!.bytes!)
                         : null,
                     child: widget.pickedProfilePhoto?.bytes == null
-                        ? Icon(Icons.person, size: 60, color: AppColors.accentPurple)
+                        ? Icon(
+                            Icons.person,
+                            size: 50,
+                            color: AppTheme.getAdaptiveGrey(context, lightShade: 400, darkShade: 600),
+                          )
                         : null,
                   ),
                 ),
@@ -317,13 +407,18 @@ class _ProfileEditStep2State extends State<ProfileEditStep2> {
                     decoration: BoxDecoration(
                       color: AppColors.accentPurple,
                       shape: BoxShape.circle,
-                      border: Border.all(color: isDark ? AppColors.surfaceDark : Colors.white, width: 2),
+                      border: Border.all(
+                        color: isDark ? AppColors.surfaceDark : Colors.white,
+                        width: 3,
+                      ),
                     ),
-                    child: IconButton(
-                      icon: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
-                      onPressed: widget.onPickProfilePhoto,
+                    child: Padding(
                       padding: const EdgeInsets.all(8),
-                      constraints: const BoxConstraints(),
+                      child: Icon(
+                        Icons.camera_alt,
+                        color: Colors.white,
+                        size: 18,
+                      ),
                     ),
                   ),
                 ),
@@ -331,17 +426,25 @@ class _ProfileEditStep2State extends State<ProfileEditStep2> {
                   Positioned(
                     top: 0,
                     right: 0,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFFE57373) : Colors.red,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: isDark ? AppColors.surfaceDark : Colors.white, width: 2),
-                      ),
-                      child: IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white, size: 16),
-                        onPressed: widget.onRemoveProfilePhoto,
-                        padding: const EdgeInsets.all(4),
-                        constraints: const BoxConstraints(),
+                    child: GestureDetector(
+                      onTap: widget.onRemoveProfilePhoto,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFFE57373) : Colors.red,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isDark ? AppColors.surfaceDark : Colors.white,
+                            width: 2,
+                          ),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(4),
+                          child: Icon(
+                            Icons.close,
+                            color: Colors.white,
+                            size: 14,
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -350,89 +453,96 @@ class _ProfileEditStep2State extends State<ProfileEditStep2> {
           ),
         ),
         const SizedBox(height: 8),
-        Text(
-          'Tap to ${widget.pickedProfilePhoto == null ? 'add' : 'change'} profile photo',
-          style: TextStyle(fontSize: 12, color: AppTheme.getAdaptiveGrey(context, lightShade: 600, darkShade: 400)),
+        Center(
+          child: Text(
+            widget.pickedProfilePhoto == null ? 'Tap to add photo' : 'Tap to change photo',
+            style: TextStyle(
+              fontSize: 13,
+              color: AppTheme.getAdaptiveGrey(context, lightShade: 600, darkShade: 400),
+            ),
+          ),
         ),
-        const SizedBox(height: 24),
-        StatefulBuilder(
-          builder: (context, setStateLocal) {
-            return TextFormField(
-              controller: widget.descController,
-              autovalidateMode: AutovalidateMode.onUserInteraction,
-              validator: (value) => validateDescription(value ?? ''),
-              style: TextStyle(
-                color: isDark ? AppColors.textWhite : AppColors.accentPurple,
-              ),
-              decoration: InputDecoration(
-                labelText: 'Description',
-                labelStyle: TextStyle(
-                  color: isDark ? AppColors.textWhite : AppColors.accentPurple,
-                ),
-                hintText: 'Tell us about yourself...',
-                hintStyle: TextStyle(
-                  color: isDark ? AppColors.textWhite.withOpacity(0.5) : AppColors.accentPurple.withOpacity(0.5),
-                ),
-                helperText: '${widget.descController.text.length}/500 characters',
-                helperStyle: TextStyle(
-                  color: isDark ? AppColors.textWhite.withOpacity(0.7) : AppColors.accentPurple.withOpacity(0.7),
-                ),
-                filled: true,
-                fillColor: isDark ? AppColors.surfaceDarkAlt : Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  borderSide: isDark ? BorderSide.none : BorderSide(color: AppColors.accentPurple, width: 1.5),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  borderSide: isDark ? BorderSide.none : BorderSide(color: AppColors.accentPurple, width: 1.5),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  borderSide: BorderSide(color: AppColors.accentPurple, width: 2),
-                ),
-                errorBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  borderSide: BorderSide(color: isDark ? const Color(0xFFE57373) : Colors.red, width: 1.5),
-                ),
-                focusedErrorBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  borderSide: BorderSide(color: isDark ? const Color(0xFFE57373) : Colors.red, width: 2),
-                ),
-                contentPadding: const EdgeInsets.all(20),
-              ),
-              maxLines: 4,
-              onChanged: (value) {
-                setStateLocal(() {}); // Trigger rebuild to update character count
+        const SizedBox(height: 28),
+
+        // Description section
+        _buildSectionHeader('ABOUT YOU'),
+        const SizedBox(height: 12),
+        _buildCard(
+          context,
+          isDark,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: StatefulBuilder(
+              builder: (context, setStateLocal) {
+                return TextFormField(
+                  controller: widget.descController,
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  validator: (value) => validateDescription(value ?? ''),
+                  style: TextStyle(
+                    color: AppTheme.getAdaptiveText(context),
+                    fontSize: 15,
+                    height: 1.5,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'Tell us about yourself, your music journey, and what you\'re looking for...',
+                    hintStyle: TextStyle(
+                      color: AppTheme.getAdaptiveGrey(context, lightShade: 400, darkShade: 600),
+                      fontSize: 14,
+                    ),
+                    counterText: '${widget.descController.text.length}/500',
+                    counterStyle: TextStyle(
+                      color: AppTheme.getAdaptiveGrey(context, lightShade: 500, darkShade: 500),
+                      fontSize: 12,
+                    ),
+                    filled: false,
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    errorBorder: InputBorder.none,
+                    focusedErrorBorder: InputBorder.none,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                  maxLines: 5,
+                  maxLength: 500,
+                  onChanged: (value) {
+                    setStateLocal(() {}); // Update character count
+                  },
+                );
               },
-            );
-          },
+            ),
+          ),
         ),
-        _buildTags(context),
-        if (widget.isBand) _buildBandMembersSection(context, isDark),
         const SizedBox(height: 24),
-        
-        // Back and Complete buttons
+
+        // Tags section
+        _buildTags(context),
+        const SizedBox(height: 8),
+
+        // Band members section (only for bands)
+        if (widget.isBand) ...[
+          _buildBandMembersSection(context, isDark),
+          const SizedBox(height: 24),
+        ],
+
+        const SizedBox(height: 8),
+
+        // Action buttons
         Row(
           children: [
             if (widget.showBackButton) ...[
               SizedBox(
                 height: 56,
-                child: OutlinedButton(
+                child: OutlinedButton.icon(
                   onPressed: widget.onBack,
+                  icon: const Icon(Icons.arrow_back, size: 18),
+                  label: const Text('Back'),
                   style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: AppColors.accentPurple, width: 2),
+                    foregroundColor: AppColors.accentPurple,
+                    side: BorderSide(color: AppColors.accentPurple, width: 1.5),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                  ),
-                  child: Text(
-                    'Back',
-                    style: TextStyle(
-                      color: AppColors.accentPurple,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
                   ),
                 ),
               ),
@@ -447,16 +557,23 @@ class _ProfileEditStep2State extends State<ProfileEditStep2> {
                     backgroundColor: AppColors.accentPurple,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
+                      borderRadius: BorderRadius.circular(16),
                     ),
                     elevation: 0,
                   ),
-                  child: const Text(
-                    'Complete Profile',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      Icon(Icons.check_circle_outline, size: 20),
+                      SizedBox(width: 8),
+                      Text(
+                        'Complete Profile',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -467,15 +584,32 @@ class _ProfileEditStep2State extends State<ProfileEditStep2> {
         if (widget.status.isNotEmpty) ...[
           const SizedBox(height: 16),
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFFB71C1C) : const Color(0xFFFFEBEE),
+              color: isDark ? const Color(0xFF3D1F1F) : const Color(0xFFFFEBEE),
               borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isDark ? const Color(0xFFE57373) : Colors.red.shade200,
+              ),
             ),
-            child: Text(
-              widget.status,
-              style: TextStyle(color: isDark ? const Color(0xFFFFCDD2) : const Color(0xFFC62828)),
-              textAlign: TextAlign.center,
+            child: Row(
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  color: isDark ? const Color(0xFFE57373) : Colors.red.shade700,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    widget.status,
+                    style: TextStyle(
+                      color: isDark ? const Color(0xFFFFCDD2) : Colors.red.shade700,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],

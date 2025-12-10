@@ -88,8 +88,6 @@ class _ProfileEditTagsScreenState extends State<ProfileEditTagsScreen> {
   }
 
   void _parseProfile(Map<String, dynamic> profile) {
-    // Description and isBand are already parsed above
-
     // Band members
     if (profile['bandMembers'] is List) {
       _bandMembers = (profile['bandMembers'] as List)
@@ -161,23 +159,23 @@ class _ProfileEditTagsScreenState extends State<ProfileEditTagsScreen> {
       
       // Validate required fields for artist
       if (name.isEmpty) {
-        setState(() => _status = 'Error: Name is required');
+        setState(() => _status = 'Name is required');
         return;
       }
       if (countryId == null || countryId.isEmpty) {
-        setState(() => _status = 'Error: Country is required');
+        setState(() => _status = 'Country is required');
         return;
       }
       if (cityId == null || cityId.isEmpty) {
-        setState(() => _status = 'Error: City is required');
+        setState(() => _status = 'City is required');
         return;
       }
       if (birthDate == null) {
-        setState(() => _status = 'Error: Birth date is required for artists');
+        setState(() => _status = 'Birth date is required for artists');
         return;
       }
       if (genderId == null || genderId.isEmpty) {
-        setState(() => _status = 'Error: Gender is required for artists');
+        setState(() => _status = 'Gender is required for artists');
         return;
       }
       
@@ -196,11 +194,12 @@ class _ProfileEditTagsScreenState extends State<ProfileEditTagsScreen> {
       resp = await widget.api.updateArtistProfile(dto, allSelected.isEmpty ? null : allSelected);
     }
 
-    setState(() => _status = 'Profile update: ${resp.statusCode}');
     if (resp.statusCode == 200) {
       await _maybeUploadProfilePhoto();
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/profile');
+    } else {
+      setState(() => _status = 'Failed to save changes. Please try again.');
     }
   }
 
@@ -211,12 +210,10 @@ class _ProfileEditTagsScreenState extends State<ProfileEditTagsScreen> {
       if (!lower.endsWith('.jpg') && !lower.endsWith('.jpeg')) {
         uploadName = '$uploadName.jpg';
       }
-      final streamed = await widget.api.uploadProfilePicture(
+      await widget.api.uploadProfilePicture(
         _pickedProfilePhoto!.bytes!,
         uploadName,
       );
-      if (!mounted) return;
-      setState(() => _status += ' ; photo upload: ${streamed.statusCode}');
       _pickedProfilePhoto = null;
     }
   }
@@ -244,6 +241,7 @@ class _ProfileEditTagsScreenState extends State<ProfileEditTagsScreen> {
                     return CheckboxListTile(
                       title: Text(label),
                       value: isSelected,
+                      activeColor: AppColors.accentPurple,
                       onChanged: (checked) {
                         setStateDialog(() {
                           if (checked == true) {
@@ -260,9 +258,16 @@ class _ProfileEditTagsScreenState extends State<ProfileEditTagsScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel'),
+                  child: Text(
+                    'Cancel',
+                    style: TextStyle(color: AppTheme.getAdaptiveGrey(context, lightShade: 600, darkShade: 400)),
+                  ),
                 ),
-                TextButton(
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.accentPurple,
+                    foregroundColor: Colors.white,
+                  ),
                   onPressed: () {
                     setState(() {
                       _tagManager.selected[category] = localSelected;
@@ -337,14 +342,310 @@ class _ProfileEditTagsScreenState extends State<ProfileEditTagsScreen> {
     return bandRoleId;
   }
 
-  @override
-  Widget build(BuildContext context) {
+  IconData _categoryIcon(String categoryKey) {
+    switch (categoryKey.toLowerCase()) {
+      case 'activity':
+        return Icons.star;
+      case 'instruments':
+        return Icons.music_note;
+      case 'band status':
+        return Icons.info_outline;
+      case 'genres':
+        return Icons.library_music;
+      default:
+        return Icons.label_outline;
+    }
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Text(
+      title,
+      style: TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        color: AppColors.accentPurple,
+        letterSpacing: 1.2,
+      ),
+    );
+  }
+
+  Widget _buildCard(BuildContext context, bool isDark, {required Widget child}) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.getAdaptiveSurface(context),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: child,
+    );
+  }
+
+  Widget _buildTags(BuildContext context, bool isDark) {
     final tagOptions = _tagManager.buildOptionsForEdit();
+    if (tagOptions.isEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader('TAGS'),
+          const SizedBox(height: 12),
+          _buildCard(
+            context,
+            isDark,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                'No tags available',
+                style: TextStyle(color: AppTheme.getAdaptiveGrey(context, lightShade: 600, darkShade: 400)),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
     final categories = tagOptions.keys.toList();
 
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader('TAGS'),
+        const SizedBox(height: 12),
+        ...categories.map((cat) {
+          final selectedSet = _tagManager.selected[cat] ?? {};
+          final options = tagOptions[cat] ?? [];
+          final selectedOptions = options.where((o) => selectedSet.contains(o['value'])).toList();
+
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: _buildCard(
+              context,
+              isDark,
+              child: InkWell(
+                onTap: () => _showTagPicker(cat),
+                borderRadius: BorderRadius.circular(16),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            _categoryIcon(cat),
+                            color: AppColors.accentPurple,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            _humanize(cat).toUpperCase(),
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.getAdaptiveGrey(context, lightShade: 600, darkShade: 400),
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          const Spacer(),
+                          Icon(
+                            Icons.add_circle_outline,
+                            color: AppColors.accentPurple,
+                            size: 22,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      if (selectedOptions.isEmpty)
+                        Text(
+                          'Tap to select ${cat.toLowerCase()}',
+                          style: TextStyle(
+                            color: AppTheme.getAdaptiveGrey(context, lightShade: 400, darkShade: 600),
+                            fontSize: 14,
+                          ),
+                        )
+                      else
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: selectedOptions.map((option) {
+                            final label = option['label']?.toString() ?? option['value'].toString();
+                            final value = option['value'];
+                            return Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: AppColors.accentPurple,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    label,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        _tagManager.selected[cat]?.remove(value);
+                                      });
+                                    },
+                                    child: const Icon(
+                                      Icons.close,
+                                      size: 16,
+                                      color: Colors.white70,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  Widget _buildBandMembersSection(BuildContext context, bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader('BAND MEMBERS'),
+        const SizedBox(height: 12),
+        _buildCard(
+          context,
+          isDark,
+          child: Column(
+            children: [
+              if (_bandMembers.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.groups_outlined,
+                        size: 48,
+                        color: AppTheme.getAdaptiveGrey(context, lightShade: 400, darkShade: 600),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'No members added yet',
+                        style: TextStyle(
+                          color: AppTheme.getAdaptiveGrey(context, lightShade: 500, darkShade: 500),
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                ..._bandMembers.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final m = entry.value;
+                  return Column(
+                    children: [
+                      if (index > 0)
+                        Divider(
+                          height: 1,
+                          indent: 16,
+                          endIndent: 16,
+                          color: AppTheme.getAdaptiveGrey(context, lightShade: 200, darkShade: 800),
+                        ),
+                      ListTile(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        leading: CircleAvatar(
+                          backgroundColor: AppColors.accentPurple.withOpacity(0.15),
+                          child: Icon(
+                            Icons.person,
+                            color: AppColors.accentPurple,
+                          ),
+                        ),
+                        title: Text(
+                          m.name,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.getAdaptiveText(context),
+                          ),
+                        ),
+                        subtitle: Text(
+                          '${_bandRoleName(m.bandRoleId)} • ${m.age} years old',
+                          style: TextStyle(
+                            color: AppTheme.getAdaptiveGrey(context, lightShade: 600, darkShade: 400),
+                            fontSize: 13,
+                          ),
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: Icon(
+                                Icons.edit_outlined,
+                                color: AppColors.accentPurple,
+                                size: 20,
+                              ),
+                              onPressed: () => _editBandMember(m),
+                            ),
+                            IconButton(
+                              icon: Icon(
+                                Icons.delete_outline,
+                                color: isDark ? const Color(0xFFE57373) : Colors.red.shade400,
+                                size: 20,
+                              ),
+                              onPressed: () => _removeBandMember(m),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                }),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.add, size: 20),
+                    label: const Text('Add Member'),
+                    onPressed: _addBandMember,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.accentPurple,
+                      side: BorderSide(color: AppColors.accentPurple, width: 1.5),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : Colors.white,
+      backgroundColor: isDark ? AppColors.backgroundDark : Colors.grey[50],
       appBar: AppBar(
         elevation: 0,
         backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
@@ -364,13 +665,15 @@ class _ProfileEditTagsScreenState extends State<ProfileEditTagsScreen> {
         ),
       ),
       body: _status == 'Loading...'
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator(color: AppColors.accentPurple))
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Profile photo circle at the top
+                  // Profile photo section
+                  _buildSectionHeader('PROFILE PHOTO'),
+                  const SizedBox(height: 12),
                   Center(
                     child: GestureDetector(
                       onTap: _pickProfilePhoto,
@@ -380,18 +683,28 @@ class _ProfileEditTagsScreenState extends State<ProfileEditTagsScreen> {
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               border: Border.all(color: AppColors.accentPurple, width: 3),
-                              color: isDark ? null : Colors.white,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.accentPurple.withOpacity(0.2),
+                                  blurRadius: 20,
+                                  spreadRadius: 2,
+                                ),
+                              ],
                             ),
                             child: CircleAvatar(
                               radius: 60,
-                              backgroundColor: isDark ? AppColors.surfaceDarkAlt : AppColors.accentPurpleSoft,
+                              backgroundColor: isDark ? AppColors.surfaceDarkAlt : Colors.grey.shade100,
                               backgroundImage: _pickedProfilePhoto?.bytes != null
                                   ? MemoryImage(_pickedProfilePhoto!.bytes!)
                                   : (_profilePictures.isNotEmpty
                                       ? NetworkImage(_profilePictures.first.getAbsoluteUrl(widget.api.baseUrl))
                                       : null),
                               child: _pickedProfilePhoto?.bytes == null && _profilePictures.isEmpty
-                                  ? Icon(Icons.person, size: 60, color: AppColors.accentPurple)
+                                  ? Icon(
+                                      Icons.person,
+                                      size: 50,
+                                      color: AppTheme.getAdaptiveGrey(context, lightShade: 400, darkShade: 600),
+                                    )
                                   : null,
                             ),
                           ),
@@ -402,13 +715,18 @@ class _ProfileEditTagsScreenState extends State<ProfileEditTagsScreen> {
                               decoration: BoxDecoration(
                                 color: AppColors.accentPurple,
                                 shape: BoxShape.circle,
-                                border: Border.all(color: isDark ? AppColors.surfaceDark : Colors.white, width: 2),
+                                border: Border.all(
+                                  color: isDark ? AppColors.surfaceDark : Colors.white,
+                                  width: 3,
+                                ),
                               ),
-                              child: IconButton(
-                                icon: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
-                                onPressed: _pickProfilePhoto,
+                              child: Padding(
                                 padding: const EdgeInsets.all(8),
-                                constraints: const BoxConstraints(),
+                                child: Icon(
+                                  Icons.camera_alt,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
                               ),
                             ),
                           ),
@@ -416,23 +734,30 @@ class _ProfileEditTagsScreenState extends State<ProfileEditTagsScreen> {
                             Positioned(
                               top: 0,
                               right: 0,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.red,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.white, width: 2),
-                                ),
-                                child: IconButton(
-                                  icon: const Icon(Icons.close, color: Colors.white, size: 16),
-                                  onPressed: () {
-                                    setState(() {
-                                      _pickedProfilePhoto = null;
-                                      // Note: This only clears from UI, actual deletion would need API call
-                                      _profilePictures = [];
-                                    });
-                                  },
-                                  padding: const EdgeInsets.all(4),
-                                  constraints: const BoxConstraints(),
+                              child: GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _pickedProfilePhoto = null;
+                                    _profilePictures = [];
+                                  });
+                                },
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: isDark ? const Color(0xFFE57373) : Colors.red,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: isDark ? AppColors.surfaceDark : Colors.white,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(4),
+                                    child: Icon(
+                                      Icons.close,
+                                      color: Colors.white,
+                                      size: 14,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
@@ -443,256 +768,144 @@ class _ProfileEditTagsScreenState extends State<ProfileEditTagsScreen> {
                   const SizedBox(height: 8),
                   Center(
                     child: Text(
-                      'Tap to ${_pickedProfilePhoto == null ? 'add' : 'change'} profile photo',
-                      style: TextStyle(fontSize: 12, color: AppTheme.getAdaptiveGrey(context, lightShade: 600, darkShade: 400)),
+                      _pickedProfilePhoto == null && _profilePictures.isEmpty
+                          ? 'Tap to add photo'
+                          : 'Tap to change photo',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppTheme.getAdaptiveGrey(context, lightShade: 600, darkShade: 400),
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  // Description
-                  TextFormField(
-                    controller: _desc,
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
-                    validator: (value) => validateDescription(value ?? ''),
-                    decoration: InputDecoration(
-                      labelText: 'Description',
-                      labelStyle: TextStyle(
-                        color: isDark ? AppColors.textWhite : AppColors.accentPurple,
-                      ),
-                      helperText: '${_desc.text.length}/500 characters',
-                      helperStyle: TextStyle(
-                        color: isDark ? AppColors.textWhite.withOpacity(0.7) : AppColors.accentPurple.withOpacity(0.7),
-                      ),
-                      filled: true,
-                      fillColor: isDark ? AppColors.surfaceDarkAlt : Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        borderSide: isDark ? BorderSide.none : BorderSide(color: AppColors.accentPurple, width: 1.5),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        borderSide: isDark ? BorderSide.none : BorderSide(color: AppColors.accentPurple, width: 1.5),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        borderSide: BorderSide(color: AppColors.accentPurple, width: 2),
-                      ),
-                      errorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        borderSide: BorderSide(color: isDark ? const Color(0xFFE57373) : Colors.red, width: 1.5),
-                      ),
-                      focusedErrorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        borderSide: BorderSide(color: isDark ? const Color(0xFFE57373) : Colors.red, width: 2),
-                      ),
-                      hintText: 'Tell others about yourself...',
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-                    ),
-                    maxLines: 4,
-                    onChanged: (value) {
-                      setState(() {}); // Trigger rebuild to update character count
-                    },
-                  ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 28),
 
-                  // Tags
-                  const Text(
-                    'Tags',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
+                  // Description section
+                  _buildSectionHeader('ABOUT YOU'),
                   const SizedBox(height: 12),
-                  if (tagOptions.isEmpty)
-                    Text(
-                      '(no tags available)',
-                      style: TextStyle(color: Colors.grey[600]),
-                    )
-                  else
-                    ...categories.map((cat) {
-                      final selectedSet = _tagManager.selected[cat] ?? {};
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _humanize(cat),
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
+                  _buildCard(
+                    context,
+                    isDark,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: StatefulBuilder(
+                        builder: (context, setStateLocal) {
+                          return TextFormField(
+                            controller: _desc,
+                            autovalidateMode: AutovalidateMode.onUserInteraction,
+                            validator: (value) => validateDescription(value ?? ''),
+                            style: TextStyle(
+                              color: AppTheme.getAdaptiveText(context),
                               fontSize: 15,
+                              height: 1.5,
                             ),
-                          ),
-                          const SizedBox(height: 6),
-                          InkWell(
-                            onTap: () => _showTagPicker(cat),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-                              decoration: BoxDecoration(
-                                color: isDark ? AppColors.surfaceDarkAlt : Colors.white,
-                                borderRadius: BorderRadius.circular(30),
-                                border: isDark ? null : Border.all(color: AppColors.accentPurple, width: 1.5),
+                            decoration: InputDecoration(
+                              hintText: 'Tell us about yourself, your music journey, and what you\'re looking for...',
+                              hintStyle: TextStyle(
+                                color: AppTheme.getAdaptiveGrey(context, lightShade: 400, darkShade: 600),
+                                fontSize: 14,
                               ),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      selectedSet.isEmpty
-                                          ? '(none selected)'
-                                          : '${selectedSet.length} selected',
-                                      style: TextStyle(
-                                        color: isDark ? AppColors.textWhite : AppColors.accentPurple,
-                                      ),
-                                    ),
-                                  ),
-                                  Icon(
-                                    Icons.arrow_drop_down,
-                                    color: isDark ? AppColors.textWhite : AppColors.accentPurple,
-                                  ),
-                                ],
+                              counterText: '${_desc.text.length}/500',
+                              counterStyle: TextStyle(
+                                color: AppTheme.getAdaptiveGrey(context, lightShade: 500, darkShade: 500),
+                                fontSize: 12,
                               ),
+                              filled: false,
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              errorBorder: InputBorder.none,
+                              focusedErrorBorder: InputBorder.none,
+                              contentPadding: EdgeInsets.zero,
                             ),
-                          ),
-                          const SizedBox(height: 6),
-                          if (selectedSet.isNotEmpty)
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: selectedSet.map((val) {
-                                final found = tagOptions[cat]!.firstWhere(
-                                  (o) => o['value'] == val,
-                                  orElse: () => {'label': val.toString()},
-                                );
-                                final label = found['label']?.toString() ?? val.toString();
-                                return Chip(
-                                  label: Text(
-                                    label,
-                                    style: TextStyle(
-                                      color: isDark ? AppColors.textWhite : AppColors.accentPurple,
-                                    ),
-                                  ),
-                                  backgroundColor: isDark ? AppColors.surfaceDarkAlt : Colors.white,
-                                  side: isDark ? null : BorderSide(color: AppColors.accentPurple, width: 1.5),
-                                  deleteIconColor: AppColors.accentPurple,
-                                  onDeleted: () {
-                                    setState(() {
-                                      _tagManager.selected[cat]?.remove(val);
-                                    });
-                                  },
-                                );
-                              }).toList(),
-                            ),
-                          const SizedBox(height: 16),
-                        ],
-                      );
-                    }),
-
-                  // Band Members Section
-                  if (_isBand) ...[
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Band Members',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 12),
-                    if (_bandMembers.isEmpty)
-                      Text(
-                        '(no members added)',
-                        style: TextStyle(color: Colors.grey[600]),
-                      )
-                    else
-                      ..._bandMembers.map((m) => Container(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            decoration: BoxDecoration(
-                              color: isDark ? AppColors.surfaceDarkAlt : Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                              border: isDark ? null : Border.all(color: AppColors.accentPurple, width: 1.5),
-                            ),
-                            child: ListTile(
-                              title: Text(
-                                '${m.name} (${m.age} y/o)',
-                                style: TextStyle(
-                                  color: isDark ? AppColors.textWhite : AppColors.accentPurple,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              subtitle: Text(
-                                'Role: ${_bandRoleName(m.bandRoleId)} • Order: ${m.displayOrder}',
-                                style: TextStyle(
-                                  color: isDark ? AppColors.textWhite.withOpacity(0.7) : AppColors.accentPurple.withOpacity(0.7),
-                                ),
-                              ),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    icon: Icon(Icons.edit, color: AppColors.accentPurple),
-                                    onPressed: () => _editBandMember(m),
-                                  ),
-                                  IconButton(
-                                    icon: Icon(Icons.delete, color: isDark ? const Color(0xFFE57373) : const Color(0xFFEF5350)),
-                                    onPressed: () => _removeBandMember(m),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          )),
-                    const SizedBox(height: 8),
-                    OutlinedButton.icon(
-                      icon: const Icon(Icons.add),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.accentPurple,
-                        side: BorderSide(color: AppColors.accentPurple, width: 2),
+                            maxLines: 5,
+                            maxLength: 500,
+                            onChanged: (value) {
+                              setStateLocal(() {}); // Update character count
+                            },
+                          );
+                        },
                       ),
-                      label: const Text('Add Band Member'),
-                      onPressed: _addBandMember,
                     ),
-                    const SizedBox(height: 32),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Tags section
+                  _buildTags(context, isDark),
+                  const SizedBox(height: 8),
+
+                  // Band members section (only for bands)
+                  if (_isBand) ...[
+                    _buildBandMembersSection(context, isDark),
+                    const SizedBox(height: 24),
                   ],
 
+                  const SizedBox(height: 8),
 
-                  // Save Button
+                  // Save button
                   SizedBox(
                     width: double.infinity,
+                    height: 56,
                     child: ElevatedButton(
                       onPressed: _save,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.accentPurple,
                         foregroundColor: Colors.white,
-                        minimumSize: const Size(double.infinity, 56),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
+                          borderRadius: BorderRadius.circular(16),
                         ),
-                        textStyle: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        elevation: 0,
                       ),
-                      child: const Text('Save Changes'),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          Icon(Icons.check_circle_outline, size: 20),
+                          SizedBox(width: 8),
+                          Text(
+                            'Save Changes',
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
 
-                  if (_status.isNotEmpty && _status != 'Loading...') ...[
+                  if (_status.isNotEmpty && _status != 'Loading...' && _status != 'Saving...') ...[
                     const SizedBox(height: 16),
                     Container(
-                      width: double.infinity,
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: _status.contains('200')
-                            ? (isDark ? const Color(0xFF1B5E20) : const Color(0xFFE8F5E9))
-                            : (isDark ? const Color(0xFFB71C1C) : const Color(0xFFFFEBEE)),
-                        borderRadius: BorderRadius.circular(16),
+                        color: isDark ? const Color(0xFF3D1F1F) : const Color(0xFFFFEBEE),
+                        borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: _status.contains('200')
-                              ? (isDark ? const Color(0xFF4CAF50) : const Color(0xFF81C784))
-                              : (isDark ? const Color(0xFFE57373) : const Color(0xFFE57373)),
+                          color: isDark ? const Color(0xFFE57373) : Colors.red.shade200,
                         ),
                       ),
-                      child: Text(
-                        _status,
-                        style: TextStyle(
-                          color: _status.contains('200')
-                              ? (isDark ? const Color(0xFFA5D6A7) : const Color(0xFF1B5E20))
-                              : (isDark ? const Color(0xFFFFCDD2) : const Color(0xFFC62828)),
-                        ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            color: isDark ? const Color(0xFFE57373) : Colors.red.shade700,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              _status,
+                              style: TextStyle(
+                                color: isDark ? const Color(0xFFFFCDD2) : Colors.red.shade700,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
+
+                  const SizedBox(height: 32),
                 ],
               ),
             ),

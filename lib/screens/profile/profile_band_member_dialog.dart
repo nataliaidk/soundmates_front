@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import '../../api/models.dart';
+import '../../utils/validators.dart';
+import '../../theme/app_design_system.dart';
 
 /// Shows a dialog to add or edit a band member
 Future<BandMemberDto?> showBandMemberDialog({
@@ -10,6 +12,9 @@ Future<BandMemberDto?> showBandMemberDialog({
 }) async {
   final nameCtrl = TextEditingController(text: member?.name ?? '');
   final ageCtrl = TextEditingController(text: member?.age.toString() ?? '');
+  String? nameError;
+  String? ageError;
+  String? roleError;
 
   // Preselect current role (if editing)
   BandRoleDto? selectedRole;
@@ -25,52 +30,123 @@ Future<BandMemberDto?> showBandMemberDialog({
     builder: (ctx) => StatefulBuilder(
       builder: (context, setDialogState) {
         return AlertDialog(
-          title: Text(member == null ? 'Add band member' : 'Edit band member'),
+          backgroundColor: AppTheme.getAdaptiveSurface(context),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(
+            member == null ? 'Add Band Member' : 'Edit Band Member',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: AppTheme.getAdaptiveText(context),
+            ),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               TextField(
                 controller: nameCtrl,
-                decoration: const InputDecoration(labelText: 'Name'),
+                decoration: InputDecoration(
+                  labelText: 'Name',
+                  errorText: nameError,
+                  prefixIcon: Icon(Icons.person_outline, color: AppColors.accentPurple),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppColors.accentPurple, width: 2),
+                  ),
+                ),
+                onChanged: (_) {
+                  if (nameError != null) {
+                    setDialogState(() => nameError = null);
+                  }
+                },
               ),
+              const SizedBox(height: 16),
               TextField(
                 controller: ageCtrl,
-                decoration: const InputDecoration(labelText: 'Age'),
+                decoration: InputDecoration(
+                  labelText: 'Age',
+                  errorText: ageError,
+                  prefixIcon: Icon(Icons.cake_outlined, color: AppColors.accentPurple),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppColors.accentPurple, width: 2),
+                  ),
+                  helperText: 'Must be between 13 and 100',
+                ),
                 keyboardType: TextInputType.number,
+                onChanged: (_) {
+                  if (ageError != null) {
+                    setDialogState(() => ageError = null);
+                  }
+                },
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               DropdownButtonFormField<BandRoleDto>(
-                initialValue: selectedRole,
-                decoration: const InputDecoration(
+                value: selectedRole,
+                decoration: InputDecoration(
                   labelText: 'Role',
-                  border: OutlineInputBorder(),
+                  errorText: roleError,
+                  prefixIcon: Icon(Icons.music_note, color: AppColors.accentPurple),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppColors.accentPurple, width: 2),
+                  ),
                 ),
                 items: bandRoles.map(
                   (r) => DropdownMenuItem(value: r, child: Text(r.name)),
                 ).toList(),
-                onChanged: (v) => setDialogState(() => selectedRole = v),
+                onChanged: (v) {
+                  setDialogState(() {
+                    selectedRole = v;
+                    roleError = null;
+                  });
+                },
               ),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: AppTheme.getAdaptiveGrey(context, lightShade: 600, darkShade: 400)),
+              ),
             ),
             ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.accentPurple,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
               onPressed: () {
-                if (selectedRole == null) return;
+                // Validate all fields
+                final nameValidation = validateBandMemberName(nameCtrl.text);
+                final ageValidation = validateBandMemberAge(ageCtrl.text);
+                final roleValidation = selectedRole == null ? 'Please select a role' : null;
+
+                if (nameValidation != null || ageValidation != null || roleValidation != null) {
+                  setDialogState(() {
+                    nameError = nameValidation;
+                    ageError = ageValidation;
+                    roleError = roleValidation;
+                  });
+                  return;
+                }
+
                 final dto = BandMemberDto(
                   id: member?.id ?? const Uuid().v4(),
                   name: nameCtrl.text.trim(),
-                  age: int.tryParse(ageCtrl.text) ?? 0,
+                  age: int.parse(ageCtrl.text),
                   displayOrder: 0,
                   bandId: 'TEMP',
                   bandRoleId: selectedRole!.id,
                 );
                 Navigator.pop(ctx, dto);
               },
-              child: const Text('OK'),
+              child: Text(member == null ? 'Add' : 'Save'),
             ),
           ],
         );

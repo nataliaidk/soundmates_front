@@ -54,7 +54,7 @@ String? validateBirthYear(String yearText) {
 String? validateAge(int? age) {
   if (age == null) return 'Age is required';
   if (age < 13) return 'You must be at least 13 years old';
-  if (age > 120) return 'Invalid age';
+  if (age > 100) return 'Age must be 100 or less';
   return null;
 }
 
@@ -69,6 +69,6 @@ String? validateBandMemberAge(String ageText) {
   final age = int.tryParse(ageText);
   if (age == null) return 'Invalid age';
   if (age < 13) return 'Member must be at least 13 years old';
-  if (age > 120) return 'Invalid age';
+  if (age > 100) return 'Age must be 100 or less';
   return null;
 }

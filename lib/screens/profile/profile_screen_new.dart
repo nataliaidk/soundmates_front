@@ -443,6 +443,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _save() async {
+    // Validate before saving
+    final validationError = _validateProfile();
+    if (validationError != null) {
+      setState(() => _status = validationError);
+      return;
+    }
+
     setState(() => _status = 'Saving...');
 
     final allSelected = _tagManager.getAllSelectedTagIds();
@@ -479,10 +486,144 @@ class _ProfileScreenState extends State<ProfileScreen> {
       resp = await widget.api.updateArtistProfile(dto, allSelected.isEmpty ? null : allSelected);
     }
 
-    setState(() => _status = 'Profile update: ${resp.statusCode}');
     if (resp.statusCode == 200) {
+      setState(() => _status = '');
       await _maybeUploadProfilePhoto();
       await _goToProfileView();
+    } else {
+      // Parse error response for better error messages
+      final errorMessage = _parseErrorResponse(resp);
+      setState(() => _status = errorMessage);
+    }
+  }
+
+  String? _validateProfile() {
+    // Validate name
+    if (_name.text.trim().isEmpty) {
+      return 'Name is required';
+    }
+    if (_name.text.trim().length > 50) {
+      return 'Name is too long (max 50 characters)';
+    }
+
+    // Validate location
+    if (_selectedCountry == null) {
+      return 'Please select a country';
+    }
+    if (_selectedCity == null) {
+      return 'Please select a city';
+    }
+
+    // Validate artist-specific fields
+    if (_isBand != true) {
+      if (_birthDate == null) {
+        return 'Birth date is required for artists';
+      }
+      // Validate age (must be at least 13)
+      final age = DateTime.now().difference(_birthDate!).inDays ~/ 365;
+      if (age < 13) {
+        return 'You must be at least 13 years old';
+      }
+      if (age > 100) {
+        return 'Birth date must be within the last 100 years';
+      }
+      if (_selectedGender == null) {
+        return 'Please select your gender';
+      }
+    }
+
+    // Validate band members
+    if (_isBand == true) {
+      for (final member in _bandMembers) {
+        if (member.name.trim().isEmpty) {
+          return 'Band member name cannot be empty';
+        }
+        if (member.name.trim().length > 50) {
+          return 'Band member name is too long (max 50 characters)';
+        }
+        if (member.age < 13) {
+          return 'Band member "${member.name}" must be at least 13 years old';
+        }
+        if (member.age > 100) {
+          return 'Band member "${member.name}" age must be 100 or less';
+        }
+      }
+    }
+
+    // Validate description (optional but has max length)
+    if (_desc.text.trim().length > 500) {
+      return 'Description is too long (max 500 characters)';
+    }
+
+    return null; // No validation errors
+  }
+
+  String _parseErrorResponse(http.Response resp) {
+    try {
+      final body = jsonDecode(resp.body);
+
+      // Check for validation errors in common formats
+      if (body is Map) {
+        // Check for 'errors' field (common in ASP.NET validation)
+        if (body.containsKey('errors')) {
+          final errors = body['errors'];
+          if (errors is Map) {
+            final messages = <String>[];
+            errors.forEach((key, value) {
+              if (value is List) {
+                messages.addAll(value.map((v) => v.toString()));
+              } else {
+                messages.add(value.toString());
+              }
+            });
+            if (messages.isNotEmpty) {
+              return messages.join('\n');
+            }
+          }
+        }
+
+        // Check for 'message' field
+        if (body.containsKey('message')) {
+          return body['message'].toString();
+        }
+
+        // Check for 'title' field (ASP.NET problem details)
+        if (body.containsKey('title')) {
+          return body['title'].toString();
+        }
+
+        // Check for 'detail' field (ASP.NET problem details)
+        if (body.containsKey('detail')) {
+          return body['detail'].toString();
+        }
+      }
+
+      // If body is a string
+      if (body is String && body.isNotEmpty) {
+        return body;
+      }
+    } catch (_) {
+      // JSON parsing failed
+    }
+
+    // Fallback based on status code
+    switch (resp.statusCode) {
+      case 400:
+        return 'Invalid data. Please check all fields and try again.';
+      case 401:
+        return 'Session expired. Please log in again.';
+      case 403:
+        return 'You don\'t have permission to perform this action.';
+      case 404:
+        return 'Profile not found. Please try again.';
+      case 413:
+        return 'Data too large. Please reduce the size of your content.';
+      case 422:
+        return 'Invalid data format. Please check all fields.';
+      case 500:
+        return 'Server error. Please try again later.';
+      default:
+        return 'Something went wrong (Error ${resp.statusCode}). Please try again.';
     }
   }
 
@@ -506,15 +647,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _goToProfileView() async {
     if (!mounted) return;
-    // Navigate to profile view route
-    Navigator.pushReplacementNamed(context, '/profile');
+
+    // If completing profile creation (from registration), go to discover screen
+    if (_isFromRegistration) {
+      Navigator.pushReplacementNamed(context, '/discover');
+    } else {
+      // Otherwise go back to profile view
+      Navigator.pushReplacementNamed(context, '/profile');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final showNav = !_isEditing;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Scaffold(
+
+    // Prevent back navigation during profile creation
+    return PopScope(
+      canPop: !_isFromRegistration, // Disable back button during registration flow
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop && _isFromRegistration) {
+          // User tried to go back during profile creation
+          if (_currentStep == 2) {
+            // Go back to step 1 instead of leaving
+            setState(() => _currentStep = 1);
+          } else {
+            // On step 1, show a message that they can't go back
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Please complete your profile to continue'),
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+        }
+      },
+      child: Scaffold(
       backgroundColor: isDark ? AppColors.backgroundDark : Colors.grey[50],
       appBar: _isEditing
           ? AppBar(
@@ -604,6 +772,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
               ],
             ),
+      ),
     );
   }
 
